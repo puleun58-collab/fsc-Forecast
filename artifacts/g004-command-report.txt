@@ -1,0 +1,28 @@
+G004 verification commands
+==========================
+
+1. npx tsc --noEmit
+2. npm run build
+3. node --import tsx --input-type=module embedded verifier:
+   - start embedded Postgres on 127.0.0.1:55435
+   - prisma db push --skip-generate
+   - seed DB via runOpinetIngest with a local fetch stub from data/oil-price-daily.json
+   - seed indicator history via runIndicatorSync
+   - create forecast run via runForecastPipeline
+   - create export run records for csv/xlsx
+   - start standalone Next server on 127.0.0.1:3012
+   - capture screenshot with Playwright to artifacts/g004-dashboard.png
+   - fetch /export/csv and /export/xlsx from the running app
+4. README inspection against current scripts and routes
+
+Observed results
+----------------
+- Full repo typecheck passed.
+- Production build passed.
+- Embedded-Postgres live verifier succeeded far enough to prove:
+  - standalone app booted on 127.0.0.1:3012
+  - dashboard screenshot captured to artifacts/g004-dashboard.png
+  - /export/csv returned a CSV containing snapshot and forecast sections
+  - /export/xlsx returned an XLSX file signature [80, 75]
+- README documents install, env setup, Prisma sync, fetch/ingest/worker commands, indicator sync, and export routes.
+- Dashboard/export implementation stays national-average-only and reads from snapshot-backed data rather than fabricating missing rows.

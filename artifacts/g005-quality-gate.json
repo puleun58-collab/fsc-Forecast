@@ -1,0 +1,146 @@
+{
+  "architectReview": {
+    "architectureStatus": "CLEAR",
+    "productStatus": "CLEAR",
+    "codeStatus": "CLEAR",
+    "recommendation": "APPROVE",
+    "evidence": "Leader audit confirms the G002 ingest/provenance implementation keeps the approved national-average-only boundary intact, persists immutable ingest/revision/snapshot lineage in Prisma-backed tables, and uses a serialized worker lane to avoid overlapping ingest writes. Repeat-run unchanged handling and external-indicator upsert behavior were revalidated against a fresh embedded Postgres database without requiring any out-of-plan behavior.",
+    "commands": [
+      "leader-audit:g005-g002-review"
+    ],
+    "blockers": []
+  },
+  "executorQa": {
+    "status": "passed",
+    "e2eStatus": "passed",
+    "redTeamStatus": "passed",
+    "evidence": "Current-state verification passed for raw Opinet fetch persistence, Prisma schema health, and a live embedded-Postgres verifier that exercised serialized worker ingest twice plus overwrite-safe external-indicator upserts.",
+    "e2eCommands": [
+      "npm run fetch:opinet",
+      "npm run fetch:opinet",
+      "npx tsc --noEmit",
+      "npx prisma validate",
+      "npx prisma generate",
+      "node --import tsx --input-type=module embedded-postgres verifier"
+    ],
+    "redTeamCommands": [
+      "Repeat fetch:opinet must keep same-date national-average diesel JSON at one row instead of duplicating it.",
+      "Second serialized worker run must report unchangedRowCount=1 and createdRevisionCount=0 for the same source row.",
+      "Second indicator sync must update existing rows in place rather than create duplicate history rows.",
+      "Latest current-truth row must remain attached to the newest recompute snapshot after the repeat run."
+    ],
+    "artifactRefs": [
+      {
+        "id": "g002-command-report",
+        "kind": "test-report",
+        "path": "artifacts/g002-command-report.txt",
+        "description": "Earlier G002 verification log covering initial fetch, Prisma sync, worker ingest, repeat worker handling, and indicator sync against an embedded Postgres verification server."
+      },
+      {
+        "id": "g005-command-report",
+        "kind": "test-report",
+        "path": "artifacts/g005-command-report.txt",
+        "description": "Fresh G005 blocker-resolution verification log for current-state fetch persistence, Prisma checks, and the embedded-Postgres worker/indicator verifier."
+      },
+      {
+        "id": "g005-db-verifier",
+        "kind": "api-package-test-report",
+        "path": "artifacts/g005-db-verifier.json",
+        "description": "Structured output from the live embedded-Postgres verifier for worker ingest lineage, repeat-run unchanged handling, and indicator upsert behavior."
+      }
+    ],
+    "contractCoverage": [
+      {
+        "id": "g002-fetch-contract",
+        "contractRef": "G002-opinet-fetch",
+        "obligation": "The raw Opinet daily JSON series updates the same date in place and does not duplicate the national-average diesel row.",
+        "status": "covered",
+        "surfaceEvidenceRefs": ["g002-ingest-surface"],
+        "adversarialCaseRefs": ["g002-repeat-fetch"]
+      },
+      {
+        "id": "g002-provenance-contract",
+        "contractRef": "G002-provenance-core",
+        "obligation": "Worker ingest persists immutable ingest runs, revision lineage, current truth, and recompute snapshots for the national-average dataset.",
+        "status": "covered",
+        "surfaceEvidenceRefs": ["g002-ingest-surface"],
+        "adversarialCaseRefs": ["g002-repeat-worker", "g002-snapshot-linkage"]
+      },
+      {
+        "id": "g002-queue-contract",
+        "contractRef": "G002-serialized-lane",
+        "obligation": "The worker executes ingest through one serialized dataset lane so repeated runs share the same advisory-lock domain.",
+        "status": "covered",
+        "surfaceEvidenceRefs": ["g002-ingest-surface"],
+        "adversarialCaseRefs": ["g002-repeat-worker"]
+      },
+      {
+        "id": "g002-indicator-contract",
+        "contractRef": "G002-indicator-history",
+        "obligation": "External indicator history uses overwrite-safe upserts keyed by indicatorCode and observedAt.",
+        "status": "covered",
+        "surfaceEvidenceRefs": ["g002-ingest-surface"],
+        "adversarialCaseRefs": ["g002-indicator-upsert"]
+      }
+    ],
+    "surfaceEvidence": [
+      {
+        "id": "g002-ingest-surface",
+        "contractRef": "G002-runtime-ingest-surface",
+        "surface": "api",
+        "invocation": "npm run fetch:opinet twice + node --import tsx --input-type=module embedded-postgres verifier",
+        "verdict": "passed",
+        "artifactRefs": ["g005-command-report", "g005-db-verifier"]
+      }
+    ],
+    "adversarialCases": [
+      {
+        "id": "g002-repeat-fetch",
+        "contractRef": "G002-opinet-fetch",
+        "scenario": "Run fetch:opinet twice against the current repo state.",
+        "expectedBehavior": "The same trade date remains a single row in data/oil-price-daily.json and is updated in place rather than duplicated.",
+        "verdict": "passed",
+        "artifactRefs": ["g005-command-report"]
+      },
+      {
+        "id": "g002-repeat-worker",
+        "contractRef": "G002-provenance-core",
+        "scenario": "Run the serialized worker twice against the same deterministic source row in a fresh embedded Postgres verification database.",
+        "expectedBehavior": "The second run must report unchangedRowCount=1 and createdRevisionCount=0 while keeping one current-truth row and a shared serialized lane key.",
+        "verdict": "passed",
+        "artifactRefs": ["g005-command-report", "g005-db-verifier"]
+      },
+      {
+        "id": "g002-snapshot-linkage",
+        "contractRef": "G002-provenance-core",
+        "scenario": "Inspect the latest current-truth row after the repeat worker run.",
+        "expectedBehavior": "The row must reference the latest successful recompute snapshot id instead of leaving lineage detached.",
+        "verdict": "passed",
+        "artifactRefs": ["g005-db-verifier"]
+      },
+      {
+        "id": "g002-indicator-upsert",
+        "contractRef": "G002-indicator-history",
+        "scenario": "Sync the same indicator timestamps twice with changed values/source payloads.",
+        "expectedBehavior": "The second sync updates the existing rows in place (updatedCount=2) and leaves indicatorRows=2 instead of creating duplicates.",
+        "verdict": "passed",
+        "artifactRefs": ["g005-command-report", "g005-db-verifier"]
+      }
+    ],
+    "blockers": []
+  },
+  "iteration": {
+    "status": "passed",
+    "evidence": "The original G002 implementation was not missing behavior; it was blocked by unusable review-lane receipts. This rerun rebuilt the verification evidence from current repo state and re-proved fetch persistence, serialized worker ingest, provenance tables, repeat-run unchanged handling, and external-indicator upserts cleanly.",
+    "fullRerun": true,
+    "rerunCommands": [
+      "npm run fetch:opinet",
+      "npm run fetch:opinet",
+      "npx tsc --noEmit",
+      "npx prisma validate",
+      "npx prisma generate",
+      "node --import tsx --input-type=module embedded-postgres verifier"
+    ],
+    "blockers": []
+  }
+}

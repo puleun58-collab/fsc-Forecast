@@ -1,0 +1,11 @@
+[
+  {
+    "date": "20260706",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1884.62,
+    "diff": -5.94,
+    "source": "opinet-average-price",
+    "fetchedAt": "2026-07-06T07:41:40.035Z"
+  }
+]

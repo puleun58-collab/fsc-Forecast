@@ -1,0 +1,131 @@
+{
+  "architectReview": {
+    "architectureStatus": "CLEAR",
+    "productStatus": "CLEAR",
+    "codeStatus": "CLEAR",
+    "recommendation": "APPROVE",
+    "evidence": "Leader audit confirms G004 wires the public dashboard, snapshot-based CSV/XLSX export, and run documentation on top of the approved national-average-only data contract. Export routes read from the shared snapshot-backed dataset builder, dashboard rendering handles unavailable DB states honestly, and README matches the implemented commands and routes.",
+    "commands": [
+      "leader-audit:g004-architecture"
+    ],
+    "blockers": []
+  },
+  "executorQa": {
+    "status": "passed",
+    "e2eStatus": "passed",
+    "redTeamStatus": "passed",
+    "evidence": "Full-repo typecheck/build passed, and a live embedded-Postgres verifier booted the standalone app, captured a dashboard screenshot, and exercised both export routes against seeded snapshot-backed data.",
+    "e2eCommands": [
+      "npx tsc --noEmit",
+      "npm run build",
+      "node --import tsx --input-type=module embedded-postgres live web verifier"
+    ],
+    "redTeamCommands": [
+      "Embedded verifier seeds only snapshot-backed data and verifies the app/export behavior without fabricating dashboard rows.",
+      "CSV route check confirms snapshot and forecast sections exist in live output.",
+      "XLSX route check confirms a valid ZIP/XLSX signature [80, 75]."
+    ],
+    "artifactRefs": [
+      {
+        "id": "g004-web-report",
+        "kind": "playwright-web-report",
+        "path": "artifacts/g004-web-evidence.json",
+        "description": "Live standalone app verification for the dashboard and export routes."
+      },
+      {
+        "id": "g004-web-screenshot",
+        "kind": "web-screenshot",
+        "path": "artifacts/g004-dashboard.png",
+        "description": "Non-uniform screenshot of the live national-average dashboard."
+      },
+      {
+        "id": "g004-command-report",
+        "kind": "test-report",
+        "path": "artifacts/g004-command-report.txt",
+        "description": "Command-level verification log for build, live dashboard, export routes, and documentation coverage."
+      }
+    ],
+    "contractCoverage": [
+      {
+        "id": "g004-dashboard-contract",
+        "contractRef": "G004-dashboard",
+        "obligation": "The public dashboard renders snapshot-backed national-average data and handles unavailable state honestly.",
+        "status": "covered",
+        "surfaceEvidenceRefs": ["g004-web-surface"],
+        "adversarialCaseRefs": ["g004-snapshot-only"]
+      },
+      {
+        "id": "g004-export-contract",
+        "contractRef": "G004-export",
+        "obligation": "CSV/XLSX routes export the shared snapshot-backed dataset.",
+        "status": "covered",
+        "surfaceEvidenceRefs": ["g004-web-surface"],
+        "adversarialCaseRefs": ["g004-csv-export", "g004-xlsx-export"]
+      },
+      {
+        "id": "g004-docs-contract",
+        "contractRef": "G004-docs",
+        "obligation": "README documents the current install, env, ingest, indicator sync, worker, and export flows.",
+        "status": "covered",
+        "surfaceEvidenceRefs": ["g004-web-surface"],
+        "adversarialCaseRefs": ["g004-readme-current"]
+      }
+    ],
+    "surfaceEvidence": [
+      {
+        "id": "g004-web-surface",
+        "contractRef": "G004-public-surface",
+        "surface": "web",
+        "invocation": "embedded-postgres verifier + node .next/standalone/server.js + Playwright screenshot + /export route fetches",
+        "verdict": "passed",
+        "artifactRefs": ["g004-web-report", "g004-web-screenshot"]
+      }
+    ],
+    "adversarialCases": [
+      {
+        "id": "g004-snapshot-only",
+        "contractRef": "G004-dashboard",
+        "scenario": "Live app rendered only after seeding snapshot-backed data in an embedded Postgres verification DB.",
+        "expectedBehavior": "Dashboard must depend on seeded snapshot data rather than fabricate missing rows.",
+        "verdict": "passed",
+        "artifactRefs": ["g004-command-report", "g004-web-report"]
+      },
+      {
+        "id": "g004-csv-export",
+        "contractRef": "G004-export",
+        "scenario": "GET /export/csv against the live standalone app",
+        "expectedBehavior": "Returns CSV containing snapshot and forecast sections from the shared dataset builder.",
+        "verdict": "passed",
+        "artifactRefs": ["g004-command-report", "g004-web-report"]
+      },
+      {
+        "id": "g004-xlsx-export",
+        "contractRef": "G004-export",
+        "scenario": "GET /export/xlsx against the live standalone app",
+        "expectedBehavior": "Returns a downloadable XLSX payload with ZIP signature [80, 75].",
+        "verdict": "passed",
+        "artifactRefs": ["g004-command-report", "g004-web-report"]
+      },
+      {
+        "id": "g004-readme-current",
+        "contractRef": "G004-docs",
+        "scenario": "README inspected against current scripts and routes",
+        "expectedBehavior": "Documented commands and routes match the repo's actual current state.",
+        "verdict": "passed",
+        "artifactRefs": ["g004-command-report"]
+      }
+    ],
+    "blockers": []
+  },
+  "iteration": {
+    "status": "passed",
+    "evidence": "G004 implementation was revalidated after export-body and lazy DB loading fixes. The final rerun included full typecheck/build plus a live standalone-app/export verification against an embedded Postgres database.",
+    "fullRerun": true,
+    "rerunCommands": [
+      "npx tsc --noEmit",
+      "npm run build",
+      "node --import tsx --input-type=module embedded-postgres live web verifier"
+    ],
+    "blockers": []
+  }
+}

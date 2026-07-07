@@ -1,0 +1,29 @@
+G002 verification commands
+==========================
+
+1. npx tsc --noEmit
+2. npm run fetch:opinet
+3. npm run fetch:opinet  # repeat run to verify same-date JSON update without duplication
+4. set -a && . ./.env.example && set +a && npx prisma validate
+5. set -a && . ./.env.example && set +a && npx prisma generate
+6. set -a && . ./.env.example && set +a && npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/20260706_init/migration.sql
+7. Start embedded Postgres locally via embedded-postgres (verification harness only)
+8. set -a && . ./.env.example && . ./.env.local && set +a && npx prisma db push --skip-generate
+9. set -a && . ./.env.example && . ./.env.local && set +a && RUNTIME_ROLE=worker npm run worker
+10. Repeat worker run against the same live DB to verify unchanged same-date handling
+11. set -a && . ./.env.example && set +a && node --import tsx -e "...runIndicatorSync..."  # create and update indicator rows
+12. set -a && . ./.env.example && . ./.env.local && set +a && node --import tsx -e "...count ingestRuns/revisions/currentRows/snapshots..."
+
+Observed results
+----------------
+- TypeScript check passed after the G002 implementation landed.
+- `npm run fetch:opinet` succeeded and wrote one national-average diesel row to data/oil-price-daily.json.
+- Re-running `npm run fetch:opinet` kept data/oil-price-daily.json at a single row for the same date.
+- Prisma schema validated and Prisma Client regenerated successfully.
+- Initial migration SQL was generated at prisma/migrations/20260706_init/migration.sql.
+- A live embedded Postgres verification server allowed real DB-backed checks without changing the approved runtime contract.
+- `npx prisma db push --skip-generate` succeeded against the live embedded Postgres verification server.
+- The worker ingest path succeeded against the live embedded Postgres server and produced ingest/reconcile/snapshot output.
+- After fixing advisory-lock typing and duplicate-revision detection, a repeat worker run reported `unchangedRowCount: 1` with no extra current-truth rows.
+- DB counts after live verification showed ingest run history, revision rows, current truth rows, and recompute snapshots persisted through Prisma.
+- `runIndicatorSync` successfully created and updated external-indicator history rows for Dubai and USD/KRW against the live embedded Postgres server.

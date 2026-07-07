@@ -1,0 +1,70 @@
+services:
+  postgres:
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-opinet_diesel_dashboard}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/opinet_diesel_dashboard?schema=public}
+      NODE_ENV: production
+      RUNTIME_FAMILY: container-web-postgres-cron
+      RUNTIME_ROLE: app
+      OPINET_DATASET_KEY: national-average-opinet-diesel
+      QUEUE_DOMAIN: national-average-opinet-diesel
+      APP_RUNTIME_ID: ${APP_RUNTIME_ID:-web-app}
+      WORKER_RUNTIME_ID: ${WORKER_RUNTIME_ID:-scheduled-worker}
+      SCHEDULED_JOB_NAME: ${SCHEDULED_JOB_NAME:-scheduled-national-average-ingest}
+      OPINET_API_KEY: ${OPINET_API_KEY:-your_opinet_api_key_here}
+      OPINET_AVG_PRICE_URL: ${OPINET_AVG_PRICE_URL:-https://www.opinet.co.kr/api/avgAllPrice.do?out=json}
+    command: ["sh", "-c", "npx prisma migrate deploy && npm run start -- --hostname 0.0.0.0 --port 3000"]
+    ports:
+      - "3000:3000"
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/opinet_diesel_dashboard?schema=public}
+      NODE_ENV: production
+      RUNTIME_FAMILY: container-web-postgres-cron
+      RUNTIME_ROLE: worker
+      OPINET_DATASET_KEY: national-average-opinet-diesel
+      QUEUE_DOMAIN: national-average-opinet-diesel
+      APP_RUNTIME_ID: ${APP_RUNTIME_ID:-web-app}
+      WORKER_RUNTIME_ID: ${WORKER_RUNTIME_ID:-scheduled-worker}
+      SCHEDULED_JOB_NAME: ${SCHEDULED_JOB_NAME:-scheduled-national-average-ingest}
+      OPINET_API_KEY: ${OPINET_API_KEY:-your_opinet_api_key_here}
+      OPINET_AVG_PRICE_URL: ${OPINET_AVG_PRICE_URL:-https://www.opinet.co.kr/api/avgAllPrice.do?out=json}
+    command: ["sh", "-c", "npx prisma migrate deploy && npm run worker"]
+
+volumes:
+  postgres-data:

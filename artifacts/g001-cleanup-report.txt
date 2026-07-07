@@ -1,0 +1,30 @@
+AI SLOP CLEANUP REPORT — G001
+================================
+
+Scope reviewed:
+- package.json
+- .eslintrc.json
+- .dockerignore
+- .env.example
+- next.config.mjs
+- tsconfig.json
+- Dockerfile
+- compose.yaml
+- app/layout.tsx
+- app/page.tsx
+- app/globals.css
+- src/components/dashboard-shell.tsx
+- src/components/section-card.tsx
+- prisma/schema.prisma
+- src/lib/env.ts
+- src/lib/db.ts
+- src/lib/queue.ts
+- src/worker/index.ts
+
+Blocking findings: none
+Advisory findings: none
+
+Notes:
+- National-average-only runtime scope is hard-locked in env parsing and compose wiring.
+- Placeholder UI/schema scaffolding is explicit about future wiring and does not claim later-story behavior is already implemented.
+- No fake fallback logic or dead duplicate branches were observed in the scaffold story files.

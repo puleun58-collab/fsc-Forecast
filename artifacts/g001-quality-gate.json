@@ -1,0 +1,158 @@
+{
+  "architectReview": {
+    "architectureStatus": "CLEAR",
+    "productStatus": "CLEAR",
+    "codeStatus": "CLEAR",
+    "recommendation": "APPROVE",
+    "evidence": "Architect review cleared the runtime-family scaffold after confirming the locked national-average runtime contract, file-backed container/worker artifacts, and honest baseline placeholders. Evidence: agent://24-G001ArchitectFinal and artifacts/g001-cleanup-report.txt.",
+    "commands": [
+      "agent://24-G001ArchitectFinal"
+    ],
+    "blockers": []
+  },
+  "executorQa": {
+    "status": "passed",
+    "e2eStatus": "passed",
+    "redTeamStatus": "passed",
+    "evidence": "Parent verification passed TypeScript, lint, build, worker bootstrap, rendered web shell markers, and screenshot capture. Executor QA cleared the final scaffold with adversarial env-lock checks. Evidence: agent://25-G001QaFinal, artifacts/g001-command-report.txt, artifacts/g001-web-evidence.json, artifacts/g001-home.png.",
+    "e2eCommands": [
+      "npx tsc --noEmit",
+      "npm run lint",
+      "npm run build",
+      "npm run dev -- --hostname 127.0.0.1 --port 3005",
+      "npx playwright screenshot http://127.0.0.1:3005 artifacts/g001-home.png"
+    ],
+    "redTeamCommands": [
+      "RUNTIME_ROLE=worker npm run worker",
+      "node --import tsx -e \"process.env.DATABASE_URL='postgresql://postgres:postgres@localhost:5432/opinet_diesel_dashboard?schema=public'; process.env.OPINET_DATASET_KEY='rogue-dataset'; import('./src/lib/env.ts').then(()=>{ console.log('unexpected-success'); process.exit(1); }).catch((error)=>{ console.log(String(error.message || error)); });\"",
+      "node --import tsx -e \"process.env.DATABASE_URL='postgresql://postgres:postgres@localhost:5432/opinet_diesel_dashboard?schema=public'; process.env.QUEUE_DOMAIN='override-domain'; import('./src/lib/env.ts').then(()=>{ console.log('unexpected-success'); process.exit(1); }).catch((error)=>{ console.log(String(error.message || error)); });\"",
+      "node --import tsx -e \"process.env.DATABASE_URL='postgresql://postgres:postgres@localhost:5432/opinet_diesel_dashboard?schema=public'; process.env.RUNTIME_FAMILY='serverless'; import('./src/lib/env.ts').then(()=>{ console.log('unexpected-success'); process.exit(1); }).catch((error)=>{ console.log(String(error.message || error)); });\""
+    ],
+    "artifactRefs": [
+      {
+        "id": "g001-web-report",
+        "kind": "playwright-web-report",
+        "path": "artifacts/g001-web-evidence.json",
+        "description": "Browser smoke evidence for the rendered national-average-only scaffold page."
+      },
+      {
+        "id": "g001-web-screenshot",
+        "kind": "web-screenshot",
+        "path": "artifacts/g001-home.png",
+        "description": "Non-uniform screenshot of the live scaffold page."
+      },
+      {
+        "id": "g001-command-report",
+        "kind": "test-report",
+        "path": "artifacts/g001-command-report.txt",
+        "description": "Command-level verification log for typecheck, lint, build, worker bootstrap, marker fetch, and screenshot capture."
+      },
+      {
+        "id": "g001-cleanup-report",
+        "kind": "test-report",
+        "path": "artifacts/g001-cleanup-report.txt",
+        "description": "Manual cleanup sweep over the G001 scaffold files."
+      }
+    ],
+    "contractCoverage": [
+      {
+        "id": "cc-runtime-family",
+        "contractRef": "G001-runtime-family",
+        "obligation": "The project scaffolds the locked container-web-postgres-cron runtime family.",
+        "status": "covered",
+        "surfaceEvidenceRefs": ["se-web-shell"],
+        "adversarialCaseRefs": ["ac-runtime-family-lock"]
+      },
+      {
+        "id": "cc-national-scope",
+        "contractRef": "G001-national-only",
+        "obligation": "The scaffold hard-locks national-average-only dataset scope.",
+        "status": "covered",
+        "surfaceEvidenceRefs": ["se-web-shell"],
+        "adversarialCaseRefs": ["ac-dataset-lock", "ac-queue-lock"]
+      },
+      {
+        "id": "cc-worker-entrypoint",
+        "contractRef": "G001-worker-bootstrap",
+        "obligation": "The scheduled worker entrypoint boots successfully with locked scaffold env values.",
+        "status": "covered",
+        "surfaceEvidenceRefs": ["se-web-shell"],
+        "adversarialCaseRefs": ["ac-worker-bootstrap"]
+      },
+      {
+        "id": "cc-web-shell",
+        "contractRef": "G001-public-shell",
+        "obligation": "The public scaffold page renders the national-average-only MVP shell.",
+        "status": "covered",
+        "surfaceEvidenceRefs": ["se-web-shell"],
+        "adversarialCaseRefs": ["ac-html-markers"]
+      }
+    ],
+    "surfaceEvidence": [
+      {
+        "id": "se-web-shell",
+        "contractRef": "G001-public-shell",
+        "surface": "web",
+        "invocation": "npm run dev -- --hostname 127.0.0.1 --port 3005 && npx playwright screenshot http://127.0.0.1:3005 artifacts/g001-home.png",
+        "verdict": "passed",
+        "artifactRefs": ["g001-web-report", "g001-web-screenshot"]
+      }
+    ],
+    "adversarialCases": [
+      {
+        "id": "ac-runtime-family-lock",
+        "contractRef": "G001-runtime-family",
+        "scenario": "RUNTIME_FAMILY를 serverless로 바꿔 부팅 시도",
+        "expectedBehavior": "env 파서가 즉시 실패해야 한다.",
+        "verdict": "passed",
+        "artifactRefs": ["g001-command-report"]
+      },
+      {
+        "id": "ac-dataset-lock",
+        "contractRef": "G001-national-only",
+        "scenario": "OPINET_DATASET_KEY를 rogue-dataset으로 바꿔 부팅 시도",
+        "expectedBehavior": "national-average-only 잠금이 유지되며 env 파서가 즉시 실패해야 한다.",
+        "verdict": "passed",
+        "artifactRefs": ["g001-command-report"]
+      },
+      {
+        "id": "ac-queue-lock",
+        "contractRef": "G001-national-only",
+        "scenario": "QUEUE_DOMAIN을 override-domain으로 바꿔 부팅 시도",
+        "expectedBehavior": "queue 도메인 잠금이 유지되며 env 파서가 즉시 실패해야 한다.",
+        "verdict": "passed",
+        "artifactRefs": ["g001-command-report"]
+      },
+      {
+        "id": "ac-worker-bootstrap",
+        "contractRef": "G001-worker-bootstrap",
+        "scenario": "RUNTIME_ROLE=worker로 일회성 worker 부팅",
+        "expectedBehavior": "idle-shell 요약을 출력하고 비정상 종료하지 않아야 한다.",
+        "verdict": "passed",
+        "artifactRefs": ["g001-command-report"]
+      },
+      {
+        "id": "ac-html-markers",
+        "contractRef": "G001-public-shell",
+        "scenario": "렌더된 HTML에서 핵심 마커 확인",
+        "expectedBehavior": "대시보드 제목과 National-average-only MVP 마커가 존재해야 한다.",
+        "verdict": "passed",
+        "artifactRefs": ["g001-web-report", "g001-command-report"]
+      }
+    ],
+    "blockers": []
+  },
+  "iteration": {
+    "status": "passed",
+    "evidence": "초기 리뷰에서 드러난 런타임 패밀리 누락과 dataset override 누수를 수정했고, 전체 검증 및 리뷰를 다시 수행해 blocker 없는 결과를 확인했다.",
+    "fullRerun": true,
+    "rerunCommands": [
+      "npx tsc --noEmit",
+      "npm run lint",
+      "npm run build",
+      "RUNTIME_ROLE=worker npm run worker",
+      "npx playwright screenshot http://127.0.0.1:3005 artifacts/g001-home.png"
+    ],
+    "blockers": []
+  }
+}

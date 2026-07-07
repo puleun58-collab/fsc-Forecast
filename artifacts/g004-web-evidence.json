@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "kind": "playwright-web-report",
+  "tool": "playwright",
+  "url": "http://127.0.0.1:3012",
+  "invocation": "npx playwright screenshot http://127.0.0.1:3012 artifacts/g004-dashboard.png",
+  "actions": [
+    {
+      "type": "navigate",
+      "target": "http://127.0.0.1:3012",
+      "selector": "body",
+      "timestamp": "2026-07-07T04:24:18Z"
+    },
+    {
+      "type": "screenshot",
+      "target": "artifacts/g004-dashboard.png",
+      "selector": "body",
+      "timestamp": "2026-07-07T04:24:20Z"
+    }
+  ],
+  "transcript": [
+    "Start a standalone Next server against an embedded Postgres verification database on port 3012.",
+    "Navigate to http://127.0.0.1:3012.",
+    "Capture screenshot to artifacts/g004-dashboard.png."
+  ],
+  "screenshotPath": "artifacts/g004-dashboard.png",
+  "observedMarkers": [
+    "/export/csv",
+    "forecast_summary",
+    "XLSX signature [80, 75]"
+  ],
+  "notes": "The verifier seeded a live embedded Postgres database, ran ingest, indicator sync, forecast, and then captured the dashboard plus export-route checks from the running standalone app."
+}

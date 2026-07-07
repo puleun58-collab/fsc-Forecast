@@ -1,0 +1,23 @@
+G003 verification commands
+==========================
+
+1. node --import tsx -e "import { buildSeriesSnapshot } from './src/lib/aggregates/index.ts'; ..."
+2. node --import tsx -e "import { buildBaselineForecast } from './src/lib/forecast/build-baseline-forecast.ts'; import { evaluateMapeGate } from './src/lib/forecast/evaluate-mape-gate.ts'; ..."
+3. node --import tsx -e "import { runCommentaryPipeline } from './src/lib/commentary/index.ts'; ..."
+4. node --import tsx --input-type=module -e "embedded-postgres + prisma db push + runOpinetIngest + fredIndicatorProvider.fetchHistory + runIndicatorSync + runForecastPipeline + loadDashboardData + buildExportDataset + buildCsv + buildXlsx"
+5. npx tsc --noEmit
+6. npm run build
+
+Observed results
+----------------
+- Aggregate builders produced daily/weekly/monthly snapshot output with deterministic counts and latest averages.
+- Forecast baseline builder produced 4 weekly points and the MAPE gate evaluated 26 weekly backtest points with an approved sample case.
+- Commentary pipeline produced a ready Korean rule-based explanation with four indicator signals.
+- A full embedded-Postgres verifier succeeded end to end for ingest + indicator sync + forecast + dashboard/export dataset generation. Summary observed:
+  - ingest fetchedRows=1 currentRowCount=1
+  - indicators providerKey=fred-public-csv persistedCount=31829
+  - forecast approvalState=degraded weeklyPoints=4 monthlyPoints=3 indicatorCount=4
+  - dashboard availability=available forecastAvailability=available commentaryStatus=ready exportItems=2
+  - exportDataset status=ready csvLength=2223 xlsxSignature=[80, 75]
+- Full repo typecheck passed.
+- Production build passed.

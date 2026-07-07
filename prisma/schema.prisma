@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RunStatus {
+  queued
+  running
+  succeeded
+  failed
+  cancelled
+}
+
+enum ForecastApprovalState {
+  pending
+  approved
+  degraded
+}
+
+enum ForecastHorizonKind {
+  weekly
+  monthly
+}
+
+model DailyPriceCurrent {
+  id                       String             @id @default(cuid())
+  datasetKey               String             @default("national-average-opinet-diesel")
+  priceDate                DateTime
+  currentRevisionId        String             @unique
+  currentRevision          PriceRevisionLog   @relation("CurrentRevision", fields: [currentRevisionId], references: [id], onDelete: Restrict)
+  latestRecomputeSnapshotId String?
+  latestRecomputeSnapshot  RecomputeSnapshot? @relation(fields: [latestRecomputeSnapshotId], references: [id], onDelete: SetNull)
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
+
+  @@unique([datasetKey, priceDate])
+  @@index([latestRecomputeSnapshotId])
+  @@map("daily_price_current")
+}
+
+model PriceRevisionLog {
+  id                   String            @id @default(cuid())
+  datasetKey           String            @default("national-average-opinet-diesel")
+  priceDate            DateTime
+  observedPriceKrwPerL Decimal           @db.Decimal(10, 3)
+  sourceObservedAt     DateTime?
+  sourceRevisionToken  String?
+  sourcePayload        Json?
+  ingestRunId          String
+  ingestRun            IngestRun         @relation(fields: [ingestRunId], references: [id], onDelete: Restrict)
+  supersedesRevisionId String?
+  supersedesRevision   PriceRevisionLog? @relation("RevisionSupersession", fields: [supersedesRevisionId], references: [id], onDelete: Restrict)
+  supersededByRevision PriceRevisionLog[] @relation("RevisionSupersession")
+  currentTruth         DailyPriceCurrent? @relation("CurrentRevision")
+  createdAt            DateTime          @default(now())
+
+  @@index([datasetKey, priceDate, createdAt])
+  @@map("price_revision_log")
+}
+
+model IngestRun {
+  id                 String             @id @default(cuid())
+  datasetKey         String             @default("national-average-opinet-diesel")
+  triggerKind        String
+  requestedByRuntime String
+  status             RunStatus          @default(queued)
+  sourceWindowStart  DateTime?
+  sourceWindowEnd    DateTime?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  errorSummary       String?
+  metadata           Json?
+  revisions          PriceRevisionLog[]
+  recomputeSnapshots RecomputeSnapshot[]
+  createdAt          DateTime           @default(now())
+
+  @@index([datasetKey, createdAt])
+  @@map("ingest_runs")
+}
+
+model ExternalIndicatorHistory {
+  id              String   @id @default(cuid())
+  indicatorCode   String
+  observedAt      DateTime
+  value           Decimal  @db.Decimal(14, 4)
+  sourcePayload   Json?
+  createdAt       DateTime @default(now())
+
+  @@unique([indicatorCode, observedAt])
+  @@map("external_indicator_history")
+}
+
+model RecomputeSnapshot {
+  id                    String            @id @default(cuid())
+  datasetKey            String            @default("national-average-opinet-diesel")
+  triggeringIngestRunId String?
+  triggeringIngestRun   IngestRun?        @relation(fields: [triggeringIngestRunId], references: [id], onDelete: SetNull)
+  status                RunStatus         @default(queued)
+  triggerReason         String
+  currentTruthCutoffAt  DateTime?
+  startedAt             DateTime?
+  completedAt           DateTime?
+  errorSummary          String?
+  metadata              Json?
+  dailyCurrentRows      DailyPriceCurrent[]
+  forecastRuns          ForecastRun[]
+  commentaryRuns        CommentaryRun[]
+  exportRuns            ExportRun[]
+  createdAt             DateTime          @default(now())
+
+  @@index([datasetKey, createdAt])
+  @@map("recompute_snapshots")
+}
+
+model ForecastRun {
+  id                  String                 @id @default(cuid())
+  recomputeSnapshotId String
+  recomputeSnapshot   RecomputeSnapshot      @relation(fields: [recomputeSnapshotId], references: [id], onDelete: Restrict)
+  status              RunStatus              @default(queued)
+  approvalState       ForecastApprovalState  @default(pending)
+  backtestWeeks       Int?
+  mapePct             Decimal?               @db.Decimal(6, 3)
+  maeKrwPerL          Decimal?               @db.Decimal(10, 3)
+  startedAt           DateTime?
+  completedAt         DateTime?
+  errorSummary        String?
+  metadata            Json?
+  points              ForecastPoint[]
+  createdAt           DateTime               @default(now())
+
+  @@index([recomputeSnapshotId, createdAt])
+  @@map("forecast_runs")
+}
+
+model ForecastPoint {
+  id                 String              @id @default(cuid())
+  forecastRunId      String
+  forecastRun        ForecastRun         @relation(fields: [forecastRunId], references: [id], onDelete: Cascade)
+  horizonKind        ForecastHorizonKind
+  horizonIndex       Int
+  targetDate         DateTime
+  pointKrwPerL       Decimal             @db.Decimal(10, 3)
+  lowerBoundKrwPerL  Decimal?            @db.Decimal(10, 3)
+  upperBoundKrwPerL  Decimal?            @db.Decimal(10, 3)
+  createdAt          DateTime            @default(now())
+
+  @@unique([forecastRunId, horizonKind, horizonIndex])
+  @@map("forecast_points")
+}
+
+model CommentaryRun {
+  id                  String            @id @default(cuid())
+  recomputeSnapshotId String
+  recomputeSnapshot   RecomputeSnapshot @relation(fields: [recomputeSnapshotId], references: [id], onDelete: Restrict)
+  status              RunStatus         @default(queued)
+  ruleSetVersion      String?
+  commentaryText      String?
+  evidencePayload     Json?
+  startedAt           DateTime?
+  completedAt         DateTime?
+  errorSummary        String?
+  createdAt           DateTime          @default(now())
+
+  @@index([recomputeSnapshotId, createdAt])
+  @@map("commentary_runs")
+}
+
+model ExportRun {
+  id                  String            @id @default(cuid())
+  recomputeSnapshotId String
+  recomputeSnapshot   RecomputeSnapshot @relation(fields: [recomputeSnapshotId], references: [id], onDelete: Restrict)
+  status              RunStatus         @default(queued)
+  exportFormat        String
+  storageKey          String?
+  startedAt           DateTime?
+  completedAt         DateTime?
+  errorSummary        String?
+  metadata            Json?
+  createdAt           DateTime          @default(now())
+
+  @@index([recomputeSnapshotId, createdAt])
+  @@map("export_runs")
+}

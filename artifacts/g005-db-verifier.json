@@ -1,0 +1,55 @@
+{
+  "databaseUrl": "postgresql://postgres:postgres@127.0.0.1:55436/opinet_diesel_dashboard?schema=public",
+  "firstWorker": {
+    "runId": "cmra6t6xi000054qhaf7onzew",
+    "fetchedRowCount": 1,
+    "createdRevisionCount": 1,
+    "unchangedRowCount": 0,
+    "snapshotId": "cmra6t70n000854qhu2nzgkpb",
+    "laneKey": "national-average-opinet-diesel:national-average-opinet-diesel:serialized-runtime"
+  },
+  "secondWorker": {
+    "runId": "cmra6t710000954qhradguj2v",
+    "fetchedRowCount": 1,
+    "createdRevisionCount": 0,
+    "unchangedRowCount": 1,
+    "snapshotId": "cmra6t71g000d54qhco43t3e1",
+    "laneKey": "national-average-opinet-diesel:national-average-opinet-diesel:serialized-runtime"
+  },
+  "indicators": {
+    "firstCreated": 2,
+    "firstUpdated": 0,
+    "secondCreated": 0,
+    "secondUpdated": 2,
+    "rows": 2
+  },
+  "counts": {
+    "ingestRuns": 2,
+    "revisions": 1,
+    "currentRows": 1,
+    "snapshots": 2,
+    "indicatorRows": 2
+  },
+  "latestCurrent": {
+    "priceDate": "2026-07-06T00:00:00.000Z",
+    "revisionId": "cmra6t70a000454qhyeh8411m",
+    "latestRecomputeSnapshotId": "cmra6t71g000d54qhco43t3e1",
+    "sourceRevisionToken": "opinet-average-price:D047:자동차용경유:20260706:1884.62:-5.94"
+  },
+  "latestSnapshot": {
+    "id": "cmra6t71g000d54qhco43t3e1",
+    "status": "succeeded",
+    "triggerReason": "opinet-ingest-reconcile",
+    "currentTruthCutoffAt": "2026-07-07T05:07:14.780Z",
+    "metadata": {
+      "currentRowCount": 1,
+      "processedRowCount": 1,
+      "unchangedRowCount": 1,
+      "createdRevisionCount": 0,
+      "supersededRevisionCount": 0,
+      "latestCurrentRevisionIds": [
+        "cmra6t70a000454qhyeh8411m"
+      ]
+    }
+  }
+}

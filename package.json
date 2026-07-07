@@ -1,0 +1,39 @@
+{
+  "name": "opinet-diesel-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "cross-env NODE_ENV=production next build",
+    "start": "cross-env NODE_ENV=production next start",
+    "lint": "next lint",
+    "worker": "tsx src/worker/index.ts",
+    "fetch:opinet": "tsx scripts/fetch-opinet.ts",
+    "ingest:opinet": "tsx scripts/run-opinet-ingest.ts",
+    "sync:indicators": "tsx scripts/sync-external-indicators.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "dotenv": "^16.4.7",
+    "next": "^14.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "xlsx": "^0.18.5",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "cross-env": "^7.0.3",
+    "embedded-postgres": "^18.4.0-beta.17",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.0",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

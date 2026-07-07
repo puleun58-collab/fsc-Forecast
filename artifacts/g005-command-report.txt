@@ -1,0 +1,30 @@
+G005 / G002 re-verification commands
+=================================
+
+1. npm run fetch:opinet
+2. npm run fetch:opinet  # repeat run to verify same-date JSON update without duplication
+3. npx tsc --noEmit
+4. npx prisma validate
+5. npx prisma generate
+6. node --import tsx --input-type=module embedded-postgres verifier:
+   - start embedded Postgres on 127.0.0.1:55436
+   - prisma db push --skip-generate against the verifier DB
+   - monkey-patch fetch so worker uses a deterministic local Opinet diesel payload from data/oil-price-daily.json
+   - runScheduledWorkerOnce() twice
+   - runIndicatorSync() twice with the same timestamps and changed values/source payloads
+   - query ingest_runs / price_revision_log / daily_price_current / recompute_snapshots / external_indicator_history
+   - assert latest current-truth row points at the latest recompute snapshot
+
+Observed results
+----------------
+- `npm run fetch:opinet` succeeded twice without duplicating the same-date national-average diesel row in data/oil-price-daily.json.
+- TypeScript check passed on the current repo state.
+- Prisma schema validation and Prisma Client generation both succeeded on the current repo state.
+- The live embedded Postgres verifier succeeded and proved:
+  - first serialized worker run fetched 1 row, created 1 revision, and created 1 recompute snapshot
+  - second serialized worker run fetched the same row and reported `unchangedRowCount: 1` with `createdRevisionCount: 0`
+  - the serialized lane key remained `national-average-opinet-diesel:national-average-opinet-diesel:serialized-runtime`
+  - the verification DB ended with ingestRuns=2, revisions=1, currentRows=1, snapshots=2, indicatorRows=2
+  - the latest current-truth row referenced the latest recompute snapshot id
+  - the second indicator sync updated existing rows in place (`updatedCount: 2`) instead of creating duplicates
+- Detailed verifier output is stored at artifacts/g005-db-verifier.json.

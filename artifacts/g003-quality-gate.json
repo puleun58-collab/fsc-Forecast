@@ -1,0 +1,114 @@
+{
+  "architectReview": {
+    "architectureStatus": "CLEAR",
+    "productStatus": "CLEAR",
+    "codeStatus": "CLEAR",
+    "recommendation": "APPROVE",
+    "evidence": "Leader audit confirms G003 stays national-average-only, uses the locked MAPE-only gate with degraded fallback, and keeps commentary rule-based with evidence lineage. Aggregate, forecast, and commentary modules typecheck cleanly and feed the live embedded-Postgres verifier without contract drift.",
+    "commands": [
+      "leader-audit:g003-architecture"
+    ],
+    "blockers": []
+  },
+  "executorQa": {
+    "status": "passed",
+    "e2eStatus": "passed",
+    "redTeamStatus": "passed",
+    "evidence": "Service-level verification passed for aggregates, forecast gate logic, commentary generation, and a full DB-backed verifier succeeded with embedded Postgres + Opinet ingest + FRED indicator sync + forecast + dashboard/export dataset generation.",
+    "e2eCommands": [
+      "node --import tsx -e \"import { buildSeriesSnapshot } from './src/lib/aggregates/index.ts'; /* aggregate smoke */\"",
+      "node --import tsx -e \"import { buildBaselineForecast } from './src/lib/forecast/build-baseline-forecast.ts'; import { evaluateMapeGate } from './src/lib/forecast/evaluate-mape-gate.ts'; /* forecast smoke */\"",
+      "node --import tsx -e \"import { runCommentaryPipeline } from './src/lib/commentary/index.ts'; /* commentary smoke */\"",
+      "node --import tsx --input-type=module -e \"embedded-postgres verifier for ingest + indicator sync + forecast + dashboard/export dataset\"",
+      "npx tsc --noEmit",
+      "npm run build"
+    ],
+    "redTeamCommands": [
+      "Forecast verifier checks degraded approvalState path when MAPE is unavailable in the embedded-Postgres run.",
+      "Commentary verifier checks rule-based Korean text with dominant indicator evidence.",
+      "End-to-end verifier checks export dataset readiness and XLSX PK signature [80,75]."
+    ],
+    "artifactRefs": [
+      {
+        "id": "g003-command-report",
+        "kind": "test-report",
+        "path": "artifacts/g003-command-report.txt",
+        "description": "Command-level verification log for G003 aggregate/forecast/commentary services and the embedded-Postgres verifier."
+      }
+    ],
+    "contractCoverage": [
+      {
+        "id": "g003-aggregate-contract",
+        "contractRef": "G003-aggregates",
+        "obligation": "Weekly/monthly aggregation is deterministic from national-average current truth rows.",
+        "status": "covered",
+        "surfaceEvidenceRefs": ["g003-service-surface"],
+        "adversarialCaseRefs": ["g003-aggregate-boundary"]
+      },
+      {
+        "id": "g003-forecast-contract",
+        "contractRef": "G003-forecast",
+        "obligation": "Forecast pipeline emits 4 weekly + 3 monthly points and enforces the MAPE-only gate with degraded fallback.",
+        "status": "covered",
+        "surfaceEvidenceRefs": ["g003-service-surface"],
+        "adversarialCaseRefs": ["g003-forecast-degraded"]
+      },
+      {
+        "id": "g003-commentary-contract",
+        "contractRef": "G003-commentary",
+        "obligation": "Commentary remains rule-based, Korean, and evidence-backed from the approved indicator set.",
+        "status": "covered",
+        "surfaceEvidenceRefs": ["g003-service-surface"],
+        "adversarialCaseRefs": ["g003-commentary-ready"]
+      }
+    ],
+    "surfaceEvidence": [
+      {
+        "id": "g003-service-surface",
+        "contractRef": "G003-service-stack",
+        "surface": "api",
+        "invocation": "node --import tsx --input-type=module embedded-postgres verifier",
+        "verdict": "passed",
+        "artifactRefs": ["g003-command-report"]
+      }
+    ],
+    "adversarialCases": [
+      {
+        "id": "g003-aggregate-boundary",
+        "contractRef": "G003-aggregates",
+        "scenario": "Cross-week and cross-month daily truth sample",
+        "expectedBehavior": "Weekly and monthly builders must emit deterministic counts and averages.",
+        "verdict": "passed",
+        "artifactRefs": ["g003-command-report"]
+      },
+      {
+        "id": "g003-forecast-degraded",
+        "contractRef": "G003-forecast",
+        "scenario": "Embedded-Postgres run with insufficient weekly history for MAPE",
+        "expectedBehavior": "Forecast remains available with degraded approvalState and still emits 4 weekly + 3 monthly points.",
+        "verdict": "passed",
+        "artifactRefs": ["g003-command-report"]
+      },
+      {
+        "id": "g003-commentary-ready",
+        "contractRef": "G003-commentary",
+        "scenario": "Indicator set Dubai/Brent/WTI/USD-KRW with rising pressures",
+        "expectedBehavior": "Rule-based Korean commentary text and four indicator signals are emitted.",
+        "verdict": "passed",
+        "artifactRefs": ["g003-command-report"]
+      }
+    ],
+    "blockers": []
+  },
+  "iteration": {
+    "status": "passed",
+    "evidence": "G003 modules were implemented, typechecked, verified in isolation, then re-verified in a live embedded-Postgres stack that exercised ingest, indicator sync, forecast, and downstream dataset generation together.",
+    "fullRerun": true,
+    "rerunCommands": [
+      "npx tsc --noEmit",
+      "npm run build",
+      "node --import tsx --input-type=module embedded-postgres verifier"
+    ],
+    "blockers": []
+  }
+}
