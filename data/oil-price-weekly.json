@@ -1,0 +1,13 @@
+[
+  {
+    "weekKey": "2026071",
+    "weekLabel": "2026년07월1주",
+    "weekStartDate": "2026-06-28",
+    "weekEndDate": "2026-07-04",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1942.39,
+    "source": "opinet-weekly-average-price",
+    "fetchedAt": "2026-07-08T03:24:49.803Z"
+  }
+]

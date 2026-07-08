@@ -329,7 +329,7 @@ export async function loadDashboardData(): Promise<DashboardData> {
         recomputeSnapshotId: snapshot.id,
         status: RunStatus.succeeded,
         exportFormat: {
-          in: ['csv', 'xlsx'],
+          in: ['xlsx'],
         },
       },
       orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }],
@@ -340,11 +340,11 @@ export async function loadDashboardData(): Promise<DashboardData> {
       },
     });
 
-    const exportItems: DashboardExportItem[] = ['csv', 'xlsx'].map((format) => {
+    const exportItems: DashboardExportItem[] = ['xlsx'].map((format) => {
       const run = exportRuns.find((item) => item.exportFormat.toLowerCase() === format);
 
       return {
-        format: format as 'csv' | 'xlsx',
+        format: format as 'xlsx',
         availability: 'available',
         completedAt: run ? formatTimestamp(run.completedAt) : null,
         storageKey: run?.storageKey ?? null,

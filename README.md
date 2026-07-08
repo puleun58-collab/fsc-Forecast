@@ -1,6 +1,6 @@
 # Opinet Diesel Dashboard
 
-전국 평균 자동차용 경유가만 다루는 MVP입니다. 오피넷 평균가격 수집, DB 기반 ingest/recompute snapshot, 주간·월간 집계, 4주·3개월 예측, 규칙 기반 해설, CSV/XLSX 내보내기까지 한 흐름으로 묶여 있습니다.
+전국 평균 자동차용 경유가만 다루는 MVP입니다. 오피넷 평균가격 수집, DB 기반 ingest/recompute snapshot, 주간·월간 집계, 4주·3개월 예측, 규칙 기반 해설, XLSX 내보내기까지 한 흐름으로 묶여 있습니다.
 
 ## 1) 설치 방법
 
@@ -18,7 +18,7 @@ npm install
 ### 환경 변수 준비
 1. `.env.example`를 `.env.local`로 복사합니다.
 2. Docker Compose도 쓸 예정이면 `.env`도 따로 만듭니다.
-3. `OPINET_API_KEY`와 `DATABASE_URL`을 채웁니다.
+3. `OPINET_API_KEY`와 `DATABASE_URL`을 채우고, 필요하면 오피넷 기본 경로도 그대로 둡니다.
 4. `.env.local` / `.env`에는 `NODE_ENV`를 직접 넣지 마세요.
 
 예시:
@@ -33,6 +33,8 @@ WORKER_RUNTIME_ID=scheduled-worker
 SCHEDULED_JOB_NAME=scheduled-national-average-ingest
 OPINET_API_KEY=replace_with_real_key
 OPINET_AVG_PRICE_URL=https://www.opinet.co.kr/api/avgAllPrice.do?out=json
+OPINET_RECENT_PRICE_URL=https://www.opinet.co.kr/api/avgRecentPrice.do?out=json
+OPINET_STATS_PRICE_URL=https://www.opinet.co.kr/user/dopospdrg/dopOsPdrgSelect.do
 POSTGRES_DB=opinet_diesel_dashboard
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
@@ -56,8 +58,8 @@ npm run dev
 
 브라우저:
 - 대시보드: `http://localhost:3000`
-- CSV: `http://localhost:3000/export/csv`
 - XLSX: `http://localhost:3000/export/xlsx`
+
 
 ### B. production 모드 로컬 실행
 ```bash
@@ -81,6 +83,23 @@ Compose 구성:
 - Compose의 `worker` 서비스는 컨테이너 시작 시 `npm run worker`를 한 번 실행합니다.
 - 반복 스케줄링은 운영 환경의 cron / Task Scheduler / 배치 시스템이 맡아야 합니다.
 
+### D. Vercel 배포
+배포용 build는 Prisma Client 생성까지 포함한 아래 스크립트를 사용합니다.
+
+```bash
+npm run vercel-build
+```
+
+Vercel production 주소:
+- `https://fsc-forecast.vercel.app`
+
+### E. 현재 배포 주소
+- Production: `https://fsc-forecast.vercel.app`
+- Vercel project: `fsc-forecast`
+
+Vercel 배포는 외부에서 접근 가능한 PostgreSQL `DATABASE_URL`이 필요합니다.
+
+
 ## 3) 데이터 수집/처리 명령
 
 ### 오피넷 raw JSON 저장
@@ -88,16 +107,19 @@ Compose 구성:
 npm run fetch:opinet
 ```
 - `.env.local`의 `OPINET_API_KEY`, `OPINET_AVG_PRICE_URL` 사용
-- `code`로 먼저 호출하고, 비면 `certkey`로 한 번 더 시도
-- 자동차용경유(`D047` 또는 `자동차용경유`)만 `data/oil-price-daily.json`에 반영
+- 최근 7일 일평균은 `OPINET_RECENT_PRICE_URL`에서 추가 수집해 `data/oil-price-daily.json`에 누적 반영
+- 최근 1주 주간 평균은 `OPINET_STATS_PRICE_URL` 기반 CSV 응답에서 추출해 `data/oil-price-weekly.json`에 저장
+- 현재 평균가격 API는 `code`로 먼저 호출하고, 비면 `certkey`로 한 번 더 시도
+- 자동차용경유(`D047` 또는 `자동차용경유`)만 반영
 
 ### DB 기반 ingest + recompute snapshot 생성
 ```bash
 npm run ingest:opinet
 ```
-- 오피넷 수집
+- 오피넷 현재 평균 + 최근 7일 일평균을 함께 수집
 - revision/current truth 반영
 - recompute snapshot 생성
+- 월간 집계는 누적된 일별 데이터 기준으로 계산
 
 ### 외부 지표 동기화
 ```bash
@@ -132,7 +154,6 @@ set RUNTIME_ROLE=worker && npm run worker
 app/
   page.tsx                # 대시보드 진입점
   export/
-    csv/route.ts          # CSV 다운로드
     xlsx/route.ts         # XLSX 다운로드
 
 src/
@@ -145,7 +166,7 @@ src/
     forecast/             # 4주/3개월 예측
     commentary/           # 규칙 기반 해설
     dashboard/            # 대시보드 데이터 로더
-    export/               # CSV/XLSX dataset/builder
+    export/               # XLSX dataset/builder
     queue.ts              # serialized lane / advisory lock
     env.ts                # 런타임 env 검증
     db.ts                 # Prisma client
@@ -164,7 +185,7 @@ prisma/
 
 data/
   oil-price-daily.json    # raw 일별 전국 평균 경유가
-
+  oil-price-weekly.json   # raw 주간 전국 평균 경유가
 artifacts/                # 검증 산출물
 ```
 
@@ -175,7 +196,7 @@ artifacts/                # 검증 산출물
 ### 권장 흐름
 1. `npm run sync:indicators`
 2. `RUNTIME_ROLE=worker npm run worker`
-3. 앱은 최신 snapshot 기준으로 대시보드/내보내기 제공
+3. 앱은 최신 snapshot 기준으로 대시보드/XLSX 내보내기 제공
 
 ### Linux cron 예시
 ```cron
@@ -235,8 +256,10 @@ npm run build
 대응:
 - `.env.local`의 `OPINET_API_KEY` 확인
 - `.env.local`의 `OPINET_AVG_PRICE_URL`이 `https://www.opinet.co.kr/api/avgAllPrice.do?out=json`인지 확인
+- `.env.local`의 `OPINET_RECENT_PRICE_URL`이 `https://www.opinet.co.kr/api/avgRecentPrice.do?out=json`인지 확인
+- `.env.local`의 `OPINET_STATS_PRICE_URL`이 `https://www.opinet.co.kr/user/dopospdrg/dopOsPdrgSelect.do`인지 확인
 - `npm run fetch:opinet` 재실행
-- 오피넷이 빈 `RESULT.OIL`을 주면 키 권한/쿼리 조합을 먼저 의심
+- 오피넷이 빈 응답을 주면 현재 주간 미발표 구간인지, 또는 키 권한/쿼리 조합 문제인지 먼저 의심
 
 ### 5. Prisma / DB 연결 실패
 대응:
@@ -266,7 +289,7 @@ npm run dev
 대응:
 - `npm run ingest:opinet` 먼저 실행
 - 필요하면 `npm run sync:indicators`도 함께 실행
-- 이후 `/export/csv`, `/export/xlsx` 재확인
+- 이후 `/export/xlsx` 재확인
 
 ## 7) 빠른 점검 순서
 
@@ -290,7 +313,8 @@ npm run build
 - `npm run dev` — Next.js dev server
 - `npm run build` — production build
 - `npm run start` — production server
-- `npm run fetch:opinet` — raw fetch to `data/oil-price-daily.json`
+- `npm run fetch:opinet` — raw fetch to `data/oil-price-daily.json` and `data/oil-price-weekly.json`
 - `npm run ingest:opinet` — DB-backed ingest + recompute snapshot 생성
 - `npm run sync:indicators` — 외부 지표 sync
 - `npm run worker` — scheduled worker entrypoint
+- `npm run vercel-build` — Vercel용 Prisma generate + production build

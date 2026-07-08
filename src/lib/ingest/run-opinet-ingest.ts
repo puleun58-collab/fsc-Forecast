@@ -1,7 +1,7 @@
 import type { Prisma, RunStatus } from "@prisma/client";
 
 import { db } from "../db";
-import { fetchOpinetAverageDieselPrices } from "../opinet/fetch-avg-price";
+import { fetchOpinetDieselDailyHistory } from "../opinet/fetch-daily-history";
 import { createRecomputeSnapshot } from "./create-recompute-snapshot";
 import {
   recordFailedIngestRun,
@@ -69,7 +69,7 @@ export async function runOpinetIngest(
       queue: request.queueMetadata ?? {},
     });
 
-    const fetchedRows = await fetchOpinetAverageDieselPrices(request.fetchImpl);
+    const fetchedRows = await fetchOpinetDieselDailyHistory(request.fetchImpl);
 
     if (fetchedRows.length === 0) {
       throw new Error("Opinet diesel ingest returned no national average rows.");
@@ -97,6 +97,9 @@ export async function runOpinetIngest(
         reconcile: reconcileResult,
         snapshot: snapshotResult,
       };
+    }, {
+      maxWait: 10_000,
+      timeout: 30_000,
     });
 
     const completedRun = await recordSucceededIngestRun(queuedRun.id, {

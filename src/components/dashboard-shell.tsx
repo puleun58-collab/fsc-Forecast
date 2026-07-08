@@ -112,7 +112,7 @@ function renderExportItem(item: DashboardExportItem): ReactNode {
       <span style={labelStyle}>완료 시각: {formatTimestamp(item.completedAt)}</span>
       <span style={labelStyle}>저장 키: {item.storageKey ?? '기록 없음'}</span>
       <a href={href} style={{ color: 'var(--accent)', fontWeight: 700, textDecoration: 'none' }}>
-        {item.format.toUpperCase()} 다운로드
+        XLSX 다운로드
       </a>
       {item.unavailableReason ? <span style={labelStyle}>{item.unavailableReason}</span> : null}
     </li>
@@ -295,10 +295,10 @@ export function DashboardShell({ data }: DashboardShellProps) {
         <SectionCard
           title="내보내기 블록"
           badge="스냅샷 고정"
-          description="최신 성공 스냅샷에 연결된 CSV/XLSX 내보내기 실행 기록만 공개합니다."
+          description="최신 성공 스냅샷에 연결된 XLSX 내보내기 실행 기록만 공개합니다."
           highlights={[
             `기준 snapshot ${data.exports.snapshotId ?? '없음'}`,
-            'CSV와 XLSX를 같은 스냅샷 식별자 아래에서 구분합니다.',
+            'XLSX 다운로드만 같은 스냅샷 식별자에 묶어서 공개합니다.',
             '실행 기록이 없으면 준비되지 않았다고 그대로 표시합니다.',
           ]}
         >

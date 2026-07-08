@@ -5,7 +5,7 @@ import { externalIndicatorCodes } from "../src/lib/external-indicators/catalog";
 import { fredIndicatorProvider } from "../src/lib/external-indicators/fred-provider";
 import { runIndicatorSync } from "../src/lib/external-indicators/run-indicator-sync";
 
-loadEnv({ path: ".env.local" });
+loadEnv({ path: ".env.local", override: true });
 loadEnv();
 
 async function main(): Promise<void> {

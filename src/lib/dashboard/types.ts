@@ -3,7 +3,7 @@ export type DashboardAvailability = 'available' | 'unavailable';
 export type DashboardTrendDirection = 'up' | 'down' | 'flat';
 export type DashboardForecastApproval = 'pending' | 'approved' | 'degraded';
 export type DashboardCommentaryStatus = 'ready' | 'insufficient_data' | 'unavailable';
-export type DashboardExportFormat = 'csv' | 'xlsx';
+export type DashboardExportFormat = 'xlsx';
 
 export interface DashboardUnavailableState {
   availability: 'unavailable';

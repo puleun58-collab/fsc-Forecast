@@ -1,11 +1,74 @@
 [
   {
+    "date": "20260701",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1923.52,
+    "diff": 0,
+    "source": "opinet-daily-average-price",
+    "fetchedAt": "2026-07-08T03:24:49.689Z"
+  },
+  {
+    "date": "20260702",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1910.28,
+    "diff": -13.24,
+    "source": "opinet-daily-average-price",
+    "fetchedAt": "2026-07-08T03:24:49.689Z"
+  },
+  {
+    "date": "20260703",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1899.81,
+    "diff": -10.47,
+    "source": "opinet-daily-average-price",
+    "fetchedAt": "2026-07-08T03:24:49.689Z"
+  },
+  {
+    "date": "20260704",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1893.62,
+    "diff": -6.19,
+    "source": "opinet-daily-average-price",
+    "fetchedAt": "2026-07-08T03:24:49.689Z"
+  },
+  {
+    "date": "20260705",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1890.56,
+    "diff": -3.06,
+    "source": "opinet-daily-average-price",
+    "fetchedAt": "2026-07-08T03:24:49.689Z"
+  },
+  {
     "date": "20260706",
     "productCode": "D047",
     "productName": "자동차용경유",
-    "price": 1884.62,
-    "diff": -5.94,
-    "source": "opinet-average-price",
-    "fetchedAt": "2026-07-06T07:41:40.035Z"
+    "price": 1884.59,
+    "diff": -5.97,
+    "source": "opinet-daily-average-price",
+    "fetchedAt": "2026-07-08T03:24:49.689Z"
+  },
+  {
+    "date": "20260707",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1879.13,
+    "diff": -5.46,
+    "source": "opinet-daily-average-price",
+    "fetchedAt": "2026-07-08T03:24:49.689Z"
+  },
+  {
+    "date": "20260708",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1875.47,
+    "diff": -3.66,
+    "source": "opinet-daily-average-price",
+    "fetchedAt": "2026-07-08T03:24:49.230Z"
   }
 ]
