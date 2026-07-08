@@ -113,6 +113,7 @@ export interface ForecastRunRecord {
 export interface RunForecastPipelineInput {
   recomputeSnapshotId: string;
   requestedByRuntime: string;
+  fetchImpl?: typeof fetch;
   tx?: Prisma.TransactionClient;
 }
 

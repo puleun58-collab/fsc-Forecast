@@ -33,6 +33,7 @@ async function main(): Promise<void> {
           currentRowCount: result.snapshot.currentRowCount,
           currentTruthCutoffAt: result.snapshot.currentTruthCutoffAt,
         },
+        forecast: result.forecast,
       },
       null,
       2,

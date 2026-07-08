@@ -59,9 +59,20 @@ export interface RecomputeSnapshotResult {
   latestCurrentRevisionIds: string[];
 }
 
+export interface IngestForecastSummary {
+  forecastRunId: string;
+  approvalState: string;
+  degradedReason: string | null;
+  weeklySeriesCount: number;
+  monthlySeriesCount: number;
+  weeklyForecastPointCount: number;
+  monthlyForecastPointCount: number;
+}
+
 export interface OpinetIngestResult {
   ingestRun: IngestRunLifecycleRecord;
   fetchedRows: NormalizedDieselPriceRow[];
   reconcile: ReconcileDailyPricesResult;
   snapshot: RecomputeSnapshotResult;
+  forecast: IngestForecastSummary;
 }

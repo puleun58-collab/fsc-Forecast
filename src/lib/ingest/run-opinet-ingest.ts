@@ -1,6 +1,7 @@
 import type { Prisma, RunStatus } from "@prisma/client";
 
 import { db } from "../db";
+import { runForecastPipeline } from "../forecast/run-forecast-pipeline";
 import { fetchOpinetDieselDailyHistory } from "../opinet/fetch-daily-history";
 import { createRecomputeSnapshot } from "./create-recompute-snapshot";
 import {
@@ -102,6 +103,12 @@ export async function runOpinetIngest(
       timeout: 30_000,
     });
 
+    const forecast = await runForecastPipeline({
+      recomputeSnapshotId: snapshot.snapshotId,
+      requestedByRuntime: request.requestedByRuntime,
+      fetchImpl: request.fetchImpl,
+    });
+
     const completedRun = await recordSucceededIngestRun(queuedRun.id, {
       stage: "completed",
       queue: request.queueMetadata ?? {},
@@ -118,6 +125,15 @@ export async function runOpinetIngest(
         currentRowCount: snapshot.currentRowCount,
         currentTruthCutoffAt: snapshot.currentTruthCutoffAt.toISOString(),
       },
+      forecast: {
+        forecastRunId: forecast.forecastRun.id,
+        approvalState: forecast.approvalState,
+        degradedReason: forecast.degradedReason,
+        weeklySeriesCount: forecast.weeklySeries.length,
+        monthlySeriesCount: forecast.monthlySeries.length,
+        weeklyForecastPointCount: forecast.weeklyForecastPoints.length,
+        monthlyForecastPointCount: forecast.monthlyForecastPoints.length,
+      },
     });
 
     return {
@@ -125,6 +141,15 @@ export async function runOpinetIngest(
       fetchedRows,
       reconcile,
       snapshot,
+      forecast: {
+        forecastRunId: forecast.forecastRun.id,
+        approvalState: forecast.approvalState,
+        degradedReason: forecast.degradedReason,
+        weeklySeriesCount: forecast.weeklySeries.length,
+        monthlySeriesCount: forecast.monthlySeries.length,
+        weeklyForecastPointCount: forecast.weeklyForecastPoints.length,
+        monthlyForecastPointCount: forecast.monthlyForecastPoints.length,
+      },
     };
   } catch (error) {
     await recordFailedIngestRun(queuedRun.id, error, {

@@ -10,6 +10,7 @@ import { externalIndicatorCodes } from "../external-indicators/catalog";
 import { env } from "../env";
 import { buildBaselineForecast } from "./build-baseline-forecast";
 import { evaluateMapeGate } from "./evaluate-mape-gate";
+import { loadOpinetQ2FallbackSeries } from "./load-opinet-q2-fallback";
 import {
   FORECAST_BACKTEST_WEEKS,
   FORECAST_MAPE_THRESHOLD_PCT,
@@ -137,6 +138,53 @@ async function loadDailyPrices(
   });
 
   return normalizeDailyPriceRows(rows);
+}
+function mergeSeries(
+  primarySeries: readonly ForecastSeriesPoint[],
+  fallbackSeries: readonly ForecastSeriesPoint[],
+): ForecastSeriesPoint[] {
+  const merged = new Map<string, ForecastSeriesPoint>();
+
+  for (const point of fallbackSeries) {
+    merged.set(point.targetDate.toISOString(), point);
+  }
+
+  for (const point of primarySeries) {
+    merged.set(point.targetDate.toISOString(), point);
+  }
+
+  return [...merged.values()].sort((left, right) => left.targetDate.getTime() - right.targetDate.getTime());
+}
+
+function shouldLoadQ2Fallback(
+  dailyPrices: readonly ForecastDailyPriceRow[],
+  weeklySeries: readonly ForecastSeriesPoint[],
+  monthlySeries: readonly ForecastSeriesPoint[],
+): boolean {
+  if (dailyPrices.length === 0) {
+    return false;
+  }
+
+  if (weeklySeries.length < 8 || monthlySeries.length < 3) {
+    return true;
+  }
+
+  const latestYear = dailyPrices[dailyPrices.length - 1].priceDate.getUTCFullYear();
+  const quarterStart = new Date(Date.UTC(latestYear, 3, 1));
+  const quarterEnd = new Date(Date.UTC(latestYear, 6, 0));
+
+  return !dailyPrices.some((row) => row.priceDate >= quarterStart && row.priceDate <= quarterEnd);
+}
+
+function resolveFallbackYear(
+  dailyPrices: readonly ForecastDailyPriceRow[],
+  currentTruthCutoffAt: Date | null,
+): number {
+  if (currentTruthCutoffAt) {
+    return currentTruthCutoffAt.getUTCFullYear();
+  }
+
+  return dailyPrices[dailyPrices.length - 1].priceDate.getUTCFullYear();
 }
 
 async function loadIndicatorSnapshots(
@@ -271,7 +319,10 @@ export async function runForecastPipeline(
     return executeForecastPipeline(input.tx, input, startedAt);
   }
 
-  return db.$transaction((tx) => executeForecastPipeline(tx, input, startedAt));
+  return db.$transaction((tx) => executeForecastPipeline(tx, input, startedAt), {
+    maxWait: 10_000,
+    timeout: 30_000,
+  });
 }
 
 async function executeForecastPipeline(
@@ -311,8 +362,20 @@ async function executeForecastPipeline(
     );
   }
 
-  const weeklySeries = aggregateDailyPrices(dailyPrices, ForecastHorizonKind.weekly);
-  const monthlySeries = aggregateDailyPrices(dailyPrices, ForecastHorizonKind.monthly);
+  const dailySeriesWeekly = aggregateDailyPrices(dailyPrices, ForecastHorizonKind.weekly);
+  const dailySeriesMonthly = aggregateDailyPrices(dailyPrices, ForecastHorizonKind.monthly);
+  const fallbackSeries = shouldLoadQ2Fallback(dailyPrices, dailySeriesWeekly, dailySeriesMonthly)
+    ? await loadOpinetQ2FallbackSeries({
+        year: resolveFallbackYear(dailyPrices, recomputeSnapshot.currentTruthCutoffAt),
+        fetchImpl: input.fetchImpl,
+      })
+    : null;
+  const weeklySeries = fallbackSeries
+    ? mergeSeries(dailySeriesWeekly, fallbackSeries.weeklySeries)
+    : dailySeriesWeekly;
+  const monthlySeries = fallbackSeries
+    ? mergeSeries(dailySeriesMonthly, fallbackSeries.monthlySeries)
+    : dailySeriesMonthly;
 
   if (weeklySeries.length === 0 || monthlySeries.length === 0) {
     throw new Error("Forecast pipeline requires both weekly and monthly aggregate history.");
@@ -369,7 +432,7 @@ async function executeForecastPipeline(
       metadata: toJsonObject({
         datasetKey: env.datasetKey,
         requestedByRuntime: input.requestedByRuntime,
-        fallbackMode: approvalState === ForecastApprovalState.degraded ? "degraded-unavailable" : "normal",
+        fallbackMode: fallbackSeries ? "q2-stats-supplemented" : approvalState === ForecastApprovalState.degraded ? "degraded-unavailable" : "normal",
         degradedReason,
         qualityGate: {
           blockingMetric: "mape",
@@ -393,6 +456,13 @@ async function executeForecastPipeline(
           currentTruthCutoffAt: recomputeSnapshot.currentTruthCutoffAt?.toISOString() ?? null,
           currentRowCount: dailyPrices.length,
           currentRevisionIds: dailyPrices.map((row) => row.currentRevisionId),
+          fallback: fallbackSeries
+            ? {
+                quarter: `${resolveFallbackYear(dailyPrices, recomputeSnapshot.currentTruthCutoffAt)}-Q2`,
+                weeklyPointCount: fallbackSeries.weeklySeries.length,
+                monthlyPointCount: fallbackSeries.monthlySeries.length,
+              }
+            : null,
         },
         indicators: indicators.map((indicator) => ({
           indicatorCode: indicator.indicatorCode,

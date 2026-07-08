@@ -120,6 +120,7 @@ npm run ingest:opinet
 - revision/current truth 반영
 - recompute snapshot 생성
 - 월간 집계는 누적된 일별 데이터 기준으로 계산
+- 예측 기록이 부족하면 오피넷 제품별 통계 화면의 2분기(4~6월) 주간/월간 평균판매가격을 보강 이력으로 사용해 다음 4주·3개월 예측을 생성
 
 ### 외부 지표 동기화
 ```bash
@@ -260,6 +261,7 @@ npm run build
 - `.env.local`의 `OPINET_STATS_PRICE_URL`이 `https://www.opinet.co.kr/user/dopospdrg/dopOsPdrgSelect.do`인지 확인
 - `npm run fetch:opinet` 재실행
 - 오피넷이 빈 응답을 주면 현재 주간 미발표 구간인지, 또는 키 권한/쿼리 조합 문제인지 먼저 의심
+- 예측이 비어 있으면 `npm run ingest:opinet`로 최신 snapshot과 forecast run을 다시 생성하고, 부족한 이력은 오피넷 2분기 주간/월간 평균판매가격 보강으로 채워지는지 확인
 
 ### 5. Prisma / DB 연결 실패
 대응:
@@ -314,7 +316,7 @@ npm run build
 - `npm run build` — production build
 - `npm run start` — production server
 - `npm run fetch:opinet` — raw fetch to `data/oil-price-daily.json` and `data/oil-price-weekly.json`
-- `npm run ingest:opinet` — DB-backed ingest + recompute snapshot 생성
+- `npm run ingest:opinet` — DB-backed ingest + recompute snapshot + forecast 생성
 - `npm run sync:indicators` — 외부 지표 sync
 - `npm run worker` — scheduled worker entrypoint
 - `npm run vercel-build` — Vercel용 Prisma generate + production build

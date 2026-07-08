@@ -46,6 +46,16 @@ export interface WorkerRunSummary {
     currentRowCount: number;
     currentTruthCutoffAt: string;
   };
+  forecast: {
+    forecastRunId: string;
+    approvalState: string;
+    degradedReason: string | null;
+    weeklySeriesCount: number;
+    monthlySeriesCount: number;
+    weeklyForecastPointCount: number;
+    monthlyForecastPointCount: number;
+  };
+
   fetchedRowCount: number;
 }
 
@@ -130,6 +140,7 @@ export async function runScheduledWorkerOnce(): Promise<WorkerRunSummary> {
       currentTruthCutoffAt: execution.result.snapshot.currentTruthCutoffAt.toISOString(),
     },
     fetchedRowCount: execution.result.fetchedRows.length,
+    forecast: execution.result.forecast,
   };
 }
 
