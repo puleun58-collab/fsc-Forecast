@@ -124,8 +124,8 @@ export function DashboardShell({ data }: DashboardShellProps) {
     return (
       <main className="dashboard-shell">
         <section className="dashboard-shell__hero">
-          <p className="dashboard-shell__eyebrow">National-average-only MVP</p>
-          <h1 className="dashboard-shell__title">오피넷 전국 평균 경유가 대시보드</h1>
+          <p className="dashboard-shell__eyebrow">FSC calculation MVP</p>
+          <h1 className="dashboard-shell__title">FSC Forecast Dashboard</h1>
           <p className="dashboard-shell__description">
             공개 범위는 전국 평균 자동차용 경유가만 유지합니다. 현재는 데이터베이스 기반 공개 데이터를 읽을 수 없어
             대시보드 전체를 비가용 상태로 노출합니다.
@@ -155,8 +155,8 @@ export function DashboardShell({ data }: DashboardShellProps) {
   return (
     <main className="dashboard-shell">
       <section className="dashboard-shell__hero">
-        <p className="dashboard-shell__eyebrow">National-average-only MVP</p>
-        <h1 className="dashboard-shell__title">오피넷 전국 평균 경유가 대시보드</h1>
+        <p className="dashboard-shell__eyebrow">FSC calculation MVP</p>
+        <h1 className="dashboard-shell__title">FSC Forecast Dashboard</h1>
         <p className="dashboard-shell__description">
           최신 current truth와 성공한 recompute snapshot 기준으로 전국 평균 자동차용 경유가만 공개합니다. 지역별 수치,
           추정치 보정, 임의 대체값은 표시하지 않습니다.
@@ -171,7 +171,7 @@ export function DashboardShell({ data }: DashboardShellProps) {
 
       <div className="dashboard-shell__grid">
         <SectionCard
-          title="전국 평균 현재 상태"
+          title="현재 유가 및 FSC 기준"
           badge="현재 진실값"
           description="최신 스냅샷에 연결된 전국 평균 자동차용 경유가 현황입니다."
           highlights={[
@@ -225,7 +225,7 @@ export function DashboardShell({ data }: DashboardShellProps) {
         </SectionCard>
 
         <SectionCard
-          title="예측 블록"
+          title="유가 예측 및 FSC 기준 시나리오"
           badge={forecastBadge}
           description="성공한 forecast run이 있으면 최신 스냅샷 기준 주간 4포인트, 월간 3포인트를 그대로 노출합니다."
           highlights={[
@@ -293,7 +293,7 @@ export function DashboardShell({ data }: DashboardShellProps) {
         </SectionCard>
 
         <SectionCard
-          title="내보내기 블록"
+          title="FSC 산출표 다운로드"
           badge="스냅샷 고정"
           description="최신 성공 스냅샷에 연결된 XLSX 내보내기 실행 기록만 공개합니다."
           highlights={[

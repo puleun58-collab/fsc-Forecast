@@ -26,16 +26,48 @@ enum ForecastHorizonKind {
   monthly
 }
 
+enum QuarterStatus {
+  draft
+  active
+  closed
+}
+
+enum FscApprovalStatus {
+  pending
+  approved
+  rejected
+}
+
+enum FscPriceKind {
+  actual
+  forecast
+}
+
+enum FscDataFreshnessStatus {
+  fresh
+  delayed
+  stale
+  unavailable
+}
+
+enum FscForecastSourceKind {
+  weekly_point
+  monthly_point
+  carry_forward
+  applied_price_fallback
+  base_price_fallback
+}
+
 model DailyPriceCurrent {
-  id                       String             @id @default(cuid())
-  datasetKey               String             @default("national-average-opinet-diesel")
-  priceDate                DateTime
-  currentRevisionId        String             @unique
-  currentRevision          PriceRevisionLog   @relation("CurrentRevision", fields: [currentRevisionId], references: [id], onDelete: Restrict)
+  id                        String             @id @default(cuid())
+  datasetKey                String             @default("national-average-opinet-diesel")
+  priceDate                 DateTime
+  currentRevisionId         String             @unique
+  currentRevision           PriceRevisionLog   @relation("CurrentRevision", fields: [currentRevisionId], references: [id], onDelete: Restrict)
   latestRecomputeSnapshotId String?
-  latestRecomputeSnapshot  RecomputeSnapshot? @relation(fields: [latestRecomputeSnapshotId], references: [id], onDelete: SetNull)
-  createdAt                DateTime           @default(now())
-  updatedAt                DateTime           @updatedAt
+  latestRecomputeSnapshot   RecomputeSnapshot? @relation(fields: [latestRecomputeSnapshotId], references: [id], onDelete: SetNull)
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
 
   @@unique([datasetKey, priceDate])
   @@index([latestRecomputeSnapshotId])
@@ -43,31 +75,31 @@ model DailyPriceCurrent {
 }
 
 model PriceRevisionLog {
-  id                   String            @id @default(cuid())
-  datasetKey           String            @default("national-average-opinet-diesel")
+  id                   String             @id @default(cuid())
+  datasetKey           String             @default("national-average-opinet-diesel")
   priceDate            DateTime
-  observedPriceKrwPerL Decimal           @db.Decimal(10, 3)
+  observedPriceKrwPerL Decimal            @db.Decimal(10, 3)
   sourceObservedAt     DateTime?
   sourceRevisionToken  String?
   sourcePayload        Json?
   ingestRunId          String
-  ingestRun            IngestRun         @relation(fields: [ingestRunId], references: [id], onDelete: Restrict)
+  ingestRun            IngestRun          @relation(fields: [ingestRunId], references: [id], onDelete: Restrict)
   supersedesRevisionId String?
-  supersedesRevision   PriceRevisionLog? @relation("RevisionSupersession", fields: [supersedesRevisionId], references: [id], onDelete: Restrict)
+  supersedesRevision   PriceRevisionLog?  @relation("RevisionSupersession", fields: [supersedesRevisionId], references: [id], onDelete: Restrict)
   supersededByRevision PriceRevisionLog[] @relation("RevisionSupersession")
   currentTruth         DailyPriceCurrent? @relation("CurrentRevision")
-  createdAt            DateTime          @default(now())
+  createdAt            DateTime           @default(now())
 
   @@index([datasetKey, priceDate, createdAt])
   @@map("price_revision_log")
 }
 
 model IngestRun {
-  id                 String             @id @default(cuid())
-  datasetKey         String             @default("national-average-opinet-diesel")
+  id                 String              @id @default(cuid())
+  datasetKey         String              @default("national-average-opinet-diesel")
   triggerKind        String
   requestedByRuntime String
-  status             RunStatus          @default(queued)
+  status             RunStatus           @default(queued)
   sourceWindowStart  DateTime?
   sourceWindowEnd    DateTime?
   startedAt          DateTime?
@@ -76,30 +108,30 @@ model IngestRun {
   metadata           Json?
   revisions          PriceRevisionLog[]
   recomputeSnapshots RecomputeSnapshot[]
-  createdAt          DateTime           @default(now())
+  createdAt          DateTime            @default(now())
 
   @@index([datasetKey, createdAt])
   @@map("ingest_runs")
 }
 
 model ExternalIndicatorHistory {
-  id              String   @id @default(cuid())
-  indicatorCode   String
-  observedAt      DateTime
-  value           Decimal  @db.Decimal(14, 4)
-  sourcePayload   Json?
-  createdAt       DateTime @default(now())
+  id            String   @id @default(cuid())
+  indicatorCode String
+  observedAt    DateTime
+  value         Decimal  @db.Decimal(14, 4)
+  sourcePayload Json?
+  createdAt     DateTime @default(now())
 
   @@unique([indicatorCode, observedAt])
   @@map("external_indicator_history")
 }
 
 model RecomputeSnapshot {
-  id                    String            @id @default(cuid())
-  datasetKey            String            @default("national-average-opinet-diesel")
+  id                    String              @id @default(cuid())
+  datasetKey            String              @default("national-average-opinet-diesel")
   triggeringIngestRunId String?
-  triggeringIngestRun   IngestRun?        @relation(fields: [triggeringIngestRunId], references: [id], onDelete: SetNull)
-  status                RunStatus         @default(queued)
+  triggeringIngestRun   IngestRun?          @relation(fields: [triggeringIngestRunId], references: [id], onDelete: SetNull)
+  status                RunStatus           @default(queued)
   triggerReason         String
   currentTruthCutoffAt  DateTime?
   startedAt             DateTime?
@@ -110,43 +142,46 @@ model RecomputeSnapshot {
   forecastRuns          ForecastRun[]
   commentaryRuns        CommentaryRun[]
   exportRuns            ExportRun[]
-  createdAt             DateTime          @default(now())
+  fscResults            FscResult[]
+  createdAt             DateTime            @default(now())
 
   @@index([datasetKey, createdAt])
   @@map("recompute_snapshots")
 }
 
 model ForecastRun {
-  id                  String                 @id @default(cuid())
+  id                  String                @id @default(cuid())
   recomputeSnapshotId String
-  recomputeSnapshot   RecomputeSnapshot      @relation(fields: [recomputeSnapshotId], references: [id], onDelete: Restrict)
-  status              RunStatus              @default(queued)
-  approvalState       ForecastApprovalState  @default(pending)
+  recomputeSnapshot   RecomputeSnapshot     @relation(fields: [recomputeSnapshotId], references: [id], onDelete: Restrict)
+  status              RunStatus             @default(queued)
+  approvalState       ForecastApprovalState @default(pending)
   backtestWeeks       Int?
-  mapePct             Decimal?               @db.Decimal(6, 3)
-  maeKrwPerL          Decimal?               @db.Decimal(10, 3)
+  mapePct             Decimal?              @db.Decimal(6, 3)
+  maeKrwPerL          Decimal?              @db.Decimal(10, 3)
   startedAt           DateTime?
   completedAt         DateTime?
   errorSummary        String?
   metadata            Json?
   points              ForecastPoint[]
-  createdAt           DateTime               @default(now())
+  createdAt           DateTime              @default(now())
+  fscResults          FscResult[]
 
   @@index([recomputeSnapshotId, createdAt])
   @@map("forecast_runs")
 }
 
 model ForecastPoint {
-  id                 String              @id @default(cuid())
-  forecastRunId      String
-  forecastRun        ForecastRun         @relation(fields: [forecastRunId], references: [id], onDelete: Cascade)
-  horizonKind        ForecastHorizonKind
-  horizonIndex       Int
-  targetDate         DateTime
-  pointKrwPerL       Decimal             @db.Decimal(10, 3)
-  lowerBoundKrwPerL  Decimal?            @db.Decimal(10, 3)
-  upperBoundKrwPerL  Decimal?            @db.Decimal(10, 3)
-  createdAt          DateTime            @default(now())
+  id                String              @id @default(cuid())
+  forecastRunId     String
+  forecastRun       ForecastRun         @relation(fields: [forecastRunId], references: [id], onDelete: Cascade)
+  horizonKind       ForecastHorizonKind
+  horizonIndex      Int
+  targetDate        DateTime
+  pointKrwPerL      Decimal             @db.Decimal(10, 3)
+  lowerBoundKrwPerL Decimal?            @db.Decimal(10, 3)
+  upperBoundKrwPerL Decimal?            @db.Decimal(10, 3)
+  createdAt         DateTime            @default(now())
+  fscQuarterWeeks   FscQuarterWeek[]
 
   @@unique([forecastRunId, horizonKind, horizonIndex])
   @@map("forecast_points")
@@ -184,4 +219,111 @@ model ExportRun {
 
   @@index([recomputeSnapshotId, createdAt])
   @@map("export_runs")
+}
+
+model QuarterSetting {
+  id                  String        @id @default(cuid())
+  targetYear          Int
+  targetQuarter       Int
+  referenceYear       Int
+  referenceQuarter    Int
+  quarterStartDate    DateTime
+  quarterEndDate      DateTime
+  basePriceKrwPerL    Decimal       @db.Decimal(10, 3)
+  appliedPriceKrwPerL Decimal       @db.Decimal(10, 3)
+  fscLowRate          Decimal       @db.Decimal(5, 4)
+  fscHighRate         Decimal       @db.Decimal(5, 4)
+  status              QuarterStatus @default(draft)
+  isActive            Boolean       @default(false)
+  activeKey           String?       @unique
+  fscResults          FscResult[]
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  @@unique([targetYear, targetQuarter])
+  @@index([isActive])
+  @@index([status])
+  @@map("quarter_settings")
+}
+
+model FscResult {
+  id                              String                 @id @default(cuid())
+  quarterSettingId                String
+  quarterSetting                  QuarterSetting         @relation(fields: [quarterSettingId], references: [id], onDelete: Restrict)
+  targetYear                      Int
+  targetQuarter                   Int
+  scenarioName                    String                 @default("base")
+  sourceRecomputeSnapshotId       String
+  sourceRecomputeSnapshot         RecomputeSnapshot      @relation(fields: [sourceRecomputeSnapshotId], references: [id], onDelete: Restrict)
+  forecastRunId                   String?
+  forecastRun                     ForecastRun?           @relation(fields: [forecastRunId], references: [id], onDelete: SetNull)
+  calculationFormulaVersion       String                 @default("fsc-v1")
+  forecastModelVersion            String?
+  basePriceKrwPerL                Decimal                @db.Decimal(10, 3)
+  appliedPriceKrwPerL             Decimal                @db.Decimal(10, 3)
+  quarterAverageKrwPerL           Decimal                @db.Decimal(10, 3)
+  priceDiffKrwPerL                Decimal                @db.Decimal(10, 3)
+  diffRatio                       Decimal                @db.Decimal(10, 6)
+  fscLowRate                      Decimal                @db.Decimal(5, 4)
+  fscHighRate                     Decimal                @db.Decimal(5, 4)
+  fscLowKrwPerL                   Decimal                @db.Decimal(10, 3)
+  fscHighKrwPerL                  Decimal                @db.Decimal(10, 3)
+  actualWeekCount                 Int
+  forecastWeekCount               Int
+  recent13wWeeklyPriceMae         Decimal?               @db.Decimal(10, 3)
+  recent13wWeeklyPriceMape        Decimal?               @db.Decimal(10, 6)
+  recent13wQuarterAveragePriceMae Decimal?               @db.Decimal(10, 3)
+  recent13wDirectionAccuracy      Decimal?               @db.Decimal(10, 6)
+  recent4wWeeklyPriceMae          Decimal?               @db.Decimal(10, 3)
+  recent4wErrorTrend              String?
+  recent26wWeeklyPriceMae         Decimal?               @db.Decimal(10, 3)
+  forecastBias4w                  Decimal?               @db.Decimal(10, 3)
+  forecastBias13w                 Decimal?               @db.Decimal(10, 3)
+  reliabilityGrade                String
+  dataFreshnessStatus             FscDataFreshnessStatus
+  calculationPayload              Json
+  approvalStatus                  FscApprovalStatus      @default(pending)
+  approvedBy                      String?
+  approvedAt                      DateTime?
+  weeks                           FscQuarterWeek[]
+  createdAt                       DateTime               @default(now())
+  updatedAt                       DateTime               @updatedAt
+
+  @@index([targetYear, targetQuarter, scenarioName, createdAt])
+  @@index([sourceRecomputeSnapshotId])
+  @@index([forecastRunId])
+  @@index([approvalStatus])
+  @@map("fsc_results")
+}
+
+model FscQuarterWeek {
+  id                   String                 @id @default(cuid())
+  fscResultId          String
+  fscResult            FscResult              @relation(fields: [fscResultId], references: [id], onDelete: Restrict)
+  targetYear           Int
+  targetQuarter        Int
+  targetMonth          Int
+  weekNo               Int
+  sequenceNo           Int
+  weekStartDate        DateTime
+  weekEndDate          DateTime
+  priceKind            FscPriceKind
+  priceKrwPerL         Decimal                @db.Decimal(10, 3)
+  actualPriceKrwPerL   Decimal?               @db.Decimal(10, 3)
+  forecastPriceKrwPerL Decimal?               @db.Decimal(10, 3)
+  sourcePriceDate      DateTime?
+  sourceRevisionIds    Json?
+  forecastPointId      String?
+  forecastPoint        ForecastPoint?         @relation(fields: [forecastPointId], references: [id], onDelete: SetNull)
+  forecastSourceKind   FscForecastSourceKind?
+  fallbackUsed         Boolean                @default(false)
+  basePriceKrwPerL     Decimal                @db.Decimal(10, 3)
+  priceDiffKrwPerL     Decimal                @db.Decimal(10, 3)
+  diffRatio            Decimal                @db.Decimal(10, 6)
+  createdAt            DateTime               @default(now())
+
+  @@unique([fscResultId, sequenceNo])
+  @@index([targetYear, targetQuarter, sequenceNo])
+  @@index([forecastPointId])
+  @@map("fsc_quarter_weeks")
 }

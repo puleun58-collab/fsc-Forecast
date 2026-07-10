@@ -1,4 +1,4 @@
-# Opinet Diesel Dashboard
+# FSC Forecast
 
 전국 평균 자동차용 경유가만 다루는 MVP입니다. 오피넷 평균가격 수집, DB 기반 ingest/recompute snapshot, 주간·월간 집계, 4주·3개월 예측, 규칙 기반 해설, XLSX 내보내기까지 한 흐름으로 묶여 있습니다.
 
@@ -97,6 +97,16 @@ Vercel production 주소:
 - Production: `https://fsc-forecast.vercel.app`
 - Vercel project: `fsc-forecast`
 
+### F. FSC Active Quarter / Result API
+- Active quarter: `/api/fsc/active-quarter`
+- Quarter list: `/api/fsc/quarters`
+- Current FSC result: `/api/fsc/current`
+- Quarter FSC result: `/api/fsc/quarter?year=2026&quarter=3`
+- Quarter week rows: `/api/fsc/quarter/weeks?year=2026&quarter=3`
+
+The public FSC API serializes Decimal values as strings and returns empty-state responses when a quarter/result is not ready yet.
+
+
 Vercel 배포는 외부에서 접근 가능한 PostgreSQL `DATABASE_URL`이 필요합니다.
 
 
@@ -121,6 +131,8 @@ npm run ingest:opinet
 - recompute snapshot 생성
 - 월간 집계는 누적된 일별 데이터 기준으로 계산
 - 예측 기록이 부족하면 오피넷 제품별 통계 화면의 2분기(4~6월) 주간/월간 평균판매가격을 보강 이력으로 사용해 다음 4주·3개월 예측을 생성
+- active quarter 기반 FSC quarter result / week row 재계산 foundation을 포함합니다.
+
 
 ### 외부 지표 동기화
 ```bash
@@ -167,7 +179,9 @@ src/
     forecast/             # 4주/3개월 예측
     commentary/           # 규칙 기반 해설
     dashboard/            # 대시보드 데이터 로더
+    fsc/                  # FSC 계산, 주차 생성, 결과 직렬화, 재계산
     export/               # XLSX dataset/builder
+    quarter/              # active quarter 계산/rollover/helper
     queue.ts              # serialized lane / advisory lock
     env.ts                # 런타임 env 검증
     db.ts                 # Prisma client
