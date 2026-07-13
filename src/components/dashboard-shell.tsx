@@ -39,12 +39,22 @@ const valueStyle: CSSProperties = {
   fontWeight: 700,
 };
 
-const listStyle: CSSProperties = {
-  display: 'grid',
-  gap: 10,
-  margin: 0,
-  padding: 0,
-  listStyle: 'none',
+
+const compactSummaryStyle: CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 8,
+};
+
+const compactSummaryItemStyle: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '8px 10px',
+  borderRadius: 999,
+  border: '1px solid var(--border)',
+  background: 'rgba(255, 255, 255, 0.82)',
+  fontSize: '0.84rem',
 };
 
 const blockStyle: CSSProperties = {
@@ -176,38 +186,61 @@ function renderUnavailable(title: string, copy: string): ReactNode {
 
 function renderWeekRows(weeks: readonly FscDashboardWeekItem[]): ReactNode {
   return (
-    <ul style={listStyle}>
-      {weeks.map((week) => (
-        <li key={week.sequenceNo} style={blockStyle}>
-          <div style={rowStyle}>
+    <div style={panelStyle}>
+      <div style={compactSummaryStyle}>
+        {weeks.map((week) => (
+          <span key={`summary-${week.sequenceNo}`} style={compactSummaryItemStyle}>
             <strong>{week.sequenceNo}주차</strong>
-            <span style={{ color: week.priceKind === 'actual' ? 'var(--status)' : 'var(--text-muted)' }}>
-              {week.priceKind === 'actual' ? '실제값' : '예측값'}
-            </span>
-          </div>
-          <span style={labelStyle}>
-            {week.weekStartDate.slice(0, 10)} ~ {week.weekEndDate.slice(0, 10)} · ISO week {week.weekNo} · {week.targetMonth}월 귀속
+            <span>{week.priceKind === 'actual' ? '실제' : '예측'}</span>
+            <span>{formatDecimalString(week.priceKrwPerL, '원/L')}</span>
           </span>
-          <div style={summaryGridStyle}>
-            <div style={summaryCardStyle}>
-              <span style={labelStyle}>주차 가격</span>
-              <p style={valueStyle}>{formatDecimalString(week.priceKrwPerL, '원/L')}</p>
-            </div>
-            <div style={summaryCardStyle}>
-              <span style={labelStyle}>기준유가 대비 차이</span>
-              <p style={valueStyle}>{formatDecimalString(week.priceDiffKrwPerL, '원/L')}</p>
-            </div>
-            <div style={summaryCardStyle}>
-              <span style={labelStyle}>기준유가 대비 차이율</span>
-              <p style={valueStyle}>{formatRatioString(week.diffRatio)}</p>
-            </div>
-          </div>
-          <span style={labelStyle}>
-            소스: {mapForecastSourceKind(week.forecastSourceKind)}{week.fallbackUsed ? ' · fallback 사용' : ''}
-          </span>
-        </li>
-      ))}
-    </ul>
+        ))}
+      </div>
+      <div className="dashboard-shell__table-wrap">
+        <table className="dashboard-shell__week-table">
+          <thead>
+            <tr>
+              <th>주차</th>
+              <th>기간</th>
+              <th>값 구분</th>
+              <th>주차 가격</th>
+              <th>기준가 대비 차이</th>
+              <th>기준가 대비 차이율</th>
+              <th>출처</th>
+            </tr>
+          </thead>
+          <tbody>
+            {weeks.map((week) => (
+              <tr key={week.sequenceNo}>
+                <td>
+                  <strong>{week.sequenceNo}주차</strong>
+                  <div style={labelStyle}>ISO week {week.weekNo} · {week.targetMonth}월</div>
+                </td>
+                <td>{week.weekStartDate.slice(0, 10)} ~ {week.weekEndDate.slice(0, 10)}</td>
+                <td>
+                  <span
+                    className={
+                      week.priceKind === 'actual'
+                        ? 'dashboard-shell__kind-badge dashboard-shell__kind-badge--actual'
+                        : 'dashboard-shell__kind-badge dashboard-shell__kind-badge--forecast'
+                    }
+                  >
+                    {week.priceKind === 'actual' ? '실제값' : '예측값'}
+                  </span>
+                </td>
+                <td>{formatDecimalString(week.priceKrwPerL, '원/L')}</td>
+                <td>{formatDecimalString(week.priceDiffKrwPerL, '원/L')}</td>
+                <td>{formatRatioString(week.diffRatio)}</td>
+                <td>
+                  {mapForecastSourceKind(week.forecastSourceKind)}
+                  {week.fallbackUsed ? ' · fallback' : ''}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
@@ -247,7 +280,7 @@ export function DashboardShell({ data }: DashboardShellProps) {
         </div>
       </section>
 
-      <div className="dashboard-shell__grid">
+      <div className="dashboard-shell__stack">
         <SectionCard
           title="현재 유가 및 FSC 기준"
           badge={data.state === 'available' ? mapResultStatus(data.fsc.dataFreshnessStatus, data.fsc.approvalStatus) : '결과 없음'}
@@ -286,18 +319,38 @@ export function DashboardShell({ data }: DashboardShellProps) {
                   </div>
                 ))}
               </div>
-              <div style={blockStyle}>
-                <div style={rowStyle}>
-                  <span style={labelStyle}>최근 13주 주간 MAPE</span>
-                  <strong>{data.fsc.recent13wWeeklyPriceMape ? `${data.fsc.recent13wWeeklyPriceMape}%` : '기록 없음'}</strong>
+              <div className="dashboard-shell__support-grid">
+                <div style={blockStyle}>
+                  <div style={rowStyle}>
+                    <span style={labelStyle}>최근 13주 주간 MAPE</span>
+                    <strong>{data.fsc.recent13wWeeklyPriceMape ? `${data.fsc.recent13wWeeklyPriceMape}%` : '기록 없음'}</strong>
+                  </div>
+                  <div style={rowStyle}>
+                    <span style={labelStyle}>최근 26주 주간 MAE</span>
+                    <strong>{data.fsc.recent26wWeeklyPriceMae ? `${data.fsc.recent26wWeeklyPriceMae}원/L` : '기록 없음'}</strong>
+                  </div>
+                  <div style={rowStyle}>
+                    <span style={labelStyle}>최근 4주 오차 추세</span>
+                    <strong>{data.fsc.recent4wErrorTrend ?? '기록 없음'}</strong>
+                  </div>
                 </div>
-                <div style={rowStyle}>
-                  <span style={labelStyle}>최근 26주 주간 MAE</span>
-                  <strong>{data.fsc.recent26wWeeklyPriceMae ? `${data.fsc.recent26wWeeklyPriceMae}원/L` : '기록 없음'}</strong>
-                </div>
-                <div style={rowStyle}>
-                  <span style={labelStyle}>최근 4주 오차 추세</span>
-                  <strong>{data.fsc.recent4wErrorTrend ?? '기록 없음'}</strong>
+                <div style={blockStyle}>
+                  <div style={rowStyle}>
+                    <span style={labelStyle}>최신 전국 평균 경유가</span>
+                    <strong>{formatPrice(data.support.currentPrice.latestPriceKrwPerL)}</strong>
+                  </div>
+                  <div style={rowStyle}>
+                    <span style={labelStyle}>직전 대비</span>
+                    <strong>
+                      {data.support.currentPrice.absoluteChangeKrwPerL === null
+                        ? '직전 비교 불가'
+                        : `${data.support.currentPrice.absoluteChangeKrwPerL > 0 ? '+' : ''}${data.support.currentPrice.absoluteChangeKrwPerL.toFixed(3)}원/L`}
+                    </strong>
+                  </div>
+                  <div style={rowStyle}>
+                    <span style={labelStyle}>전일 변동률</span>
+                    <strong>{formatPercent(data.support.currentPrice.percentChange)}</strong>
+                  </div>
                 </div>
               </div>
             </div>
@@ -323,58 +376,60 @@ export function DashboardShell({ data }: DashboardShellProps) {
           {data.state === 'available' ? renderWeekRows(data.fsc.weeks) : undefined}
         </SectionCard>
 
-        <SectionCard
-          title="최신 오피넷 유가 참고값"
-          badge={data.support.currentPrice.availability === 'available' ? mapTrendDirection(data.support.currentPrice.direction) : '데이터 없음'}
-          description="FSC 판단 보조 정보로 최신 전국 평균 자동차용 경유가 상태를 함께 보여줍니다."
-          highlights={
-            data.support.currentPrice.availability === 'available'
-              ? [
-                  `기준일 ${data.support.currentPrice.latestPriceDate}`,
-                  `커버리지 ${data.support.currentPrice.coverageStartDate ?? '없음'} ~ ${data.support.currentPrice.coverageEndDate ?? '없음'}`,
-                  `원천 관측 시각 ${formatTimestamp(data.support.currentPrice.sourceObservedAt)}`,
-                ]
-              : []
-          }
-          emptyStateTitle={data.support.currentPrice.availability === 'unavailable' ? '오피넷 현재 유가를 불러오지 못했습니다.' : undefined}
-          emptyStateCopy={data.support.currentPrice.unavailableReason}
-        >
-          {data.support.currentPrice.availability === 'available' ? (
-            <div style={panelStyle}>
-              <div style={summaryGridStyle}>
-                {[
-                  ['최신 전국 평균 경유가', formatPrice(data.support.currentPrice.latestPriceKrwPerL)],
-                  [
-                    '직전 대비',
-                    data.support.currentPrice.absoluteChangeKrwPerL === null
-                      ? '직전 비교 불가'
-                      : `${data.support.currentPrice.absoluteChangeKrwPerL > 0 ? '+' : ''}${data.support.currentPrice.absoluteChangeKrwPerL.toFixed(3)}원/L`,
-                  ],
-                  ['직전 가격', formatPrice(data.support.currentPrice.previousPriceKrwPerL)],
-                  ['전일 변동률', formatPercent(data.support.currentPrice.percentChange)],
-                ].map(([label, value]) => (
-                  <div key={label} style={summaryCardStyle}>
-                    <span style={labelStyle}>{label}</span>
-                    <p style={valueStyle}>{value}</p>
-                  </div>
-                ))}
+        <div className="dashboard-shell__support-grid">
+          <SectionCard
+            title="최신 오피넷 유가 참고값"
+            badge={data.support.currentPrice.availability === 'available' ? mapTrendDirection(data.support.currentPrice.direction) : '데이터 없음'}
+            description="FSC 판단 보조 정보로 최신 전국 평균 자동차용 경유가 상태를 함께 보여줍니다."
+            highlights={
+              data.support.currentPrice.availability === 'available'
+                ? [
+                    `기준일 ${data.support.currentPrice.latestPriceDate}`,
+                    `커버리지 ${data.support.currentPrice.coverageStartDate ?? '없음'} ~ ${data.support.currentPrice.coverageEndDate ?? '없음'}`,
+                    `원천 관측 시각 ${formatTimestamp(data.support.currentPrice.sourceObservedAt)}`,
+                  ]
+                : []
+            }
+            emptyStateTitle={data.support.currentPrice.availability === 'unavailable' ? '오피넷 현재 유가를 불러오지 못했습니다.' : undefined}
+            emptyStateCopy={data.support.currentPrice.unavailableReason}
+          >
+            {data.support.currentPrice.availability === 'available' ? (
+              <div style={panelStyle}>
+                <div style={summaryGridStyle}>
+                  {[
+                    ['최신 전국 평균 경유가', formatPrice(data.support.currentPrice.latestPriceKrwPerL)],
+                    [
+                      '직전 대비',
+                      data.support.currentPrice.absoluteChangeKrwPerL === null
+                        ? '직전 비교 불가'
+                        : `${data.support.currentPrice.absoluteChangeKrwPerL > 0 ? '+' : ''}${data.support.currentPrice.absoluteChangeKrwPerL.toFixed(3)}원/L`,
+                    ],
+                    ['직전 가격', formatPrice(data.support.currentPrice.previousPriceKrwPerL)],
+                    ['전일 변동률', formatPercent(data.support.currentPrice.percentChange)],
+                  ].map(([label, value]) => (
+                    <div key={label} style={summaryCardStyle}>
+                      <span style={labelStyle}>{label}</span>
+                      <p style={valueStyle}>{value}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ) : undefined}
-        </SectionCard>
+            ) : undefined}
+          </SectionCard>
 
-        <SectionCard
-          title="전국 평균 유가 추이"
-          badge="보조 차트"
-          description="기존 오피넷 일별 current truth를 기반으로 최근 추이를 보조 정보로 유지합니다."
-          highlights={[
-            `최신 주간 평균 ${formatPrice(data.support.trend.latestWeeklyAverageKrwPerL)}`,
-            `최신 월간 평균 ${formatPrice(data.support.trend.latestMonthlyAverageKrwPerL)}`,
-            'FSC 산출 중심 화면으로 전환했지만 추이 차트는 참고용으로 유지합니다.',
-          ]}
-        >
-          <PriceTrendChart points={data.support.trend.points} unavailableReason={data.support.trend.unavailableReason} />
-        </SectionCard>
+          <SectionCard
+            title="전국 평균 유가 추이"
+            badge="보조 차트"
+            description="기존 오피넷 일별 current truth를 기반으로 최근 추이를 보조 정보로 유지합니다."
+            highlights={[
+              `최신 주간 평균 ${formatPrice(data.support.trend.latestWeeklyAverageKrwPerL)}`,
+              `최신 월간 평균 ${formatPrice(data.support.trend.latestMonthlyAverageKrwPerL)}`,
+              'FSC 산출 중심 화면으로 전환했지만 추이 차트는 참고용으로 유지합니다.',
+            ]}
+          >
+            <PriceTrendChart points={data.support.trend.points} unavailableReason={data.support.trend.unavailableReason} />
+          </SectionCard>
+        </div>
 
         <SectionCard
           title="FSC 산출표 다운로드"

@@ -42,31 +42,32 @@ main {
 .dashboard-shell {
   width: min(1120px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 48px 0 64px;
+  padding: 56px 0 72px;
 }
 
 .dashboard-shell__hero {
   display: grid;
-  gap: 16px;
-  margin-bottom: 28px;
+  gap: 14px;
+  margin-bottom: 32px;
 }
 
 .dashboard-shell__eyebrow {
   margin: 0;
   color: var(--accent);
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .dashboard-shell__title {
   margin: 0;
-  font-size: clamp(2rem, 4vw, 3rem);
-  line-height: 1.15;
+  font-size: clamp(2.2rem, 4vw, 3.15rem);
+  line-height: 1.1;
 }
 
 .dashboard-shell__description {
   margin: 0;
-  max-width: 760px;
+  max-width: 720px;
   color: var(--text-muted);
   font-size: 1rem;
   line-height: 1.7;
@@ -75,36 +76,50 @@ main {
 .dashboard-shell__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
 }
 
 .dashboard-shell__meta-item {
-  padding: 10px 14px;
+  padding: 9px 14px;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.78);
   color: var(--text-muted);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
+}
+
+.dashboard-shell__stack {
+  display: grid;
+  gap: 20px;
+}
+
+.dashboard-shell__support-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
 }
 
 .dashboard-shell__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
+  align-items: start;
+
 }
 
 .section-card {
   display: grid;
-  gap: 14px;
+  gap: 16px;
   padding: 24px;
   border: 1px solid var(--border);
   border-radius: 20px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 14px 34px rgba(16, 32, 51, 0.06);
 }
 
 .section-card--highlight {
-  background: linear-gradient(180deg, var(--accent-soft) 0%, var(--surface) 100%);
+  background: linear-gradient(180deg, rgba(231, 240, 255, 0.92) 0%, rgba(255, 255, 255, 0.96) 100%);
   border-color: var(--border-strong);
 }
 
@@ -113,12 +128,13 @@ main {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
 .section-card__title {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 1.12rem;
+  line-height: 1.3;
 }
 
 .section-card__badge {
@@ -128,7 +144,7 @@ main {
   border-radius: 999px;
   background: var(--surface-muted);
   color: var(--status);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 700;
 }
 
@@ -144,10 +160,12 @@ main {
 }
 
 .section-card__list {
+  display: grid;
+  gap: 6px;
   margin: 0;
   padding-left: 18px;
   color: var(--text);
-  line-height: 1.7;
+  line-height: 1.65;
 }
 
 .section-card__placeholder {
@@ -171,13 +189,71 @@ main {
   line-height: 1.6;
 }
 
+.dashboard-shell__table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.dashboard-shell__week-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.dashboard-shell__week-table th,
+.dashboard-shell__week-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.dashboard-shell__week-table thead th {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dashboard-shell__week-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.dashboard-shell__week-table tbody tr:nth-child(2n) {
+  background: rgba(248, 250, 252, 0.78);
+}
+
+.dashboard-shell__kind-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dashboard-shell__kind-badge--actual {
+  background: rgba(10, 122, 72, 0.12);
+  color: var(--status);
+}
+
+.dashboard-shell__kind-badge--forecast {
+  background: rgba(16, 32, 51, 0.08);
+  color: var(--text-muted);
+}
+
 @media (max-width: 860px) {
   .dashboard-shell {
     width: min(100% - 24px, 1120px);
-    padding-top: 32px;
+    padding-top: 36px;
   }
 
-  .dashboard-shell__grid {
+  .dashboard-shell__support-grid {
     grid-template-columns: 1fr;
   }
 }

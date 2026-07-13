@@ -6,6 +6,7 @@ type SectionCardProps = {
   description: string;
   highlights?: readonly string[];
   highlight?: boolean;
+  className?: string;
   footer?: ReactNode;
   children?: ReactNode;
   emptyStateTitle?: string;
@@ -18,13 +19,14 @@ export function SectionCard({
   description,
   highlights = [],
   highlight = false,
+  className,
   footer,
   children,
   emptyStateTitle,
   emptyStateCopy,
 }: SectionCardProps) {
   return (
-    <section className={highlight ? 'section-card section-card--highlight' : 'section-card'}>
+    <section className={[highlight ? 'section-card section-card--highlight' : 'section-card', className].filter(Boolean).join(' ')}>
       <div className="section-card__header">
         <h2 className="section-card__title">{title}</h2>
         <span className="section-card__badge">{badge}</span>
