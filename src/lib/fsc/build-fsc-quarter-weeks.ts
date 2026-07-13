@@ -1,3 +1,5 @@
+import { getOpinetWeekEnd, getOpinetWeekStart } from '@/lib/opinet/weekly-period';
+
 import { Prisma, type QuarterSetting } from '@prisma/client';
 
 import type {
@@ -77,21 +79,9 @@ function formatMonthKey(value: Date): string {
   return `${value.getUTCFullYear()}-${String(value.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
-function getUtcWeekStart(value: Date): Date {
-  const normalized = toDateOnly(value);
-  const dayOfWeek = normalized.getUTCDay();
-  const offset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  normalized.setUTCDate(normalized.getUTCDate() + offset);
-  return normalized;
-}
-
-function getUtcWeekEnd(value: Date): Date {
-  return addDays(getUtcWeekStart(value), 6);
-}
 
 function getIsoWeekNumber(value: Date): number {
-  const weekStart = getUtcWeekStart(value);
-  const thursday = addDays(weekStart, 3);
+  const thursday = getOpinetWeekEnd(value);
   const isoWeekYear = thursday.getUTCFullYear();
   const firstThursday = new Date(Date.UTC(isoWeekYear, 0, 4));
   const firstThursdayDay = firstThursday.getUTCDay() === 0 ? 7 : firstThursday.getUTCDay();
@@ -321,12 +311,12 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
     dailyAverage: 0,
   };
 
-  let cursor = getUtcWeekStart(quarterStartDate);
+  let cursor = getOpinetWeekStart(quarterStartDate);
   let sequenceNo = 1;
 
   while (cursor.getTime() <= quarterEndDate.getTime()) {
     const fullWeekStart = cursor;
-    const fullWeekEnd = getUtcWeekEnd(fullWeekStart);
+    const fullWeekEnd = getOpinetWeekEnd(fullWeekStart);
     const effectiveStart = clampStart(fullWeekStart, quarterStartDate);
     const effectiveEnd = clampEnd(fullWeekEnd, quarterEndDate);
     const weekNo = getIsoWeekNumber(fullWeekStart);

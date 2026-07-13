@@ -1,3 +1,5 @@
+import { createOpinetWeekStartDate, getOpinetWeekEnd } from "./weekly-period";
+
 import type {
   NormalizedDieselMonthlyPriceRow,
   NormalizedDieselPriceRow,
@@ -33,16 +35,6 @@ function formatWeekKey(year: number, month: number, week: number): string {
   return `${year}${String(month).padStart(2, "0")}${week}`;
 }
 
-function createWeekStartDate(year: number, month: number, week: number): Date {
-  const firstDayOfMonth = new Date(Date.UTC(year, month - 1, 1));
-  const firstWeekStart = new Date(firstDayOfMonth);
-  firstWeekStart.setUTCDate(firstDayOfMonth.getUTCDate() - firstDayOfMonth.getUTCDay());
-  firstWeekStart.setUTCHours(0, 0, 0, 0);
-
-  const weekStart = new Date(firstWeekStart);
-  weekStart.setUTCDate(firstWeekStart.getUTCDate() + (week - 1) * 7);
-  return weekStart;
-}
 
 function formatUtcDate(date: Date): string {
   const year = date.getUTCFullYear();
@@ -140,9 +132,8 @@ export function normalizeWeeklyDieselRow(
   },
   fetchedAt: string,
 ): NormalizedDieselWeeklyPriceRow {
-  const weekStartDate = createWeekStartDate(input.year, input.month, input.week);
-  const weekEndDate = new Date(weekStartDate);
-  weekEndDate.setUTCDate(weekStartDate.getUTCDate() + 6);
+  const weekStartDate = createOpinetWeekStartDate(input.year, input.month, input.week);
+  const weekEndDate = getOpinetWeekEnd(weekStartDate);
 
   return {
     weekKey: formatWeekKey(input.year, input.month, input.week),

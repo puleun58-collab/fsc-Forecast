@@ -1,3 +1,5 @@
+import { createOpinetWeekStartDate, getOpinetWeekEnd } from "../opinet/weekly-period";
+
 import { ForecastHorizonKind } from "@prisma/client";
 
 import { fetchOpinetStatsCsv } from "../opinet/fetch-stats-csv";
@@ -17,16 +19,6 @@ function roundPrice(value: number): number {
   return Math.round(value * 1000) / 1000;
 }
 
-function createWeekStartDate(year: number, month: number, week: number): Date {
-  const firstDayOfMonth = new Date(Date.UTC(year, month - 1, 1));
-  const firstWeekStart = new Date(firstDayOfMonth);
-  firstWeekStart.setUTCDate(firstDayOfMonth.getUTCDate() - firstDayOfMonth.getUTCDay());
-  firstWeekStart.setUTCHours(0, 0, 0, 0);
-
-  const weekStart = new Date(firstWeekStart);
-  weekStart.setUTCDate(firstWeekStart.getUTCDate() + (week - 1) * 7);
-  return weekStart;
-}
 
 function createMonthlyStartDate(year: number, month: number): Date {
   return new Date(Date.UTC(year, month - 1, 1));
@@ -87,9 +79,8 @@ export async function loadOpinetQ2FallbackSeries(
   return {
     weeklySeries: weeklyRows.map((row) => {
       const parsed = parseWeeklyLabel(row.label);
-      const periodStart = createWeekStartDate(parsed.year, parsed.month, parsed.week);
-      const periodEnd = new Date(periodStart);
-      periodEnd.setUTCDate(periodStart.getUTCDate() + 6);
+      const periodStart = createOpinetWeekStartDate(parsed.year, parsed.month, parsed.week);
+      const periodEnd = getOpinetWeekEnd(periodStart);
 
       return {
         horizonKind: ForecastHorizonKind.weekly,

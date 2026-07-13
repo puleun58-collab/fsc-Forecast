@@ -1,4 +1,11 @@
 import {
+  OPINET_WEEKLY_COLLECTION_DAY_COUNT,
+  getOpinetWeekEnd,
+  getOpinetWeekStart,
+  isOpinetWeeklyCollectionDay,
+} from "../opinet/weekly-period";
+
+import {
   ForecastApprovalState,
   ForecastHorizonKind,
   RunStatus,
@@ -41,19 +48,6 @@ function roundPrice(value: number): number {
   return Math.round(value * 1000) / 1000;
 }
 
-function getUtcWeekStart(value: Date): Date {
-  const normalized = new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
-  const dayOfWeek = normalized.getUTCDay();
-  const offset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  normalized.setUTCDate(normalized.getUTCDate() + offset);
-  return normalized;
-}
-
-function getUtcWeekEnd(value: Date): Date {
-  const weekStart = getUtcWeekStart(value);
-  weekStart.setUTCDate(weekStart.getUTCDate() + 6);
-  return weekStart;
-}
 
 function getUtcMonthStart(value: Date): Date {
   return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), 1));
@@ -86,8 +80,12 @@ function aggregateDailyPrices(
   const groups = new Map<string, { periodStart: Date; periodEnd: Date; values: number[] }>();
 
   for (const row of dailyPrices) {
-    const periodStart = horizonKind === "weekly" ? getUtcWeekStart(row.priceDate) : getUtcMonthStart(row.priceDate);
-    const periodEnd = horizonKind === "weekly" ? getUtcWeekEnd(row.priceDate) : getUtcMonthEnd(row.priceDate);
+    if (horizonKind === "weekly" && !isOpinetWeeklyCollectionDay(row.priceDate)) {
+      continue;
+    }
+
+    const periodStart = horizonKind === "weekly" ? getOpinetWeekStart(row.priceDate) : getUtcMonthStart(row.priceDate);
+    const periodEnd = horizonKind === "weekly" ? getOpinetWeekEnd(row.priceDate) : getUtcMonthEnd(row.priceDate);
     const key = periodEnd.toISOString();
     const existing = groups.get(key);
 
@@ -103,9 +101,13 @@ function aggregateDailyPrices(
     });
   }
 
-  return [...groups.values()]
+  const series = [...groups.values()]
     .sort((left, right) => left.periodEnd.getTime() - right.periodEnd.getTime())
     .map((group) => createSeriesPoint(horizonKind, group.periodStart, group.periodEnd, group.values));
+
+  return horizonKind === "weekly"
+    ? series.filter((point) => point.sampleCount === OPINET_WEEKLY_COLLECTION_DAY_COUNT)
+    : series;
 }
 
 function normalizeDailyPriceRows(rows: readonly DailyPriceCurrentRow[]): ForecastDailyPriceRow[] {
