@@ -18,6 +18,8 @@ export interface QuarterSettingDto {
   updatedAt: string;
 }
 
+const PRICE_SCALE = 2;
+
 export function serializeQuarterSetting(value: QuarterSetting): QuarterSettingDto {
   return {
     id: value.id,
@@ -27,8 +29,8 @@ export function serializeQuarterSetting(value: QuarterSetting): QuarterSettingDt
     referenceQuarter: value.referenceQuarter,
     quarterStartDate: value.quarterStartDate.toISOString(),
     quarterEndDate: value.quarterEndDate.toISOString(),
-    basePriceKrwPerL: value.basePriceKrwPerL.toFixed(3),
-    appliedPriceKrwPerL: value.appliedPriceKrwPerL.toFixed(3),
+    basePriceKrwPerL: value.basePriceKrwPerL.toFixed(PRICE_SCALE),
+    appliedPriceKrwPerL: value.appliedPriceKrwPerL.toFixed(PRICE_SCALE),
     fscLowRate: value.fscLowRate.toFixed(4),
     fscHighRate: value.fscHighRate.toFixed(4),
     status: value.status,

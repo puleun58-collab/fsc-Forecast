@@ -17,6 +17,8 @@ function buildInvalidRequest(message: string): Response {
   );
 }
 
+const PRICE_SCALE = 2;
+
 function parseRequiredInteger(value: string | null, name: string): number {
   if (value === null || value.trim() === '') {
     throw new Error(`${name} is required.`);
@@ -88,14 +90,14 @@ export async function GET(request: Request): Promise<Response> {
           weekStartDate: week.weekStartDate.toISOString(),
           weekEndDate: week.weekEndDate.toISOString(),
           priceKind: week.priceKind,
-          priceKrwPerL: week.priceKrwPerL.toFixed(3),
-          actualPriceKrwPerL: week.actualPriceKrwPerL?.toFixed(3) ?? null,
-          forecastPriceKrwPerL: week.forecastPriceKrwPerL?.toFixed(3) ?? null,
+          priceKrwPerL: week.priceKrwPerL.toFixed(PRICE_SCALE),
+          actualPriceKrwPerL: week.actualPriceKrwPerL?.toFixed(PRICE_SCALE) ?? null,
+          forecastPriceKrwPerL: week.forecastPriceKrwPerL?.toFixed(PRICE_SCALE) ?? null,
           sourcePriceDate: week.sourcePriceDate?.toISOString() ?? null,
           forecastSourceKind: week.forecastSourceKind ?? null,
           fallbackUsed: week.fallbackUsed,
-          basePriceKrwPerL: week.basePriceKrwPerL.toFixed(3),
-          priceDiffKrwPerL: week.priceDiffKrwPerL.toFixed(3),
+          basePriceKrwPerL: week.basePriceKrwPerL.toFixed(PRICE_SCALE),
+          priceDiffKrwPerL: week.priceDiffKrwPerL.toFixed(PRICE_SCALE),
           diffRatio: week.diffRatio.toFixed(6),
         })),
       },

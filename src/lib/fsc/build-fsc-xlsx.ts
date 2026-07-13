@@ -81,8 +81,8 @@ function applyCommonFormats(workbook: XLSX.WorkBook): void {
 
   for (const sheetName of workbook.SheetNames) {
     const worksheet = workbook.Sheets[sheetName];
-    applyFormatByHeader(worksheet, priceColumns, '0.000');
-    applyFormatByHeader(worksheet, ratioColumns, '0.000000%');
+    applyFormatByHeader(worksheet, priceColumns, '0.00');
+    applyFormatByHeader(worksheet, ratioColumns, '0.00%');
   }
 }
 

@@ -87,25 +87,42 @@ const disabledButtonStyle: CSSProperties = {
   cursor: 'not-allowed',
 };
 
+const DISPLAY_DECIMALS = 2;
+
 function formatTimestamp(value: string | null): string {
   return value ?? '기록 없음';
 }
+function formatSignedPrice(value: number | null): string {
+  if (value === null) {
+    return '직전 비교 불가';
+  }
+
+  return `${value > 0 ? '+' : ''}${value.toFixed(DISPLAY_DECIMALS)}원/L`;
+}
+
 
 function formatPrice(value: number | null): string {
-  return value === null ? '데이터 없음' : `${value.toFixed(3)}원/L`;
+  return value === null ? '데이터 없음' : `${value.toFixed(DISPLAY_DECIMALS)}원/L`;
 }
 
 function formatDecimalString(value: string | null, suffix = ''): string {
-  return value === null ? '기록 없음' : `${value}${suffix}`;
+  if (value === null) {
+    return '기록 없음';
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? `${parsed.toFixed(DISPLAY_DECIMALS)}${suffix}` : `${value}${suffix}`;
 }
 
 function formatPercent(value: number | null): string {
-  return value === null ? '비교 불가' : `${value > 0 ? '+' : ''}${value.toFixed(3)}%`;
+  return value === null ? '비교 불가' : `${value > 0 ? '+' : ''}${value.toFixed(DISPLAY_DECIMALS)}%`;
 }
 
 function formatRatioString(value: string): string {
-  return `${(Number(value) * 100).toFixed(3)}%`;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? `${(parsed * 100).toFixed(DISPLAY_DECIMALS)}%` : `${value}%`;
 }
+
 
 function quarterLabel(year: number, quarter: number): string {
   return `${year}년 ${quarter}분기`;
@@ -302,13 +319,14 @@ export function DashboardShell({ data }: DashboardShellProps) {
             <div style={panelStyle}>
               <div style={summaryGridStyle}>
                 {[
-                  ['기준유가', `${data.fsc.basePriceKrwPerL}원/L`],
-                  ['현재 적용유가', `${data.fsc.appliedPriceKrwPerL}원/L`],
-                  ['분기 평균 예상 유가', `${data.fsc.quarterAverageKrwPerL}원/L`],
-                  ['기준유가 대비 차이금액', `${data.fsc.priceDiffKrwPerL}원/L`],
+                  ['기준유가', formatDecimalString(data.fsc.basePriceKrwPerL, '원/L')],
+                  ['현재 적용유가', formatDecimalString(data.fsc.appliedPriceKrwPerL, '원/L')],
+                  ['분기 평균 예상 유가', formatDecimalString(data.fsc.quarterAverageKrwPerL, '원/L')],
+                  ['기준유가 대비 차이금액', formatDecimalString(data.fsc.priceDiffKrwPerL, '원/L')],
                   ['기준유가 대비 차이율', formatRatioString(data.fsc.diffRatio)],
-                  ['FSC 30%', `${data.fsc.fscLowKrwPerL}원/L`],
-                  ['FSC 70%', `${data.fsc.fscHighKrwPerL}원/L`],
+                  ['FSC 30%', formatDecimalString(data.fsc.fscLowKrwPerL, '원/L')],
+                  ['FSC 70%', formatDecimalString(data.fsc.fscHighKrwPerL, '원/L')],
+
                   ['데이터 최신성', mapFreshnessStatus(data.fsc.dataFreshnessStatus)],
                   ['승인 상태', mapApprovalStatus(data.fsc.approvalStatus)],
                   ['신뢰도 등급', data.fsc.reliabilityGrade],
@@ -323,11 +341,12 @@ export function DashboardShell({ data }: DashboardShellProps) {
                 <div style={blockStyle}>
                   <div style={rowStyle}>
                     <span style={labelStyle}>최근 13주 주간 MAPE</span>
-                    <strong>{data.fsc.recent13wWeeklyPriceMape ? `${data.fsc.recent13wWeeklyPriceMape}%` : '기록 없음'}</strong>
+                    <strong>{formatDecimalString(data.fsc.recent13wWeeklyPriceMape, '%')}</strong>
                   </div>
                   <div style={rowStyle}>
                     <span style={labelStyle}>최근 26주 주간 MAE</span>
-                    <strong>{data.fsc.recent26wWeeklyPriceMae ? `${data.fsc.recent26wWeeklyPriceMae}원/L` : '기록 없음'}</strong>
+                    <strong>{formatDecimalString(data.fsc.recent26wWeeklyPriceMae, '원/L')}</strong>
+
                   </div>
                   <div style={rowStyle}>
                     <span style={labelStyle}>최근 4주 오차 추세</span>
@@ -341,32 +360,26 @@ export function DashboardShell({ data }: DashboardShellProps) {
                   </div>
                   <div style={rowStyle}>
                     <span style={labelStyle}>직전 대비</span>
-                    <strong>
-                      {data.support.currentPrice.absoluteChangeKrwPerL === null
-                        ? '직전 비교 불가'
-                        : `${data.support.currentPrice.absoluteChangeKrwPerL > 0 ? '+' : ''}${data.support.currentPrice.absoluteChangeKrwPerL.toFixed(3)}원/L`}
-                    </strong>
+                    <strong>{formatSignedPrice(data.support.currentPrice.absoluteChangeKrwPerL)}</strong>
                   </div>
                   <div style={rowStyle}>
                     <span style={labelStyle}>전일 변동률</span>
                     <strong>{formatPercent(data.support.currentPrice.percentChange)}</strong>
+
                   </div>
                 </div>
                 <div style={blockStyle}>
                   <div style={rowStyle}>
                     <span style={labelStyle}>참조 분기 월별 평균판매가격</span>
-                    <strong>
-                      {data.fsc.referenceQuarterAverageKrwPerL
-                        ? `${data.fsc.referenceQuarterAverageKrwPerL}원/L`
-                        : '기록 없음'}
-                    </strong>
+                    <strong>{formatDecimalString(data.fsc.referenceQuarterAverageKrwPerL, '원/L')}</strong>
                   </div>
                   {data.fsc.referenceMonthlyBasis.length > 0 ? (
                     <div style={{ display: 'grid', gap: 8 }}>
                       {data.fsc.referenceMonthlyBasis.map((row) => (
                         <div key={row.monthLabel} style={rowStyle}>
                           <span style={labelStyle}>{row.monthLabel}</span>
-                          <strong>{row.priceKrwPerL}원/L</strong>
+                          <strong>{formatDecimalString(row.priceKrwPerL, '원/L')}</strong>
+
                         </div>
                       ))}
                     </div>
@@ -422,9 +435,7 @@ export function DashboardShell({ data }: DashboardShellProps) {
                     ['최신 전국 평균 경유가', formatPrice(data.support.currentPrice.latestPriceKrwPerL)],
                     [
                       '직전 대비',
-                      data.support.currentPrice.absoluteChangeKrwPerL === null
-                        ? '직전 비교 불가'
-                        : `${data.support.currentPrice.absoluteChangeKrwPerL > 0 ? '+' : ''}${data.support.currentPrice.absoluteChangeKrwPerL.toFixed(3)}원/L`,
+                      formatSignedPrice(data.support.currentPrice.absoluteChangeKrwPerL),
                     ],
                     ['직전 가격', formatPrice(data.support.currentPrice.previousPriceKrwPerL)],
                     ['전일 변동률', formatPercent(data.support.currentPrice.percentChange)],

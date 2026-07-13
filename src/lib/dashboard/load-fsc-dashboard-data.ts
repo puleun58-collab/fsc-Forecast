@@ -22,8 +22,10 @@ function formatTimestamp(value: Date | null): string | null {
   return value ? value.toISOString() : null;
 }
 
+const PRICE_SCALE = 100;
+
 function roundPrice(value: number): number {
-  return Math.round(value * 1000) / 1000;
+  return Math.round(value * PRICE_SCALE) / PRICE_SCALE;
 }
 
 function deriveDirection(change: number | null): 'up' | 'down' | 'flat' {

@@ -24,7 +24,7 @@ function formatDiff(current: string, previous: string | null): string {
   }
 
   const diff = Number(current) - Number(previous);
-  return `${diff >= 0 ? '+' : ''}${diff.toFixed(3)}`;
+  return `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}`;
 }
 
 export default async function AdminPage() {

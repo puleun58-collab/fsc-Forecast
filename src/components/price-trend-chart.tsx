@@ -23,8 +23,10 @@ const mutedTextStyle: CSSProperties = {
   lineHeight: 1.6,
 };
 
+const DISPLAY_DECIMALS = 2;
+
 function formatPrice(value: number): string {
-  return `${value.toFixed(1)}원`;
+  return `${value.toFixed(DISPLAY_DECIMALS)}원`;
 }
 
 function buildPolyline(points: readonly FscDashboardTrendPoint[], width: number, height: number): string {

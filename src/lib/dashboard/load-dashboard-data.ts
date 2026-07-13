@@ -52,7 +52,8 @@ function createSummaryValues(
   const changeValue =
     status.absoluteChangeKrwPerL === null
       ? '직전 비교 불가'
-      : `${status.absoluteChangeKrwPerL > 0 ? '+' : ''}${status.absoluteChangeKrwPerL.toFixed(1)}원/L`;
+      : `${status.absoluteChangeKrwPerL > 0 ? '+' : ''}${status.absoluteChangeKrwPerL.toFixed(2)}원/L`;
+
   const changeTone =
     status.direction === 'up'
       ? 'negative'
@@ -63,7 +64,7 @@ function createSummaryValues(
   return [
     {
       label: '최신 전국 평균 경유가',
-      value: `${status.latestPriceKrwPerL.toFixed(3)}원/L`,
+      value: `${status.latestPriceKrwPerL.toFixed(2)}원/L`,
     },
     {
       label: '직전 대비',
