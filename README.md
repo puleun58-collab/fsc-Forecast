@@ -2,6 +2,56 @@
 
 전국 평균 자동차용 경유가만 다루는 MVP입니다. 오피넷 평균가격 수집, DB 기반 ingest/recompute snapshot, 주간·월간 집계, 4주·3개월 예측, 규칙 기반 해설, XLSX 내보내기까지 한 흐름으로 묶여 있습니다.
 
+## 0) 프로젝트 목적과 아키텍처
+
+이 저장소는 **전국 평균 자동차용 경유가 원천 데이터**를 유지하면서, 그 위에 **Active Quarter 기반 FSC 계산 이력**을 쌓는 구조입니다.
+
+핵심 구성은 아래처럼 분리됩니다.
+- `PriceRevisionLog` / `DailyPriceCurrent` — 오피넷 current truth 이력과 현재값
+- `RecomputeSnapshot` — 특정 시점의 원천 current truth, forecast, commentary, export를 묶는 snapshot
+- `ForecastRun` / `ForecastPoint` — 원천 예측 결과와 품질 gate
+- `QuarterSetting` — 현재 운영 중인 분기와 기준가/적용가/비율 설정
+- `FscResult` — 특정 quarter에 대한 immutable FSC 계산 결과
+- `FscQuarterWeek` — 해당 `FscResult.id`에만 속하는 actual/forecast 혼합 주차 행
+
+즉, `RecomputeSnapshot`은 원천 데이터 snapshot이고, `FscResult`는 그 snapshot을 참조해 계산한 **분기별 FSC 결과 이력**입니다. FSC 재계산은 기존 결과를 덮어쓰지 않고 새 `FscResult`와 새 `FscQuarterWeek` 묶음을 추가합니다.
+
+## 0.1) Active Quarter와 rollover
+
+- active quarter는 DB에서 `activeKey = "ACTIVE"` 한 건으로 유지합니다.
+- `ensureActiveQuarter()`는 active quarter가 없으면 최초 `2026 Q3`을 생성합니다.
+- active quarter가 종료되면 기존 quarter를 `closed`로 바꾸고 다음 quarter를 활성화합니다.
+- 서버가 여러 분기 동안 실행되지 않았더라도 현재 날짜를 포함하는 quarter까지 catch-up rollover를 반복합니다.
+- 분기 전환은 `Q4 -> 다음 해 Q1`, `Q1 -> 이전 해 Q4` 규칙을 따릅니다.
+
+## 0.2) actual-first와 forecast fallback
+
+FSC 주차 생성은 **actual-first** 원칙을 사용합니다.
+- 완료된 actual 주차가 있으면 `priceKind=actual`
+- 없으면 forecast 사용
+
+forecast fallback 우선순위는 아래와 같습니다.
+1. 해당 주차에 직접 대응하는 weekly forecast point
+2. 해당 월에 대응하는 monthly forecast point
+3. 가장 가까운 이전 forecast point carry-forward
+4. `QuarterSetting.appliedPriceKrwPerL`
+5. `QuarterSetting.basePriceKrwPerL`
+
+fallback 사용 여부와 종류는 `FscQuarterWeek.forecastSourceKind`, `fallbackUsed`, 그리고 `FscResult.calculationPayload`에 기록됩니다.
+
+## 0.3) FSC 계산식과 formula version
+
+현재 계산식 버전은 `fsc-v1`입니다.
+
+```text
+priceDiffKrwPerL = quarterAverageKrwPerL - basePriceKrwPerL
+diffRatio = priceDiffKrwPerL / basePriceKrwPerL
+fscLowKrwPerL = quarterAverageKrwPerL * (diffRatio * fscLowRate + 1)
+fscHighKrwPerL = quarterAverageKrwPerL * (diffRatio * fscHighRate + 1)
+```
+
+이 계산은 참고 엑셀 회귀값으로 검증하며, `appliedPriceKrwPerL`은 비교/표시용 값이지 산식 직접 입력값은 아닙니다.
+
 ## 1) 설치 방법
 
 ### 요구 사항
@@ -18,8 +68,9 @@ npm install
 ### 환경 변수 준비
 1. `.env.example`를 `.env.local`로 복사합니다.
 2. Docker Compose도 쓸 예정이면 `.env`도 따로 만듭니다.
-3. `OPINET_API_KEY`와 `DATABASE_URL`을 채우고, 필요하면 오피넷 기본 경로도 그대로 둡니다.
+3. `OPINET_API_KEY`와 `DATABASE_URL`을 채우고, 관리자 인증을 쓸 경우 `ADMIN_PASSWORD_HASH`, `ADMIN_SESSION_SECRET`도 함께 채웁니다.
 4. `.env.local` / `.env`에는 `NODE_ENV`를 직접 넣지 마세요.
+5. `ADMIN_SESSION_SECRET`은 최소 32바이트 이상 무작위 문자열을 사용하세요.
 
 예시:
 ```env
@@ -38,7 +89,19 @@ OPINET_STATS_PRICE_URL=https://www.opinet.co.kr/user/dopospdrg/dopOsPdrgSelect.d
 POSTGRES_DB=opinet_diesel_dashboard
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
+ADMIN_PASSWORD_HASH=
+ADMIN_SESSION_SECRET=
+ADMIN_SESSION_MAX_AGE_DAYS=14
+
 ```
+
+`ADMIN_PASSWORD_HASH`는 아래 명령으로 생성합니다.
+```bash
+npm run generate:admin-password-hash
+```
+- 원문 비밀번호는 `.env.example`, GitHub, 코드에 넣지 않습니다.
+- 출력된 한 줄만 `ADMIN_PASSWORD_HASH=` 값으로 복사합니다.
+
 
 고정해야 하는 값:
 - `RUNTIME_FAMILY=container-web-postgres-cron`
@@ -90,27 +153,117 @@ Compose 구성:
 npm run vercel-build
 ```
 
+Production DB 반영은 아래 순서를 권장합니다.
+```bash
+npx prisma migrate deploy
+npm run vercel-build
+```
+
 Vercel production 주소:
 - `https://fsc-forecast.vercel.app`
 
-### E. 현재 배포 주소
+### E. Vercel 환경변수
+필수:
+- `DATABASE_URL`
+- `OPINET_API_KEY`
+- `ADMIN_PASSWORD_HASH`
+- `ADMIN_SESSION_SECRET`
+
+기본값 허용:
+- `ADMIN_SESSION_MAX_AGE_DAYS=14`
+
+현재 코드 사용 시 함께 유지:
+- `OPINET_AVG_PRICE_URL`
+- `OPINET_RECENT_PRICE_URL`
+- `OPINET_STATS_PRICE_URL`
+- `RUNTIME_FAMILY`
+- `RUNTIME_ROLE`
+- `OPINET_DATASET_KEY`
+- `QUEUE_DOMAIN`
+- `APP_RUNTIME_ID`
+- `WORKER_RUNTIME_ID`
+- `SCHEDULED_JOB_NAME`
+
+비밀번호 인증 방식에서 불필요:
+- `ADMIN_EMAILS`
+- `AUTH_SECRET`
+- `AUTH_GOOGLE_ID`
+- `AUTH_GOOGLE_SECRET`
+
+### F. 현재 배포 주소
 - Production: `https://fsc-forecast.vercel.app`
+- FSC quarter XLSX: `https://fsc-forecast.vercel.app/export/fsc-quarter/xlsx`
 - Vercel project: `fsc-forecast`
 
-### F. FSC Active Quarter / Result API
+### G. 주요 public API
 - Active quarter: `/api/fsc/active-quarter`
 - Quarter list: `/api/fsc/quarters`
 - Current FSC result: `/api/fsc/current`
 - Quarter FSC result: `/api/fsc/quarter?year=2026&quarter=3`
 - Quarter week rows: `/api/fsc/quarter/weeks?year=2026&quarter=3`
+- FSC quarter XLSX: `/export/fsc-quarter/xlsx`
+- Existing snapshot XLSX: `/export/xlsx`
 
 The public FSC API serializes Decimal values as strings and returns empty-state responses when a quarter/result is not ready yet.
 
-
 Vercel 배포는 외부에서 접근 가능한 PostgreSQL `DATABASE_URL`이 필요합니다.
+
+### H. FSC quarter XLSX export
+- Active quarter download: `/export/fsc-quarter/xlsx`
+- Specific quarter download: `/export/fsc-quarter/xlsx?year=2026&quarter=3`
+- If `year` or `quarter` is missing on one side, the route returns `400`.
+- If the selected quarter has no FSC result yet, the route returns `404` with a clear message.
+
+### I. 관리자 인증과 API 보호
+- 로그인: `/admin/login`
+- 관리자 화면: `/admin`
+- 로그아웃: 로그인 후 관리자 화면의 `로그아웃` 버튼
+- 비밀번호는 `ADMIN_PASSWORD_HASH`로만 저장하고, 평문은 저장하지 않습니다.
+- 세션 쿠키는 `fsc_admin_session`이며 httpOnly + sameSite=strict로 발급됩니다.
+- `ADMIN_SESSION_SECRET`을 변경하면 기존 관리자 세션은 모두 무효화됩니다.
+- `ADMIN_SESSION_MAX_AGE_DAYS`로 세션 만료일을 조절합니다.
+- Vercel에는 `ADMIN_PASSWORD_HASH`, `ADMIN_SESSION_SECRET`, `ADMIN_SESSION_MAX_AGE_DAYS`를 environment variable로 등록해야 합니다.
+- 환경변수가 빠지면 관리자 기능은 우회되지 않고 fail-closed로 차단됩니다.
+- 관리자 상태 변경 API는 모두 비밀번호 세션 + same-origin 검사 + JSON content-type 검사를 통과해야 실행됩니다.
+- 승인 기록은 현재 `approvedBy = "password-admin"`으로 남기며, 사용자별 인증 도입 시 교체합니다.
+
+### J. 주요 admin API
+- `POST /api/admin/login`
+- `POST /api/admin/logout`
+- `POST /api/fsc/recompute`
+- `POST /api/fsc/approve`
+- `POST /api/fsc/quarter/rollover`
+- `POST /api/fsc/quarter/activate`
+
 
 
 ## 3) 데이터 수집/처리 명령
+
+## 3.1) Prisma migration과 배포 절차
+
+현재 저장소의 migration 목록:
+- `20260706_init`
+- `20260710075455_add_quarter_settings`
+- `20260710081716_add_fsc_models`
+
+로컬 개발 DB 점검:
+```bash
+npx prisma validate
+npx prisma generate
+npx prisma migrate deploy
+```
+
+Production / Vercel 배포 시:
+```bash
+npx prisma migrate deploy
+npm run vercel-build
+```
+
+주의:
+- `20260710081716_add_fsc_models` migration에는 기존 `fsc_results.metadata` 컬럼을 제거하는 구문이 있습니다.
+- production에서 해당 컬럼 데이터를 별도로 보존해야 한다면 `npx prisma migrate deploy` 전에 백업 여부를 먼저 확인하세요.
+
+이 프로젝트는 기존 Opinet ingest/forecast/commentary/export 구조를 유지한 채 Quarter/FSC 계층을 추가합니다. `RecomputeSnapshot`은 원천 snapshot이고, `FscResult`/`FscQuarterWeek`는 분기별 계산 이력입니다.
 
 ### 오피넷 raw JSON 저장
 ```bash
@@ -334,3 +487,4 @@ npm run build
 - `npm run sync:indicators` — 외부 지표 sync
 - `npm run worker` — scheduled worker entrypoint
 - `npm run vercel-build` — Vercel용 Prisma generate + production build
+- `npm run generate:admin-password-hash` — 관리자 비밀번호를 숨김 입력으로 hash 생성

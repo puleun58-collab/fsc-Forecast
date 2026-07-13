@@ -14,7 +14,8 @@
     "worker": "tsx src/worker/index.ts",
     "fetch:opinet": "tsx scripts/fetch-opinet.ts",
     "ingest:opinet": "tsx scripts/run-opinet-ingest.ts",
-    "sync:indicators": "tsx scripts/sync-external-indicators.ts"
+    "sync:indicators": "tsx scripts/sync-external-indicators.ts",
+    "generate:admin-password-hash": "node scripts/generate-admin-password-hash.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

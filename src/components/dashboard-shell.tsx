@@ -2,10 +2,10 @@ import type { CSSProperties, ReactNode } from 'react';
 
 import { PriceTrendChart } from './price-trend-chart';
 import { SectionCard } from './section-card';
-import type { DashboardData, DashboardExportItem, DashboardSummaryValue } from '@/lib/dashboard/types';
+import type { FscDashboardData, FscDashboardWeekItem } from '@/lib/dashboard/fsc-types';
 
 type DashboardShellProps = {
-  data: DashboardData;
+  data: FscDashboardData;
 };
 
 const panelStyle: CSSProperties = {
@@ -63,6 +63,20 @@ const rowStyle: CSSProperties = {
   gap: 8,
 };
 
+const disabledButtonStyle: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 'fit-content',
+  padding: '10px 14px',
+  borderRadius: 12,
+  border: '1px solid var(--border)',
+  background: '#f4f6f8',
+  color: 'var(--text-muted)',
+  fontWeight: 700,
+  cursor: 'not-allowed',
+};
+
 function formatTimestamp(value: string | null): string {
   return value ?? '기록 없음';
 }
@@ -71,21 +85,83 @@ function formatPrice(value: number | null): string {
   return value === null ? '데이터 없음' : `${value.toFixed(3)}원/L`;
 }
 
+function formatDecimalString(value: string | null, suffix = ''): string {
+  return value === null ? '기록 없음' : `${value}${suffix}`;
+}
+
 function formatPercent(value: number | null): string {
   return value === null ? '비교 불가' : `${value > 0 ? '+' : ''}${value.toFixed(3)}%`;
 }
 
-function getToneColor(tone: DashboardSummaryValue['tone']): string {
-  switch (tone) {
-    case 'positive':
-      return 'var(--status)';
-    case 'negative':
-      return '#b42318';
-    case 'muted':
-      return 'var(--text-muted)';
-    case 'default':
-    case undefined:
-      return 'var(--text)';
+function formatRatioString(value: string): string {
+  return `${(Number(value) * 100).toFixed(3)}%`;
+}
+
+function quarterLabel(year: number, quarter: number): string {
+  return `${year}년 ${quarter}분기`;
+}
+
+function mapApprovalStatus(value: string): string {
+  switch (value) {
+    case 'approved':
+      return '승인 완료';
+    case 'rejected':
+      return '반려';
+    case 'pending':
+    default:
+      return '승인 대기';
+  }
+}
+
+function mapFreshnessStatus(value: string): string {
+  switch (value) {
+    case 'fresh':
+      return '최신';
+    case 'delayed':
+      return '지연';
+    case 'stale':
+      return '오래됨';
+    case 'unavailable':
+    default:
+      return '확인 불가';
+  }
+}
+
+function mapResultStatus(freshness: string, approvalStatus: string): string {
+  if (approvalStatus === 'approved') {
+    return freshness === 'fresh' ? '승인 완료' : `승인 완료 · ${mapFreshnessStatus(freshness)}`;
+  }
+
+  return `${mapApprovalStatus(approvalStatus)} · ${mapFreshnessStatus(freshness)}`;
+}
+
+function mapTrendDirection(value: 'up' | 'down' | 'flat'): string {
+  switch (value) {
+    case 'up':
+      return '상승';
+    case 'down':
+      return '하락';
+    case 'flat':
+    default:
+      return '보합';
+  }
+}
+
+function mapForecastSourceKind(value: FscDashboardWeekItem['forecastSourceKind']): string {
+  switch (value) {
+    case 'weekly_point':
+      return '주간 forecast';
+    case 'monthly_point':
+      return '월간 forecast';
+    case 'carry_forward':
+      return '직전 forecast 승계';
+    case 'applied_price_fallback':
+      return '현재 적용유가 fallback';
+    case 'base_price_fallback':
+      return '기준유가 fallback';
+    case null:
+    default:
+      return '실제값 반영';
   }
 }
 
@@ -98,59 +174,60 @@ function renderUnavailable(title: string, copy: string): ReactNode {
   );
 }
 
-function renderExportItem(item: DashboardExportItem): ReactNode {
-  const href = `/export/${item.format}`;
-
+function renderWeekRows(weeks: readonly FscDashboardWeekItem[]): ReactNode {
   return (
-    <li key={item.format} style={blockStyle}>
-      <div style={rowStyle}>
-        <strong>{item.format.toUpperCase()}</strong>
-        <span style={{ color: item.availability === 'available' ? 'var(--status)' : 'var(--text-muted)' }}>
-          {item.availability === 'available' ? '다운로드 가능' : '준비 전'}
-        </span>
-      </div>
-      <span style={labelStyle}>완료 시각: {formatTimestamp(item.completedAt)}</span>
-      <span style={labelStyle}>저장 키: {item.storageKey ?? '기록 없음'}</span>
-      <a href={href} style={{ color: 'var(--accent)', fontWeight: 700, textDecoration: 'none' }}>
-        XLSX 다운로드
-      </a>
-      {item.unavailableReason ? <span style={labelStyle}>{item.unavailableReason}</span> : null}
-    </li>
+    <ul style={listStyle}>
+      {weeks.map((week) => (
+        <li key={week.sequenceNo} style={blockStyle}>
+          <div style={rowStyle}>
+            <strong>{week.sequenceNo}주차</strong>
+            <span style={{ color: week.priceKind === 'actual' ? 'var(--status)' : 'var(--text-muted)' }}>
+              {week.priceKind === 'actual' ? '실제값' : '예측값'}
+            </span>
+          </div>
+          <span style={labelStyle}>
+            {week.weekStartDate.slice(0, 10)} ~ {week.weekEndDate.slice(0, 10)} · ISO week {week.weekNo} · {week.targetMonth}월 귀속
+          </span>
+          <div style={summaryGridStyle}>
+            <div style={summaryCardStyle}>
+              <span style={labelStyle}>주차 가격</span>
+              <p style={valueStyle}>{formatDecimalString(week.priceKrwPerL, '원/L')}</p>
+            </div>
+            <div style={summaryCardStyle}>
+              <span style={labelStyle}>기준유가 대비 차이</span>
+              <p style={valueStyle}>{formatDecimalString(week.priceDiffKrwPerL, '원/L')}</p>
+            </div>
+            <div style={summaryCardStyle}>
+              <span style={labelStyle}>기준유가 대비 차이율</span>
+              <p style={valueStyle}>{formatRatioString(week.diffRatio)}</p>
+            </div>
+          </div>
+          <span style={labelStyle}>
+            소스: {mapForecastSourceKind(week.forecastSourceKind)}{week.fallbackUsed ? ' · fallback 사용' : ''}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
 export function DashboardShell({ data }: DashboardShellProps) {
-  if (data.availability === 'unavailable') {
+  if (data.state === 'unavailable') {
     return (
       <main className="dashboard-shell">
         <section className="dashboard-shell__hero">
           <p className="dashboard-shell__eyebrow">FSC calculation MVP</p>
           <h1 className="dashboard-shell__title">FSC Forecast Dashboard</h1>
           <p className="dashboard-shell__description">
-            공개 범위는 전국 평균 자동차용 경유가만 유지합니다. 현재는 데이터베이스 기반 공개 데이터를 읽을 수 없어
-            대시보드 전체를 비가용 상태로 노출합니다.
+            active quarter 기반 FSC 기준 시나리오를 불러오지 못해 현재는 대시보드를 비가용 상태로 표시합니다.
           </p>
         </section>
-        {renderUnavailable(data.unavailable.reason, data.unavailable.detail)}
+        {renderUnavailable(data.reason, data.detail)}
       </main>
     );
   }
 
-  const forecastBadge =
-    data.forecast.availability === 'available'
-      ? data.forecast.approvalState === 'approved'
-        ? '품질 게이트 통과'
-        : data.forecast.approvalState === 'degraded'
-          ? '저신뢰 공개'
-          : '대기 상태'
-      : '데이터 없음';
-
-  const commentaryBadge =
-    data.commentary.status === 'ready'
-      ? '규칙 기반 해설'
-      : data.commentary.status === 'insufficient_data'
-        ? '근거 부족'
-        : '데이터 없음';
+  const quarterText = quarterLabel(data.quarter.targetYear, data.quarter.targetQuarter);
 
   return (
     <main className="dashboard-shell">
@@ -158,151 +235,162 @@ export function DashboardShell({ data }: DashboardShellProps) {
         <p className="dashboard-shell__eyebrow">FSC calculation MVP</p>
         <h1 className="dashboard-shell__title">FSC Forecast Dashboard</h1>
         <p className="dashboard-shell__description">
-          최신 current truth와 성공한 recompute snapshot 기준으로 전국 평균 자동차용 경유가만 공개합니다. 지역별 수치,
-          추정치 보정, 임의 대체값은 표시하지 않습니다.
+          {quarterText} active quarter 기준으로 FSC 기준유가, 분기 평균 예상 유가, 주차별 actual/forecast 반영 결과를 공개합니다.
         </p>
-        <div className="dashboard-shell__meta" aria-label="대시보드 기준 정보">
-          <span className="dashboard-shell__meta-item">범위: {data.marketScope}</span>
-          <span className="dashboard-shell__meta-item">데이터셋: {data.datasetKey}</span>
-          <span className="dashboard-shell__meta-item">스냅샷: {data.snapshot.snapshotId}</span>
-          <span className="dashboard-shell__meta-item">컷오프: {formatTimestamp(data.snapshot.currentTruthCutoffAt)}</span>
+        <div className="dashboard-shell__meta" aria-label="분기 기준 정보">
+          <span className="dashboard-shell__meta-item">산출 대상 분기: {quarterText}</span>
+          <span className="dashboard-shell__meta-item">
+            참조 분기: {quarterLabel(data.quarter.referenceYear, data.quarter.referenceQuarter)}
+          </span>
+          <span className="dashboard-shell__meta-item">분기 시작: {data.quarter.quarterStartDate.slice(0, 10)}</span>
+          <span className="dashboard-shell__meta-item">분기 종료: {data.quarter.quarterEndDate.slice(0, 10)}</span>
         </div>
       </section>
 
       <div className="dashboard-shell__grid">
         <SectionCard
           title="현재 유가 및 FSC 기준"
-          badge="현재 진실값"
-          description="최신 스냅샷에 연결된 전국 평균 자동차용 경유가 현황입니다."
-          highlights={[
-            `기준일 ${data.status.latestPriceDate}`,
-            `커버리지 ${data.status.coverageStartDate ?? '없음'} ~ ${data.status.coverageEndDate ?? '없음'}`,
-            `현재 revision ${data.status.currentRevisionId}`,
-          ]}
+          badge={data.state === 'available' ? mapResultStatus(data.fsc.dataFreshnessStatus, data.fsc.approvalStatus) : '결과 없음'}
+          description={`${quarterText} 기준 FSC 산출 결과 요약입니다.`}
+          highlights={
+            data.state === 'available'
+              ? [
+                  `산출 기준일 ${data.fsc.createdAt.slice(0, 10)}`,
+                  `실제 반영 주차 ${data.fsc.actualWeekCount}주`,
+                  `예측 잔여 주차 ${data.fsc.forecastWeekCount}주`,
+                ]
+              : [quarterText, '아직 FSC 산출 결과가 없습니다.', '관리자 재계산 후 결과가 표시됩니다.']
+          }
           highlight
+          emptyStateTitle={data.state === 'empty' ? '아직 FSC 산출 결과가 없습니다.' : undefined}
+          emptyStateCopy={data.state === 'empty' ? '관리자 재계산 후 결과가 표시됩니다.' : undefined}
         >
-          <div style={panelStyle}>
-            <div style={summaryGridStyle}>
-              {data.summaryValues.map((item) => (
-                <div key={item.label} style={summaryCardStyle}>
-                  <span style={labelStyle}>{item.label}</span>
-                  <p style={{ ...valueStyle, color: getToneColor(item.tone) }}>{item.value}</p>
-                </div>
-              ))}
-            </div>
-            <div style={blockStyle}>
-              <div style={rowStyle}>
-                <span style={labelStyle}>직전 기준일</span>
-                <strong>{data.status.previousPriceDate ?? '없음'}</strong>
-              </div>
-              <div style={rowStyle}>
-                <span style={labelStyle}>직전 가격</span>
-                <strong>{formatPrice(data.status.previousPriceKrwPerL)}</strong>
-              </div>
-              <div style={rowStyle}>
-                <span style={labelStyle}>전일 변동률</span>
-                <strong>{formatPercent(data.status.percentChange)}</strong>
-              </div>
-              <div style={rowStyle}>
-                <span style={labelStyle}>원천 관측 시각</span>
-                <strong>{formatTimestamp(data.status.sourceObservedAt)}</strong>
-              </div>
-            </div>
-          </div>
-        </SectionCard>
-
-        <SectionCard
-          title="전국 평균 추이 차트"
-          badge="스냅샷 읽기 전용"
-          description="최신 스냅샷에 묶인 최근 30일 전국 평균 경유가 추이입니다."
-          highlights={[
-            `최신 주간 평균 ${formatPrice(data.trend.latestWeeklyAverageKrwPerL)}`,
-            `최신 월간 평균 ${formatPrice(data.trend.latestMonthlyAverageKrwPerL)}`,
-            '부분 갱신값이 아니라 동일 스냅샷 기준 데이터만 표시합니다.',
-          ]}
-        >
-          <PriceTrendChart points={data.trend.points} unavailableReason={data.trend.unavailableReason} />
-        </SectionCard>
-
-        <SectionCard
-          title="유가 예측 및 FSC 기준 시나리오"
-          badge={forecastBadge}
-          description="성공한 forecast run이 있으면 최신 스냅샷 기준 주간 4포인트, 월간 3포인트를 그대로 노출합니다."
-          highlights={[
-            data.forecast.generatedAt ? `생성 시각 ${data.forecast.generatedAt}` : '생성 시각 기록 없음',
-            data.forecast.mapePct === null ? 'MAPE 기록 없음' : `MAPE ${data.forecast.mapePct.toFixed(3)}%`,
-            data.forecast.maeKrwPerL === null ? 'MAE 기록 없음' : `MAE ${data.forecast.maeKrwPerL.toFixed(3)}원/L`,
-          ]}
-        >
-          {data.forecast.availability === 'available' ? (
+          {data.state === 'available' ? (
             <div style={panelStyle}>
-              {data.forecast.degradedReason ? (
-                <div style={blockStyle}>
-                  <strong>품질 게이트 메모</strong>
-                  <span style={labelStyle}>{data.forecast.degradedReason}</span>
-                </div>
-              ) : null}
               <div style={summaryGridStyle}>
-                {[...data.forecast.weeklyPoints, ...data.forecast.monthlyPoints].map((point) => (
-                  <div key={`${point.horizonKind}-${point.horizonIndex}`} style={summaryCardStyle}>
-                    <span style={labelStyle}>
-                      {point.horizonKind === 'weekly' ? `주간 +${point.horizonIndex}` : `월간 +${point.horizonIndex}`}
-                    </span>
-                    <p style={valueStyle}>{formatPrice(point.pointKrwPerL)}</p>
-                    <span style={labelStyle}>목표일 {point.targetDate}</span>
-                    <span style={labelStyle}>
-                      구간 {formatPrice(point.lowerBoundKrwPerL)} ~ {formatPrice(point.upperBoundKrwPerL)}
-                    </span>
+                {[
+                  ['기준유가', `${data.fsc.basePriceKrwPerL}원/L`],
+                  ['현재 적용유가', `${data.fsc.appliedPriceKrwPerL}원/L`],
+                  ['분기 평균 예상 유가', `${data.fsc.quarterAverageKrwPerL}원/L`],
+                  ['기준유가 대비 차이금액', `${data.fsc.priceDiffKrwPerL}원/L`],
+                  ['기준유가 대비 차이율', formatRatioString(data.fsc.diffRatio)],
+                  ['FSC 30%', `${data.fsc.fscLowKrwPerL}원/L`],
+                  ['FSC 70%', `${data.fsc.fscHighKrwPerL}원/L`],
+                  ['데이터 최신성', mapFreshnessStatus(data.fsc.dataFreshnessStatus)],
+                  ['승인 상태', mapApprovalStatus(data.fsc.approvalStatus)],
+                  ['신뢰도 등급', data.fsc.reliabilityGrade],
+                ].map(([label, value]) => (
+                  <div key={label} style={summaryCardStyle}>
+                    <span style={labelStyle}>{label}</span>
+                    <p style={valueStyle}>{value}</p>
+                  </div>
+                ))}
+              </div>
+              <div style={blockStyle}>
+                <div style={rowStyle}>
+                  <span style={labelStyle}>최근 13주 주간 MAPE</span>
+                  <strong>{data.fsc.recent13wWeeklyPriceMape ? `${data.fsc.recent13wWeeklyPriceMape}%` : '기록 없음'}</strong>
+                </div>
+                <div style={rowStyle}>
+                  <span style={labelStyle}>최근 26주 주간 MAE</span>
+                  <strong>{data.fsc.recent26wWeeklyPriceMae ? `${data.fsc.recent26wWeeklyPriceMae}원/L` : '기록 없음'}</strong>
+                </div>
+                <div style={rowStyle}>
+                  <span style={labelStyle}>최근 4주 오차 추세</span>
+                  <strong>{data.fsc.recent4wErrorTrend ?? '기록 없음'}</strong>
+                </div>
+              </div>
+            </div>
+          ) : undefined}
+        </SectionCard>
+
+        <SectionCard
+          title="Active Quarter 주차 반영 내역"
+          badge={data.state === 'available' ? `${data.fsc.weeks.length}개 주차` : '결과 없음'}
+          description="선택된 active quarter 최신 base 결과의 주차별 actual/forecast 반영 내역만 표시합니다."
+          highlights={
+            data.state === 'available'
+              ? [
+                  `실제값 ${data.fsc.actualWeekCount}주 · 예측값 ${data.fsc.forecastWeekCount}주`,
+                  '실제값이 존재하는 완료 주차는 forecast로 덮어쓰지 않습니다.',
+                  'sourceRecomputeSnapshotId·forecastRunId·revision id는 공개하지 않습니다.',
+                ]
+              : ['아직 FSC 산출 결과가 없습니다.', '관리자 재계산 후 주차 반영 내역이 표시됩니다.']
+          }
+          emptyStateTitle={data.state === 'empty' ? '아직 FSC 산출 결과가 없습니다.' : undefined}
+          emptyStateCopy={data.state === 'empty' ? '관리자 재계산 후 주차 반영 내역이 표시됩니다.' : undefined}
+        >
+          {data.state === 'available' ? renderWeekRows(data.fsc.weeks) : undefined}
+        </SectionCard>
+
+        <SectionCard
+          title="최신 오피넷 유가 참고값"
+          badge={data.support.currentPrice.availability === 'available' ? mapTrendDirection(data.support.currentPrice.direction) : '데이터 없음'}
+          description="FSC 판단 보조 정보로 최신 전국 평균 자동차용 경유가 상태를 함께 보여줍니다."
+          highlights={
+            data.support.currentPrice.availability === 'available'
+              ? [
+                  `기준일 ${data.support.currentPrice.latestPriceDate}`,
+                  `커버리지 ${data.support.currentPrice.coverageStartDate ?? '없음'} ~ ${data.support.currentPrice.coverageEndDate ?? '없음'}`,
+                  `원천 관측 시각 ${formatTimestamp(data.support.currentPrice.sourceObservedAt)}`,
+                ]
+              : []
+          }
+          emptyStateTitle={data.support.currentPrice.availability === 'unavailable' ? '오피넷 현재 유가를 불러오지 못했습니다.' : undefined}
+          emptyStateCopy={data.support.currentPrice.unavailableReason}
+        >
+          {data.support.currentPrice.availability === 'available' ? (
+            <div style={panelStyle}>
+              <div style={summaryGridStyle}>
+                {[
+                  ['최신 전국 평균 경유가', formatPrice(data.support.currentPrice.latestPriceKrwPerL)],
+                  [
+                    '직전 대비',
+                    data.support.currentPrice.absoluteChangeKrwPerL === null
+                      ? '직전 비교 불가'
+                      : `${data.support.currentPrice.absoluteChangeKrwPerL > 0 ? '+' : ''}${data.support.currentPrice.absoluteChangeKrwPerL.toFixed(3)}원/L`,
+                  ],
+                  ['직전 가격', formatPrice(data.support.currentPrice.previousPriceKrwPerL)],
+                  ['전일 변동률', formatPercent(data.support.currentPrice.percentChange)],
+                ].map(([label, value]) => (
+                  <div key={label} style={summaryCardStyle}>
+                    <span style={labelStyle}>{label}</span>
+                    <p style={valueStyle}>{value}</p>
                   </div>
                 ))}
               </div>
             </div>
-          ) : (
-            renderUnavailable('예측 데이터 사용 불가', data.forecast.unavailableReason ?? '예측 실행 기록이 없습니다.')
-          )}
+          ) : undefined}
         </SectionCard>
 
         <SectionCard
-          title="해설 블록"
-          badge={commentaryBadge}
-          description="Dubai·Brent·WTI·USD/KRW 최근 관측치를 근거로 같은 스냅샷 컷오프 안에서 규칙 기반 해설을 생성합니다."
+          title="전국 평균 유가 추이"
+          badge="보조 차트"
+          description="기존 오피넷 일별 current truth를 기반으로 최근 추이를 보조 정보로 유지합니다."
           highlights={[
-            data.commentary.generatedAt ? `생성 시각 ${data.commentary.generatedAt}` : '생성 시각 기록 없음',
-            'LLM 없이 규칙 기반 해설만 사용합니다.',
-            '근거 지표가 부족하면 부족하다고 그대로 노출합니다.',
+            `최신 주간 평균 ${formatPrice(data.support.trend.latestWeeklyAverageKrwPerL)}`,
+            `최신 월간 평균 ${formatPrice(data.support.trend.latestMonthlyAverageKrwPerL)}`,
+            'FSC 산출 중심 화면으로 전환했지만 추이 차트는 참고용으로 유지합니다.',
           ]}
         >
-          {data.commentary.text ? (
-            <div style={panelStyle}>
-              <div style={blockStyle}>
-                <strong>해설</strong>
-                <span style={{ lineHeight: 1.7 }}>{data.commentary.text}</span>
-              </div>
-              <ul style={listStyle}>
-                {data.commentary.signals.map((signal) => (
-                  <li key={signal.indicatorCode} style={blockStyle}>
-                    <strong>{signal.indicatorCode}</strong>
-                    <span style={labelStyle}>{signal.reasonText}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            renderUnavailable('해설 데이터 사용 불가', data.commentary.unavailableReason ?? '해설을 생성하지 못했습니다.')
-          )}
+          <PriceTrendChart points={data.support.trend.points} unavailableReason={data.support.trend.unavailableReason} />
         </SectionCard>
 
         <SectionCard
           title="FSC 산출표 다운로드"
-          badge="스냅샷 고정"
-          description="최신 성공 스냅샷에 연결된 XLSX 내보내기 실행 기록만 공개합니다."
+          badge={data.export.label}
+          description="FSC 전용 분기 산출표 XLSX route는 준비됐지만 public 화면에서는 비활성 상태로 유지합니다."
           highlights={[
-            `기준 snapshot ${data.exports.snapshotId ?? '없음'}`,
-            'XLSX 다운로드만 같은 스냅샷 식별자에 묶어서 공개합니다.',
-            '실행 기록이 없으면 준비되지 않았다고 그대로 표시합니다.',
+            'public 화면에서는 FSC 분기 XLSX 링크를 활성화하지 않습니다.',
+            '개발용 관리자 화면에서만 분기 산출표 다운로드를 제공합니다.',
           ]}
         >
-          <ul style={listStyle}>{data.exports.items.map((item) => renderExportItem(item))}</ul>
+          <div style={blockStyle}>
+            <button type="button" disabled style={disabledButtonStyle}>
+              FSC 분기 XLSX 공개 비활성
+            </button>
+            <span style={labelStyle}>{data.export.message}</span>
+          </div>
         </SectionCard>
       </div>
     </main>

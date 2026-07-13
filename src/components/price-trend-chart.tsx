@@ -1,9 +1,9 @@
 import type { CSSProperties } from 'react';
 
-import type { DashboardTrendPoint } from '@/lib/dashboard/types';
+import type { FscDashboardTrendPoint } from '@/lib/dashboard/fsc-types';
 
 type PriceTrendChartProps = {
-  points: readonly DashboardTrendPoint[];
+  points: readonly FscDashboardTrendPoint[];
   unavailableReason?: string;
 };
 
@@ -27,7 +27,7 @@ function formatPrice(value: number): string {
   return `${value.toFixed(1)}원`;
 }
 
-function buildPolyline(points: readonly DashboardTrendPoint[], width: number, height: number): string {
+function buildPolyline(points: readonly FscDashboardTrendPoint[], width: number, height: number): string {
   if (points.length === 0) {
     return '';
   }

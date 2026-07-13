@@ -1,10 +1,10 @@
 import { DashboardShell } from '@/components/dashboard-shell';
-import { loadDashboardData } from '@/lib/dashboard/load-dashboard-data';
+import { loadFscDashboardData } from '@/lib/dashboard/load-fsc-dashboard-data';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  const data = await loadDashboardData();
+  const data = await loadFscDashboardData();
 
   return <DashboardShell data={data} />;
 }

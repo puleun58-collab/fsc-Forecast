@@ -1,0 +1,262 @@
+import { RunStatus } from '@prisma/client';
+
+import { buildSeriesSnapshot, NATIONAL_AVERAGE_DATASET_KEY } from '@/lib/aggregates';
+import { db } from '@/lib/db';
+import { findLatestBaseFscResultByQuarter } from '@/lib/fsc/load-latest-fsc-result';
+import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
+import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
+
+import type {
+  FscDashboardCurrentPriceSection,
+  FscDashboardData,
+  FscDashboardQuarterSummary,
+  FscDashboardSupportSection,
+  FscDashboardTrendSection,
+} from './fsc-types';
+
+function formatDate(value: Date): string {
+  return value.toISOString().slice(0, 10);
+}
+
+function formatTimestamp(value: Date | null): string | null {
+  return value ? value.toISOString() : null;
+}
+
+function roundPrice(value: number): number {
+  return Math.round(value * 1000) / 1000;
+}
+
+function deriveDirection(change: number | null): 'up' | 'down' | 'flat' {
+  if (change === null || change === 0) {
+    return 'flat';
+  }
+
+  return change > 0 ? 'up' : 'down';
+}
+
+function normalizeError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return '알 수 없는 오류가 발생했습니다.';
+}
+
+function toQuarterSummary(value: {
+  targetYear: number;
+  targetQuarter: number;
+  referenceYear: number;
+  referenceQuarter: number;
+  quarterStartDate: Date;
+  quarterEndDate: Date;
+  status: string;
+  isActive: boolean;
+}): FscDashboardQuarterSummary {
+  return {
+    targetYear: value.targetYear,
+    targetQuarter: value.targetQuarter,
+    referenceYear: value.referenceYear,
+    referenceQuarter: value.referenceQuarter,
+    quarterStartDate: value.quarterStartDate.toISOString(),
+    quarterEndDate: value.quarterEndDate.toISOString(),
+    status: value.status,
+    isActive: value.isActive,
+  };
+}
+
+async function loadSupportSection(): Promise<FscDashboardSupportSection> {
+  const snapshot = await db.recomputeSnapshot.findFirst({
+    where: {
+      datasetKey: NATIONAL_AVERAGE_DATASET_KEY,
+      status: RunStatus.succeeded,
+    },
+    orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+    select: {
+      id: true,
+      currentTruthCutoffAt: true,
+    },
+  });
+
+  if (snapshot === null) {
+    const unavailableCurrent: FscDashboardCurrentPriceSection = {
+      availability: 'unavailable',
+      latestPriceDate: null,
+      latestPriceKrwPerL: null,
+      previousPriceDate: null,
+      previousPriceKrwPerL: null,
+      absoluteChangeKrwPerL: null,
+      percentChange: null,
+      direction: 'flat',
+      coverageStartDate: null,
+      coverageEndDate: null,
+      sourceObservedAt: null,
+      unavailableReason: '전국 평균 오피넷 스냅샷이 아직 없습니다.',
+    };
+
+    const unavailableTrend: FscDashboardTrendSection = {
+      availability: 'unavailable',
+      points: [],
+      latestWeeklyAverageKrwPerL: null,
+      latestMonthlyAverageKrwPerL: null,
+      unavailableReason: '추이 차트를 그릴 스냅샷 데이터가 아직 없습니다.',
+    };
+
+    return {
+      currentPrice: unavailableCurrent,
+      trend: unavailableTrend,
+    };
+  }
+
+  const currentRows = await db.dailyPriceCurrent.findMany({
+    where: {
+      datasetKey: NATIONAL_AVERAGE_DATASET_KEY,
+      latestRecomputeSnapshotId: snapshot.id,
+    },
+    orderBy: {
+      priceDate: 'asc',
+    },
+    include: {
+      currentRevision: {
+        select: {
+          observedPriceKrwPerL: true,
+          sourceObservedAt: true,
+        },
+      },
+    },
+  });
+
+  if (currentRows.length === 0) {
+    return {
+      currentPrice: {
+        availability: 'unavailable',
+        latestPriceDate: null,
+        latestPriceKrwPerL: null,
+        previousPriceDate: null,
+        previousPriceKrwPerL: null,
+        absoluteChangeKrwPerL: null,
+        percentChange: null,
+        direction: 'flat',
+        coverageStartDate: null,
+        coverageEndDate: null,
+        sourceObservedAt: null,
+        unavailableReason: '최신 스냅샷에 연결된 전국 평균 현재 가격이 없습니다.',
+      },
+      trend: {
+        availability: 'unavailable',
+        points: [],
+        latestWeeklyAverageKrwPerL: null,
+        latestMonthlyAverageKrwPerL: null,
+        unavailableReason: '최근 추이를 그릴 일별 데이터가 아직 없습니다.',
+      },
+    };
+  }
+
+  const seriesSnapshot = buildSeriesSnapshot({
+    datasetKey: NATIONAL_AVERAGE_DATASET_KEY,
+    currentTruthCutoffAt: snapshot.currentTruthCutoffAt,
+    dailyTruth: currentRows.map((row) => ({
+      priceDate: row.priceDate,
+      observedPriceKrwPerL: Number(row.currentRevision.observedPriceKrwPerL),
+      datasetKey: row.datasetKey,
+      currentRevisionId: row.currentRevisionId,
+      latestRecomputeSnapshotId: row.latestRecomputeSnapshotId,
+    })),
+  });
+
+  const latestRow = currentRows[currentRows.length - 1];
+  const previousRow = currentRows[currentRows.length - 2] ?? null;
+  const latestPriceKrwPerL = Number(latestRow.currentRevision.observedPriceKrwPerL);
+  const previousPriceKrwPerL = previousRow ? Number(previousRow.currentRevision.observedPriceKrwPerL) : null;
+  const absoluteChangeKrwPerL =
+    previousPriceKrwPerL === null ? null : roundPrice(latestPriceKrwPerL - previousPriceKrwPerL);
+  const percentChange =
+    previousPriceKrwPerL === null || previousPriceKrwPerL === 0
+      ? null
+      : roundPrice((absoluteChangeKrwPerL! / previousPriceKrwPerL) * 100);
+
+  return {
+    currentPrice: {
+      availability: 'available',
+      latestPriceDate: formatDate(latestRow.priceDate),
+      latestPriceKrwPerL,
+      previousPriceDate: previousRow ? formatDate(previousRow.priceDate) : null,
+      previousPriceKrwPerL,
+      absoluteChangeKrwPerL,
+      percentChange,
+      direction: deriveDirection(absoluteChangeKrwPerL),
+      coverageStartDate: seriesSnapshot.coverageStartDate,
+      coverageEndDate: seriesSnapshot.coverageEndDate,
+      sourceObservedAt: formatTimestamp(latestRow.currentRevision.sourceObservedAt),
+    },
+    trend: {
+      availability: seriesSnapshot.daily.points.length > 1 ? 'available' : 'unavailable',
+      points: seriesSnapshot.daily.points.slice(-30).map((point) => ({
+        date: point.priceDate,
+        priceKrwPerL: point.observedPriceKrwPerL,
+      })),
+      latestWeeklyAverageKrwPerL: seriesSnapshot.latest.weekly?.averagePriceKrwPerL ?? null,
+      latestMonthlyAverageKrwPerL: seriesSnapshot.latest.monthly?.averagePriceKrwPerL ?? null,
+      unavailableReason:
+        seriesSnapshot.daily.points.length > 1 ? undefined : '최근 추이를 그릴 수 있을 만큼의 일별 데이터가 없습니다.',
+    },
+  };
+}
+
+export async function loadFscDashboardData(): Promise<FscDashboardData> {
+  try {
+    const quarter = await ensureActiveQuarter();
+    const support = await loadSupportSection();
+    const result = await findLatestBaseFscResultByQuarter(quarter.targetYear, quarter.targetQuarter);
+    const exportSection = {
+      status: 'coming_soon' as const,
+      label: '공개 비활성',
+      message: 'FSC 분기 XLSX는 관리자 화면에서만 다운로드할 수 있습니다.',
+    };
+
+    if (result === null) {
+      return {
+        state: 'empty',
+        quarter: toQuarterSummary(quarter),
+        support,
+        export: exportSection,
+      };
+    }
+
+    const fsc = serializeFscResultDto(result);
+
+    return {
+      state: 'available',
+      quarter: toQuarterSummary(quarter),
+      support,
+      export: exportSection,
+      fsc: {
+        resultId: fsc.id,
+        createdAt: fsc.createdAt,
+        approvalStatus: fsc.approvalStatus,
+        dataFreshnessStatus: fsc.dataFreshnessStatus,
+        reliabilityGrade: fsc.reliabilityGrade,
+        basePriceKrwPerL: fsc.basePriceKrwPerL,
+        appliedPriceKrwPerL: fsc.appliedPriceKrwPerL,
+        quarterAverageKrwPerL: fsc.quarterAverageKrwPerL,
+        priceDiffKrwPerL: fsc.priceDiffKrwPerL,
+        diffRatio: fsc.diffRatio,
+        fscLowRate: fsc.fscLowRate,
+        fscHighRate: fsc.fscHighRate,
+        fscLowKrwPerL: fsc.fscLowKrwPerL,
+        fscHighKrwPerL: fsc.fscHighKrwPerL,
+        actualWeekCount: fsc.actualWeekCount,
+        forecastWeekCount: fsc.forecastWeekCount,
+        recent13wWeeklyPriceMape: fsc.qualityMetrics.recent13wWeeklyPriceMape,
+        recent26wWeeklyPriceMae: fsc.qualityMetrics.recent26wWeeklyPriceMae,
+        recent4wErrorTrend: fsc.qualityMetrics.recent4wErrorTrend,
+        weeks: fsc.weeks,
+      },
+    };
+  } catch (error) {
+    return {
+      state: 'unavailable',
+      reason: 'active quarter FSC 대시보드를 불러오지 못했습니다.',
+      detail: normalizeError(error),
+    };
+  }
+}
