@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 type SectionCardProps = {
   title: string;
-  badge: string;
+  badge: ReactNode;
   description: string;
   highlights?: readonly string[];
   highlight?: boolean;
@@ -25,11 +25,15 @@ export function SectionCard({
   emptyStateTitle,
   emptyStateCopy,
 }: SectionCardProps) {
+  const badgeContent = typeof badge === 'string' || typeof badge === 'number'
+    ? <span className="section-card__badge-pill">{badge}</span>
+    : badge;
+
   return (
     <section className={[highlight ? 'section-card section-card--highlight' : 'section-card', className].filter(Boolean).join(' ')}>
       <div className="section-card__header">
         <h2 className="section-card__title">{title}</h2>
-        <span className="section-card__badge">{badge}</span>
+        <div className="section-card__badge">{badgeContent}</div>
       </div>
       <div className="section-card__body">
         <p className="section-card__description">{description}</p>

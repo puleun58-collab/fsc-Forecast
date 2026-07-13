@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { PriceTrendChart } from './price-trend-chart';
 import { SectionCard } from './section-card';
@@ -8,79 +8,15 @@ type DashboardShellProps = {
   data: FscDashboardData;
 };
 
-const panelStyle: CSSProperties = {
-  display: 'grid',
-  gap: 16,
-};
-
-const summaryGridStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-  gap: 12,
-};
-
-const summaryCardStyle: CSSProperties = {
-  display: 'grid',
-  gap: 6,
-  padding: 16,
-  border: '1px solid var(--border)',
-  borderRadius: 16,
-  background: 'var(--surface-strong)',
-  boxShadow: 'var(--shadow-soft)',
-};
-
-const labelStyle: CSSProperties = {
-  color: 'var(--text-muted)',
-  fontSize: '0.84rem',
-};
-
-const valueStyle: CSSProperties = {
-  margin: 0,
-  fontSize: '1.1rem',
-  fontWeight: 700,
-};
-
-const compactSummaryStyle: CSSProperties = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: 8,
-};
-
-const compactSummaryItemStyle: CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 6,
-  padding: '8px 10px',
-  borderRadius: 999,
-  border: '1px solid var(--border)',
-  background: 'var(--surface-strong)',
-  boxShadow: 'var(--shadow-soft)',
-  fontSize: '0.84rem',
-};
-
-const blockStyle: CSSProperties = {
-  display: 'grid',
-  gap: 10,
-  padding: 16,
-  border: '1px solid var(--border)',
-  borderRadius: 16,
-  background: 'var(--surface-muted)',
-};
-
-const rowStyle: CSSProperties = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  justifyContent: 'space-between',
-  gap: 8,
-};
-
-
+type StatusTone = 'success' | 'warning' | 'approved' | 'danger' | 'neutral';
+type SummaryCardTone = 'default' | 'brand' | 'success' | 'warning' | 'approved' | 'danger';
 
 const DISPLAY_DECIMALS = 2;
 
 function formatTimestamp(value: string | null): string {
   return value ?? '기록 없음';
 }
+
 function formatSignedPrice(value: number | null): string {
   if (value === null) {
     return '직전 비교 불가';
@@ -88,7 +24,6 @@ function formatSignedPrice(value: number | null): string {
 
   return `${value > 0 ? '+' : ''}${value.toFixed(DISPLAY_DECIMALS)}원/L`;
 }
-
 
 function formatPrice(value: number | null): string {
   return value === null ? '데이터 없음' : `${value.toFixed(DISPLAY_DECIMALS)}원/L`;
@@ -111,7 +46,6 @@ function formatRatioString(value: string): string {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? `${(parsed * 100).toFixed(DISPLAY_DECIMALS)}%` : `${value}%`;
 }
-
 
 function quarterLabel(year: number, quarter: number): string {
   return `${year}년 ${quarter}분기`;
@@ -141,14 +75,6 @@ function mapFreshnessStatus(value: string): string {
     default:
       return '확인 불가';
   }
-}
-
-function mapResultStatus(freshness: string, approvalStatus: string): string {
-  if (approvalStatus === 'approved') {
-    return freshness === 'fresh' ? '승인 완료' : `승인 완료 · ${mapFreshnessStatus(freshness)}`;
-  }
-
-  return `${mapApprovalStatus(approvalStatus)} · ${mapFreshnessStatus(freshness)}`;
 }
 
 function mapTrendDirection(value: 'up' | 'down' | 'flat'): string {
@@ -181,6 +107,57 @@ function mapForecastSourceKind(value: FscDashboardWeekItem['forecastSourceKind']
   }
 }
 
+function getApprovalTone(value: string): StatusTone {
+  switch (value) {
+    case 'approved':
+      return 'approved';
+    case 'rejected':
+      return 'danger';
+    case 'pending':
+    default:
+      return 'warning';
+  }
+}
+
+function getFreshnessTone(value: string): StatusTone {
+  switch (value) {
+    case 'fresh':
+      return 'success';
+    case 'delayed':
+      return 'warning';
+    case 'stale':
+    case 'unavailable':
+    default:
+      return 'danger';
+  }
+}
+
+function getStatusBadgeClassName(tone: StatusTone): string {
+  return `dashboard-shell__status-badge dashboard-shell__status-badge--${tone}`;
+}
+
+function getMetricCardTone(label: string, approvalStatus: string, freshnessStatus: string): SummaryCardTone {
+  if (
+    label === '현재 적용유가' ||
+    label === '분기 평균 예상 유가' ||
+    label === '기준유가 대비 차이금액'
+  ) {
+    return 'brand';
+  }
+
+  if (label === '데이터 최신성') {
+    const tone = getFreshnessTone(freshnessStatus);
+    return tone === 'success' ? 'success' : tone === 'warning' ? 'warning' : 'danger';
+  }
+
+  if (label === '승인 상태') {
+    const tone = getApprovalTone(approvalStatus);
+    return tone === 'approved' ? 'approved' : tone === 'warning' ? 'warning' : 'danger';
+  }
+
+  return 'default';
+}
+
 function renderUnavailable(title: string, copy: string): ReactNode {
   return (
     <div className="section-card__placeholder" aria-label={title}>
@@ -190,12 +167,24 @@ function renderUnavailable(title: string, copy: string): ReactNode {
   );
 }
 
+function renderResultStatusBadges(approvalStatus: string, freshnessStatus: string): ReactNode {
+  const approvalTone = getApprovalTone(approvalStatus);
+  const freshnessTone = getFreshnessTone(freshnessStatus);
+
+  return (
+    <div className="dashboard-shell__status-group" aria-label="결과 상태">
+      <span className={getStatusBadgeClassName(approvalTone)}>{mapApprovalStatus(approvalStatus)}</span>
+      <span className={getStatusBadgeClassName(freshnessTone)}>{`데이터 ${mapFreshnessStatus(freshnessStatus)}`}</span>
+    </div>
+  );
+}
+
 function renderWeekRows(weeks: readonly FscDashboardWeekItem[]): ReactNode {
   return (
-    <div style={panelStyle}>
-      <div style={compactSummaryStyle}>
+    <div className="dashboard-shell__panel">
+      <div className="dashboard-shell__summary-chips">
         {weeks.map((week) => (
-          <span key={`summary-${week.sequenceNo}`} style={compactSummaryItemStyle}>
+          <span key={`summary-${week.sequenceNo}`} className="dashboard-shell__summary-chip">
             <strong>{week.sequenceNo}주차</strong>
             <span>{week.priceKind === 'actual' ? '실제' : '예측'}</span>
             <span>{formatDecimalString(week.priceKrwPerL, '원/L')}</span>
@@ -220,7 +209,7 @@ function renderWeekRows(weeks: readonly FscDashboardWeekItem[]): ReactNode {
               <tr key={week.sequenceNo}>
                 <td>
                   <strong>{week.sequenceNo}주차</strong>
-                  <div style={labelStyle}>ISO week {week.weekNo} · {week.targetMonth}월</div>
+                  <div className="dashboard-shell__cell-meta">ISO week {week.weekNo} · {week.targetMonth}월</div>
                 </td>
                 <td>{week.weekStartDate.slice(0, 10)} ~ {week.weekEndDate.slice(0, 10)}</td>
                 <td>
@@ -277,7 +266,7 @@ export function DashboardShell({ data }: DashboardShellProps) {
           {quarterText} active quarter 기준으로 FSC 기준유가, 분기 평균 예상 유가, 주차별 actual/forecast 반영 결과를 공개합니다.
         </p>
         <div className="dashboard-shell__meta" aria-label="분기 기준 정보">
-          <span className="dashboard-shell__meta-item">산출 대상 분기: {quarterText}</span>
+          <span className="dashboard-shell__meta-item dashboard-shell__meta-item--active">산출 대상 분기: {quarterText}</span>
           <span className="dashboard-shell__meta-item">
             참조 분기: {quarterLabel(data.quarter.referenceYear, data.quarter.referenceQuarter)}
           </span>
@@ -289,7 +278,11 @@ export function DashboardShell({ data }: DashboardShellProps) {
       <div className="dashboard-shell__stack">
         <SectionCard
           title="현재 유가 및 FSC 기준"
-          badge={data.state === 'available' ? mapResultStatus(data.fsc.dataFreshnessStatus, data.fsc.approvalStatus) : '결과 없음'}
+          badge={
+            data.state === 'available'
+              ? renderResultStatusBadges(data.fsc.approvalStatus, data.fsc.dataFreshnessStatus)
+              : '결과 없음'
+          }
           description={`${quarterText} 기준 FSC 산출 결과 요약입니다.`}
           highlights={
             data.state === 'available'
@@ -305,8 +298,8 @@ export function DashboardShell({ data }: DashboardShellProps) {
           emptyStateCopy={data.state === 'empty' ? '관리자 재계산 후 결과가 표시됩니다.' : undefined}
         >
           {data.state === 'available' ? (
-            <div style={panelStyle}>
-              <div style={summaryGridStyle}>
+            <div className="dashboard-shell__panel">
+              <div className="dashboard-shell__summary-grid">
                 {[
                   ['기준유가', formatDecimalString(data.fsc.basePriceKrwPerL, '원/L')],
                   ['현재 적용유가', formatDecimalString(data.fsc.appliedPriceKrwPerL, '원/L')],
@@ -315,65 +308,68 @@ export function DashboardShell({ data }: DashboardShellProps) {
                   ['기준유가 대비 차이율', formatRatioString(data.fsc.diffRatio)],
                   ['FSC 30%', formatDecimalString(data.fsc.fscLowKrwPerL, '원/L')],
                   ['FSC 70%', formatDecimalString(data.fsc.fscHighKrwPerL, '원/L')],
-
                   ['데이터 최신성', mapFreshnessStatus(data.fsc.dataFreshnessStatus)],
                   ['승인 상태', mapApprovalStatus(data.fsc.approvalStatus)],
                   ['신뢰도 등급', data.fsc.reliabilityGrade],
                 ].map(([label, value]) => (
-                  <div key={label} style={summaryCardStyle}>
-                    <span style={labelStyle}>{label}</span>
-                    <p style={valueStyle}>{value}</p>
+                  <div
+                    key={label}
+                    className={`dashboard-shell__summary-card dashboard-shell__summary-card--${getMetricCardTone(
+                      label,
+                      data.fsc.approvalStatus,
+                      data.fsc.dataFreshnessStatus,
+                    )}`}
+                  >
+                    <span className="dashboard-shell__metric-label">{label}</span>
+                    <p className="dashboard-shell__metric-value">{value}</p>
                   </div>
                 ))}
               </div>
               <div className="dashboard-shell__support-grid">
-                <div style={blockStyle}>
-                  <div style={rowStyle}>
-                    <span style={labelStyle}>최근 13주 주간 MAPE</span>
-                    <strong>{formatDecimalString(data.fsc.recent13wWeeklyPriceMape, '%')}</strong>
+                <div className="dashboard-shell__info-block">
+                  <div className="dashboard-shell__info-row">
+                    <span className="dashboard-shell__metric-label">최근 13주 주간 MAPE</span>
+                    <strong className="dashboard-shell__info-value">{formatDecimalString(data.fsc.recent13wWeeklyPriceMape, '%')}</strong>
                   </div>
-                  <div style={rowStyle}>
-                    <span style={labelStyle}>최근 26주 주간 MAE</span>
-                    <strong>{formatDecimalString(data.fsc.recent26wWeeklyPriceMae, '원/L')}</strong>
-
+                  <div className="dashboard-shell__info-row">
+                    <span className="dashboard-shell__metric-label">최근 26주 주간 MAE</span>
+                    <strong className="dashboard-shell__info-value">{formatDecimalString(data.fsc.recent26wWeeklyPriceMae, '원/L')}</strong>
                   </div>
-                  <div style={rowStyle}>
-                    <span style={labelStyle}>최근 4주 오차 추세</span>
-                    <strong>{data.fsc.recent4wErrorTrend ?? '기록 없음'}</strong>
-                  </div>
-                </div>
-                <div style={blockStyle}>
-                  <div style={rowStyle}>
-                    <span style={labelStyle}>최신 전국 평균 경유가</span>
-                    <strong>{formatPrice(data.support.currentPrice.latestPriceKrwPerL)}</strong>
-                  </div>
-                  <div style={rowStyle}>
-                    <span style={labelStyle}>직전 대비</span>
-                    <strong>{formatSignedPrice(data.support.currentPrice.absoluteChangeKrwPerL)}</strong>
-                  </div>
-                  <div style={rowStyle}>
-                    <span style={labelStyle}>전일 변동률</span>
-                    <strong>{formatPercent(data.support.currentPrice.percentChange)}</strong>
-
+                  <div className="dashboard-shell__info-row">
+                    <span className="dashboard-shell__metric-label">최근 4주 오차 추세</span>
+                    <strong className="dashboard-shell__info-value">{data.fsc.recent4wErrorTrend ?? '기록 없음'}</strong>
                   </div>
                 </div>
-                <div style={blockStyle}>
-                  <div style={rowStyle}>
-                    <span style={labelStyle}>참조 분기 월별 평균판매가격</span>
-                    <strong>{formatDecimalString(data.fsc.referenceQuarterAverageKrwPerL, '원/L')}</strong>
+                <div className="dashboard-shell__info-block">
+                  <div className="dashboard-shell__info-row">
+                    <span className="dashboard-shell__metric-label">최신 전국 평균 경유가</span>
+                    <strong className="dashboard-shell__info-value">{formatPrice(data.support.currentPrice.latestPriceKrwPerL)}</strong>
+                  </div>
+                  <div className="dashboard-shell__info-row">
+                    <span className="dashboard-shell__metric-label">직전 대비</span>
+                    <strong className="dashboard-shell__info-value">{formatSignedPrice(data.support.currentPrice.absoluteChangeKrwPerL)}</strong>
+                  </div>
+                  <div className="dashboard-shell__info-row">
+                    <span className="dashboard-shell__metric-label">전일 변동률</span>
+                    <strong className="dashboard-shell__info-value">{formatPercent(data.support.currentPrice.percentChange)}</strong>
+                  </div>
+                </div>
+                <div className="dashboard-shell__info-block">
+                  <div className="dashboard-shell__info-row">
+                    <span className="dashboard-shell__metric-label">참조 분기 월별 평균판매가격</span>
+                    <strong className="dashboard-shell__info-value">{formatDecimalString(data.fsc.referenceQuarterAverageKrwPerL, '원/L')}</strong>
                   </div>
                   {data.fsc.referenceMonthlyBasis.length > 0 ? (
-                    <div style={{ display: 'grid', gap: 8 }}>
+                    <div className="dashboard-shell__info-list">
                       {data.fsc.referenceMonthlyBasis.map((row) => (
-                        <div key={row.monthLabel} style={rowStyle}>
-                          <span style={labelStyle}>{row.monthLabel}</span>
-                          <strong>{formatDecimalString(row.priceKrwPerL, '원/L')}</strong>
-
+                        <div key={row.monthLabel} className="dashboard-shell__info-row">
+                          <span className="dashboard-shell__metric-label">{row.monthLabel}</span>
+                          <strong className="dashboard-shell__info-value">{formatDecimalString(row.priceKrwPerL, '원/L')}</strong>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <span style={labelStyle}>공식 월간 평균판매가격이 아직 없습니다.</span>
+                    <span className="dashboard-shell__metric-label">공식 월간 평균판매가격이 아직 없습니다.</span>
                   )}
                 </div>
               </div>
@@ -418,20 +414,17 @@ export function DashboardShell({ data }: DashboardShellProps) {
             emptyStateCopy={data.support.currentPrice.unavailableReason}
           >
             {data.support.currentPrice.availability === 'available' ? (
-              <div style={panelStyle}>
-                <div style={summaryGridStyle}>
+              <div className="dashboard-shell__panel">
+                <div className="dashboard-shell__summary-grid">
                   {[
                     ['최신 전국 평균 경유가', formatPrice(data.support.currentPrice.latestPriceKrwPerL)],
-                    [
-                      '직전 대비',
-                      formatSignedPrice(data.support.currentPrice.absoluteChangeKrwPerL),
-                    ],
+                    ['직전 대비', formatSignedPrice(data.support.currentPrice.absoluteChangeKrwPerL)],
                     ['직전 가격', formatPrice(data.support.currentPrice.previousPriceKrwPerL)],
                     ['전일 변동률', formatPercent(data.support.currentPrice.percentChange)],
                   ].map(([label, value]) => (
-                    <div key={label} style={summaryCardStyle}>
-                      <span style={labelStyle}>{label}</span>
-                      <p style={valueStyle}>{value}</p>
+                    <div key={label} className="dashboard-shell__summary-card dashboard-shell__summary-card--default">
+                      <span className="dashboard-shell__metric-label">{label}</span>
+                      <p className="dashboard-shell__metric-value">{value}</p>
                     </div>
                   ))}
                 </div>
@@ -452,7 +445,6 @@ export function DashboardShell({ data }: DashboardShellProps) {
             <PriceTrendChart points={data.support.trend.points} unavailableReason={data.support.trend.unavailableReason} />
           </SectionCard>
         </div>
-
       </div>
     </main>
   );
