@@ -352,6 +352,28 @@ export function DashboardShell({ data }: DashboardShellProps) {
                     <strong>{formatPercent(data.support.currentPrice.percentChange)}</strong>
                   </div>
                 </div>
+                <div style={blockStyle}>
+                  <div style={rowStyle}>
+                    <span style={labelStyle}>참조 분기 월별 평균판매가격</span>
+                    <strong>
+                      {data.fsc.referenceQuarterAverageKrwPerL
+                        ? `${data.fsc.referenceQuarterAverageKrwPerL}원/L`
+                        : '기록 없음'}
+                    </strong>
+                  </div>
+                  {data.fsc.referenceMonthlyBasis.length > 0 ? (
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      {data.fsc.referenceMonthlyBasis.map((row) => (
+                        <div key={row.monthLabel} style={rowStyle}>
+                          <span style={labelStyle}>{row.monthLabel}</span>
+                          <strong>{row.priceKrwPerL}원/L</strong>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <span style={labelStyle}>공식 월간 평균판매가격이 아직 없습니다.</span>
+                  )}
+                </div>
               </div>
             </div>
           ) : undefined}

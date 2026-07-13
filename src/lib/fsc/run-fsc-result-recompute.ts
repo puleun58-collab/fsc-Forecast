@@ -34,6 +34,8 @@ export async function runFscResultRecompute(now = new Date()): Promise<FscResult
         quarterSetting,
         currentTruthCutoffAt: sourceData.recomputeSnapshot.currentTruthCutoffAt,
         dailyPrices: sourceData.dailyPrices,
+        officialWeeklyPrices: sourceData.officialWeeklyPrices,
+        officialMonthlyPrices: sourceData.officialMonthlyPrices,
         forecastRun: sourceData.forecastRun,
       });
       const calculation = calculateFscResult({
@@ -87,10 +89,13 @@ export async function runFscResultRecompute(now = new Date()): Promise<FscResult
               forecastRunId: sourceData.forecastRun?.id ?? null,
               currentTruthCutoffAt: sourceData.recomputeSnapshot.currentTruthCutoffAt?.toISOString() ?? null,
               dailyPriceCount: sourceData.dailyPrices.length,
+              officialWeeklyPriceCount: sourceData.officialWeeklyPrices.length,
+              officialMonthlyPriceCount: sourceData.officialMonthlyPrices.length,
             },
             quarterAverageKrwPerL: calculation.quarterAverageKrwPerL.toFixed(3),
             actualWeekCount: quarterWeeks.actualWeekCount,
             forecastWeekCount: quarterWeeks.forecastWeekCount,
+            monthlyBasisQuarterAverageKrwPerL: quarterWeeks.monthlyBasis?.quarterAverageKrwPerL?.toFixed(3) ?? null,
             ...((quarterWeeks.calculationPayload as Prisma.InputJsonObject) ?? {}),
           },
           weeks: {

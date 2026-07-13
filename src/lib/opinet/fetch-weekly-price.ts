@@ -1,42 +1,60 @@
-import { normalizeWeeklyDieselRow } from "./normalize-diesel";
-import {
-  fetchOpinetStatsCsv,
-  fetchOpinetStatsPageState,
-  getPreviousWeeklyToken,
-  parseLatestWeeklyToken,
-} from "./fetch-stats-csv";
+import { fetchOpinetStatsCsv, fetchOpinetStatsPageState, parseLatestWeeklyToken } from "./fetch-stats-csv";
+import { normalizeWeeklyDieselRow, parseWeeklyLabel } from "./normalize-diesel";
 import type { NormalizedDieselWeeklyPriceRow } from "./types";
+
+interface FetchPublishedWeeklyOptions {
+  startYear?: number;
+  startMonth?: number;
+}
+
+export async function fetchPublishedOpinetWeeklyDieselPrices(
+  options: FetchPublishedWeeklyOptions = {},
+  fetchImpl: typeof fetch = fetch,
+): Promise<NormalizedDieselWeeklyPriceRow[]> {
+  const state = await fetchOpinetStatsPageState(fetchImpl);
+  const latest = parseLatestWeeklyToken(state.maxWeek);
+  const startYear = options.startYear ?? latest.year - 1;
+  const startMonth = options.startMonth ?? 1;
+  const fetchedAt = new Date().toISOString();
+  const rows = await fetchOpinetStatsCsv(
+    {
+      term: "W",
+      startYear,
+      startMonth,
+      startWeek: 1,
+      endYear: latest.year,
+      endMonth: latest.month,
+      endWeek: latest.week,
+    },
+    fetchImpl,
+  );
+
+  return rows
+    .map((row) => {
+      const parsed = parseWeeklyLabel(row.label);
+      return normalizeWeeklyDieselRow(
+        {
+          year: parsed.year,
+          month: parsed.month,
+          week: parsed.week,
+          label: row.label,
+          price: row.price,
+        },
+        fetchedAt,
+      );
+    })
+    .sort((left, right) => left.weekKey.localeCompare(right.weekKey));
+}
 
 export async function fetchLatestOpinetWeeklyDieselPrice(
   fetchImpl: typeof fetch = fetch,
 ): Promise<NormalizedDieselWeeklyPriceRow[]> {
-  const state = await fetchOpinetStatsPageState(fetchImpl);
-  const fetchedAt = new Date().toISOString();
-  let candidate = parseLatestWeeklyToken(state.maxWeek);
+  const rows = await fetchPublishedOpinetWeeklyDieselPrices({}, fetchImpl);
+  const latest = rows.at(-1);
 
-  for (let attempt = 0; attempt < 12; attempt += 1) {
-    const rows = await fetchOpinetStatsCsv({
-      term: "W",
-      startYear: candidate.year,
-      startMonth: candidate.month,
-      startWeek: candidate.week,
-      endYear: candidate.year,
-      endMonth: candidate.month,
-      endWeek: candidate.week,
-    }, fetchImpl);
-
-    if (rows.length > 0) {
-      return rows.map((row) => normalizeWeeklyDieselRow({
-        year: candidate.year,
-        month: candidate.month,
-        week: candidate.week,
-        label: row.label,
-        price: row.price,
-      }, fetchedAt));
-    }
-
-    candidate = getPreviousWeeklyToken(candidate);
+  if (!latest) {
+    throw new Error("Opinet weekly diesel collector could not find a published weekly average.");
   }
 
-  throw new Error("Opinet weekly diesel collector could not find a published weekly average in the recent search window.");
+  return [latest];
 }

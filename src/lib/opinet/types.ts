@@ -49,3 +49,15 @@ export interface NormalizedDieselWeeklyPriceRow {
   source: string;
   fetchedAt: string;
 }
+
+export interface NormalizedDieselMonthlyPriceRow {
+  monthKey: string;
+  monthLabel: string;
+  monthStartDate: string;
+  monthEndDate: string;
+  productCode: string;
+  productName: string;
+  price: number;
+  source: string;
+  fetchedAt: string;
+}

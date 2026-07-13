@@ -2,20 +2,25 @@ import { Prisma, type QuarterSetting } from '@prisma/client';
 
 import type {
   BuildFscQuarterWeeksResult,
+  FscActualSourceBreakdown,
+  FscMonthlyBasisSummary,
   FscQuarterWeekDraft,
   FscSourceDailyPriceRow,
   FscSourceForecastPointRow,
   FscSourceForecastRunRecord,
+  FscSourceOfficialMonthlyPriceRow,
+  FscSourceOfficialWeeklyPriceRow,
 } from './types';
 
 const ROUND_HALF_UP = Prisma.Decimal.ROUND_HALF_UP;
 const ZERO = new Prisma.Decimal(0);
-const ONE = new Prisma.Decimal(1);
 
 type QuarterSettingInput = Pick<
   QuarterSetting,
   | 'targetYear'
   | 'targetQuarter'
+  | 'referenceYear'
+  | 'referenceQuarter'
   | 'quarterStartDate'
   | 'quarterEndDate'
   | 'basePriceKrwPerL'
@@ -26,6 +31,8 @@ export interface BuildFscQuarterWeeksInput {
   quarterSetting: QuarterSettingInput;
   currentTruthCutoffAt: Date | null;
   dailyPrices: readonly FscSourceDailyPriceRow[];
+  officialWeeklyPrices: readonly FscSourceOfficialWeeklyPriceRow[];
+  officialMonthlyPrices: readonly FscSourceOfficialMonthlyPriceRow[];
   forecastRun: FscSourceForecastRunRecord | null;
 }
 
@@ -49,6 +56,17 @@ function clampEnd(left: Date, right: Date): Date {
 
 function daysInclusive(startDate: Date, endDate: Date): number {
   return Math.floor((endDate.getTime() - startDate.getTime()) / 86_400_000) + 1;
+}
+
+function overlapDays(leftStart: Date, leftEnd: Date, rightStart: Date, rightEnd: Date): number {
+  const start = clampStart(leftStart, rightStart);
+  const end = clampEnd(leftEnd, rightEnd);
+
+  if (start.getTime() > end.getTime()) {
+    return 0;
+  }
+
+  return daysInclusive(start, end);
 }
 
 function formatDateKey(value: Date): string {
@@ -132,6 +150,77 @@ function findCarryForwardForecastPoint(
   }
 
   return candidate;
+}
+
+function findOfficialWeeklyMatch(
+  officialWeeklyPrices: readonly FscSourceOfficialWeeklyPriceRow[],
+  effectiveStart: Date,
+  effectiveEnd: Date,
+): FscSourceOfficialWeeklyPriceRow | null {
+  let bestMatch: FscSourceOfficialWeeklyPriceRow | null = null;
+  let bestOverlap = 0;
+  const preferredMonth = effectiveEnd.getUTCMonth() + 1;
+
+  for (const row of officialWeeklyPrices) {
+    const overlap = overlapDays(effectiveStart, effectiveEnd, row.weekStartDate, row.weekEndDate);
+
+    if (overlap <= 0) {
+      continue;
+    }
+
+    const rowMonth = Number(row.weekKey.slice(4, 6));
+    const rowMatchesPreferredMonth = rowMonth === preferredMonth;
+    const bestMatchesPreferredMonth = bestMatch ? Number(bestMatch.weekKey.slice(4, 6)) === preferredMonth : false;
+
+    if (
+      overlap > bestOverlap ||
+      (overlap === bestOverlap && rowMatchesPreferredMonth && !bestMatchesPreferredMonth) ||
+      (overlap === bestOverlap && rowMatchesPreferredMonth === bestMatchesPreferredMonth && bestMatch !== null && row.fetchedAt.getTime() > bestMatch.fetchedAt.getTime()) ||
+      (overlap === bestOverlap && bestMatch === null)
+    ) {
+      bestMatch = row;
+      bestOverlap = overlap;
+    }
+  }
+
+  return bestMatch;
+}
+
+function getQuarterMonths(quarter: number): [number, number, number] {
+  if (quarter === 1) return [1, 2, 3];
+  if (quarter === 2) return [4, 5, 6];
+  if (quarter === 3) return [7, 8, 9];
+  return [10, 11, 12];
+}
+
+function buildMonthlyBasisSummary(
+  quarterSetting: QuarterSettingInput,
+  officialMonthlyPrices: readonly FscSourceOfficialMonthlyPriceRow[],
+): FscMonthlyBasisSummary | null {
+  const quarterMonths = getQuarterMonths(quarterSetting.referenceQuarter);
+  const monthKeys = new Set(
+    quarterMonths.map((month) => `${quarterSetting.referenceYear}${String(month).padStart(2, '0')}`),
+  );
+  const monthRows = officialMonthlyPrices
+    .filter((row) => monthKeys.has(row.monthKey))
+    .sort((left, right) => left.monthKey.localeCompare(right.monthKey))
+    .map((row) => ({
+      monthKey: row.monthKey,
+      monthLabel: row.monthLabel,
+      priceKrwPerL: row.priceKrwPerL,
+    }));
+
+  if (monthRows.length === 0) {
+    return null;
+  }
+
+  return {
+    referenceYear: quarterSetting.referenceYear,
+    referenceQuarter: quarterSetting.referenceQuarter,
+    monthRows,
+    quarterAverageKrwPerL:
+      monthRows.length === 3 ? averageDecimals(monthRows.map((row) => row.priceKrwPerL)) : null,
+  };
 }
 
 function createForecastWeekDraft(
@@ -227,6 +316,10 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
     applied_price_fallback: 0,
     base_price_fallback: 0,
   };
+  const actualSourceBreakdown: FscActualSourceBreakdown = {
+    officialWeekly: 0,
+    dailyAverage: 0,
+  };
 
   let cursor = getUtcWeekStart(quarterStartDate);
   let sequenceNo = 1;
@@ -247,15 +340,20 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
     }
 
     const expectedDayCount = daysInclusive(effectiveStart, effectiveEnd);
-    const hasCompletedActualWeek =
+    const officialWeeklyMatch = findOfficialWeeklyMatch(input.officialWeeklyPrices, effectiveStart, effectiveEnd);
+    const hasCompletedDailyActual =
       currentTruthCutoffAt !== null &&
       effectiveEnd.getTime() <= currentTruthCutoffAt.getTime() &&
       slotRows.length === expectedDayCount;
+    const hasPublishedOfficialWeeklyActual = officialWeeklyMatch !== null;
 
-    if (hasCompletedActualWeek) {
-      const actualPriceKrwPerL = averageDecimals(slotRows.map((row) => row.observedPriceKrwPerL));
+    if (hasCompletedDailyActual || hasPublishedOfficialWeeklyActual) {
+      const actualPriceKrwPerL = officialWeeklyMatch
+        ? roundPrice(officialWeeklyMatch.priceKrwPerL)
+        : averageDecimals(slotRows.map((row) => row.observedPriceKrwPerL));
       const priceDiffKrwPerL = roundPrice(actualPriceKrwPerL.minus(input.quarterSetting.basePriceKrwPerL));
       const diffRatio = roundRatio(priceDiffKrwPerL.dividedBy(input.quarterSetting.basePriceKrwPerL));
+
       weeks.push({
         targetYear: input.quarterSetting.targetYear,
         targetQuarter: input.quarterSetting.targetQuarter,
@@ -268,7 +366,7 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
         priceKrwPerL: actualPriceKrwPerL,
         actualPriceKrwPerL,
         forecastPriceKrwPerL: null,
-        sourcePriceDate: slotRows[slotRows.length - 1]?.priceDate ?? null,
+        sourcePriceDate: officialWeeklyMatch?.weekEndDate ?? slotRows[slotRows.length - 1]?.priceDate ?? null,
         sourceRevisionIds: slotRows.map((row) => row.currentRevisionId),
         forecastPointId: null,
         forecastSourceKind: null,
@@ -278,6 +376,11 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
         diffRatio,
       });
       sourceBreakdown.actual += 1;
+      if (officialWeeklyMatch) {
+        actualSourceBreakdown.officialWeekly += 1;
+      } else {
+        actualSourceBreakdown.dailyAverage += 1;
+      }
     } else {
       const forecastWeek = createForecastWeekDraft(
         input.quarterSetting,
@@ -307,20 +410,39 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
   const quarterAverageKrwPerL = averageDecimals(weeks.map((week) => week.priceKrwPerL));
   const fallbackWeekCount =
     sourceBreakdown.carry_forward + sourceBreakdown.applied_price_fallback + sourceBreakdown.base_price_fallback;
+  const monthlyBasis = buildMonthlyBasisSummary(input.quarterSetting, input.officialMonthlyPrices);
 
   return {
     weeks,
     actualWeekCount,
     forecastWeekCount,
     quarterAverageKrwPerL,
+    monthlyBasis,
     calculationPayload: {
       actualWeekCount,
       forecastWeekCount,
+      actualSourceBreakdown: {
+        officialWeekly: actualSourceBreakdown.officialWeekly,
+        dailyAverage: actualSourceBreakdown.dailyAverage,
+      },
       sourceBreakdown,
       fallbackSummary: {
         weekCount: fallbackWeekCount,
         ratio: weeks.length === 0 ? '0.000000' : (fallbackWeekCount / weeks.length).toFixed(6),
       },
-    },
+      monthlyBasis:
+        monthlyBasis === null
+          ? null
+          : {
+              referenceYear: monthlyBasis.referenceYear,
+              referenceQuarter: monthlyBasis.referenceQuarter,
+              quarterAverageKrwPerL: monthlyBasis.quarterAverageKrwPerL?.toFixed(3) ?? null,
+              monthRows: monthlyBasis.monthRows.map((row) => ({
+                monthKey: row.monthKey,
+                monthLabel: row.monthLabel,
+                priceKrwPerL: row.priceKrwPerL.toFixed(3),
+              })),
+            },
+    } as Prisma.InputJsonValue,
   };
 }

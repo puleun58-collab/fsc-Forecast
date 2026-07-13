@@ -42,6 +42,46 @@ function normalizeError(error: unknown): string {
   return '알 수 없는 오류가 발생했습니다.';
 }
 
+function readMonthlyBasis(
+  payload: unknown,
+): {
+  quarterAverageKrwPerL: string | null;
+  monthRows: Array<{ monthLabel: string; priceKrwPerL: string }>;
+} {
+  if (!payload || typeof payload !== 'object') {
+    return {
+      quarterAverageKrwPerL: null,
+      monthRows: [],
+    };
+  }
+
+  const candidate = (payload as { monthlyBasis?: unknown }).monthlyBasis;
+
+  if (!candidate || typeof candidate !== 'object') {
+    return {
+      quarterAverageKrwPerL: null,
+      monthRows: [],
+    };
+  }
+
+  const monthRows = Array.isArray((candidate as { monthRows?: unknown }).monthRows)
+    ? (candidate as { monthRows: Array<{ monthLabel?: unknown; priceKrwPerL?: unknown }> }).monthRows
+        .filter((row) => typeof row.monthLabel === 'string' && typeof row.priceKrwPerL === 'string')
+        .map((row) => ({
+          monthLabel: row.monthLabel as string,
+          priceKrwPerL: row.priceKrwPerL as string,
+        }))
+    : [];
+
+  return {
+    quarterAverageKrwPerL:
+      typeof (candidate as { quarterAverageKrwPerL?: unknown }).quarterAverageKrwPerL === 'string'
+        ? ((candidate as { quarterAverageKrwPerL?: string }).quarterAverageKrwPerL ?? null)
+        : null,
+    monthRows,
+  };
+}
+
 function toQuarterSummary(value: {
   targetYear: number;
   targetQuarter: number;
@@ -223,6 +263,7 @@ export async function loadFscDashboardData(): Promise<FscDashboardData> {
     }
 
     const fsc = serializeFscResultDto(result);
+    const monthlyBasis = readMonthlyBasis(result.calculationPayload);
 
     return {
       state: 'available',
@@ -250,6 +291,8 @@ export async function loadFscDashboardData(): Promise<FscDashboardData> {
         recent26wWeeklyPriceMae: fsc.qualityMetrics.recent26wWeeklyPriceMae,
         recent4wErrorTrend: fsc.qualityMetrics.recent4wErrorTrend,
         weeks: fsc.weeks,
+        referenceQuarterAverageKrwPerL: monthlyBasis?.quarterAverageKrwPerL ?? null,
+        referenceMonthlyBasis: monthlyBasis?.monthRows ?? [],
       },
     };
   } catch (error) {

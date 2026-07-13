@@ -1,4 +1,5 @@
 import type {
+  NormalizedDieselMonthlyPriceRow,
   NormalizedDieselPriceRow,
   NormalizedDieselWeeklyPriceRow,
   OpinetAveragePriceRow,
@@ -9,7 +10,7 @@ export const DIESEL_PRODUCT_CODE = "D047";
 export const DIESEL_PRODUCT_NAME = "자동차용경유";
 const OPINET_DAILY_PRICE_SOURCE = "opinet-daily-average-price";
 const OPINET_WEEKLY_PRICE_SOURCE = "opinet-weekly-average-price";
-
+const OPINET_MONTHLY_PRICE_SOURCE = "opinet-monthly-average-price";
 function isCurrentDieselRow(row: OpinetAveragePriceRow): boolean {
   return row.PRODCD === DIESEL_PRODUCT_CODE || row.PRODNM === DIESEL_PRODUCT_NAME;
 }
@@ -48,6 +49,45 @@ function formatUtcDate(date: Date): string {
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
   const day = String(date.getUTCDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function formatMonthKey(year: number, month: number): string {
+  return `${year}${String(month).padStart(2, "0")}`;
+}
+
+function createMonthStartDate(year: number, month: number): Date {
+  return new Date(Date.UTC(year, month - 1, 1));
+}
+
+function createMonthEndDate(year: number, month: number): Date {
+  return new Date(Date.UTC(year, month, 0));
+}
+
+export function parseWeeklyLabel(label: string): { year: number; month: number; week: number } {
+  const match = label.match(/^(\d{4})년(\d{2})월(\d)주$/);
+
+  if (!match) {
+    throw new Error(`Unexpected Opinet weekly label: ${label}`);
+  }
+
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    week: Number(match[3]),
+  };
+}
+
+export function parseMonthlyLabel(label: string): { year: number; month: number } {
+  const match = label.match(/^(\d{4})년(\d{2})월$/);
+
+  if (!match) {
+    throw new Error(`Unexpected Opinet monthly label: ${label}`);
+  }
+
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+  };
 }
 
 export function normalizeCurrentDieselRows(
@@ -113,6 +153,31 @@ export function normalizeWeeklyDieselRow(
     productName: DIESEL_PRODUCT_NAME,
     price: input.price,
     source: OPINET_WEEKLY_PRICE_SOURCE,
+    fetchedAt,
+  };
+}
+
+export function normalizeMonthlyDieselRow(
+  input: {
+    year: number;
+    month: number;
+    label: string;
+    price: number;
+  },
+  fetchedAt: string,
+): NormalizedDieselMonthlyPriceRow {
+  const monthStartDate = createMonthStartDate(input.year, input.month);
+  const monthEndDate = createMonthEndDate(input.year, input.month);
+
+  return {
+    monthKey: formatMonthKey(input.year, input.month),
+    monthLabel: input.label,
+    monthStartDate: formatUtcDate(monthStartDate),
+    monthEndDate: formatUtcDate(monthEndDate),
+    productCode: DIESEL_PRODUCT_CODE,
+    productName: DIESEL_PRODUCT_NAME,
+    price: input.price,
+    source: OPINET_MONTHLY_PRICE_SOURCE,
     fetchedAt,
   };
 }

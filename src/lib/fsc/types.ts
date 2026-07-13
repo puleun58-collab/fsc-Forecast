@@ -86,6 +86,42 @@ export interface LoadFscSourceDataResult {
   recomputeSnapshot: FscSourceSnapshotRecord;
   forecastRun: FscSourceForecastRunRecord | null;
   dailyPrices: FscSourceDailyPriceRow[];
+  officialWeeklyPrices: FscSourceOfficialWeeklyPriceRow[];
+  officialMonthlyPrices: FscSourceOfficialMonthlyPriceRow[];
+}
+
+export interface FscSourceOfficialWeeklyPriceRow {
+  weekKey: string;
+  weekLabel: string;
+  weekStartDate: Date;
+  weekEndDate: Date;
+  priceKrwPerL: Prisma.Decimal;
+  fetchedAt: Date;
+}
+
+export interface FscSourceOfficialMonthlyPriceRow {
+  monthKey: string;
+  monthLabel: string;
+  monthStartDate: Date;
+  monthEndDate: Date;
+  priceKrwPerL: Prisma.Decimal;
+  fetchedAt: Date;
+}
+
+export interface FscMonthlyBasisSummary {
+  referenceYear: number;
+  referenceQuarter: number;
+  monthRows: Array<{
+    monthKey: string;
+    monthLabel: string;
+    priceKrwPerL: Prisma.Decimal;
+  }>;
+  quarterAverageKrwPerL: Prisma.Decimal | null;
+}
+
+export interface FscActualSourceBreakdown {
+  officialWeekly: number;
+  dailyAverage: number;
 }
 
 export interface FscQuarterWeekDraft {
@@ -115,6 +151,7 @@ export interface BuildFscQuarterWeeksResult {
   actualWeekCount: number;
   forecastWeekCount: number;
   quarterAverageKrwPerL: Prisma.Decimal;
+  monthlyBasis: FscMonthlyBasisSummary | null;
   calculationPayload: Prisma.InputJsonValue;
 }
 

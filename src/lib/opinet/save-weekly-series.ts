@@ -46,7 +46,7 @@ function toWeeklySeriesEntry(value: unknown): NormalizedDieselWeeklyPriceRow | n
   };
 }
 
-async function readExistingSeries(): Promise<NormalizedDieselWeeklyPriceRow[]> {
+export async function readWeeklySeries(): Promise<NormalizedDieselWeeklyPriceRow[]> {
   try {
     const fileContents = await readFile(OUTPUT_PATH, "utf8");
     const parsed = JSON.parse(fileContents) as unknown;
@@ -73,7 +73,7 @@ export async function saveWeeklySeries(
 ): Promise<NormalizedDieselWeeklyPriceRow[]> {
   await mkdir(path.dirname(OUTPUT_PATH), { recursive: true });
 
-  const existingEntries = await readExistingSeries();
+  const existingEntries = await readWeeklySeries();
   const mergedEntries = new Map<string, NormalizedDieselWeeklyPriceRow>();
 
   for (const entry of existingEntries) {

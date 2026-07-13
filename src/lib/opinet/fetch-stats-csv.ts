@@ -213,10 +213,14 @@ export async function fetchOpinetStatsCsv(
 }
 
 export async function fetchOpinetStatsPageState(fetchImpl: typeof fetch = fetch): Promise<{
+  maxYear: string;
+  maxMonth: string;
   maxWeek: string;
 }> {
   const state = await fetchStatsPage(fetchImpl);
   return {
+    maxYear: state.maxYear,
+    maxMonth: state.maxMonth,
     maxWeek: state.maxWeek,
   };
 }

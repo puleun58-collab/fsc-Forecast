@@ -1,15 +1,23 @@
-import { RunStatus, type Prisma } from '@prisma/client';
+import { Prisma, RunStatus, type Prisma as PrismaTypes } from '@prisma/client';
 
 import { db } from '@/lib/db';
 import { env } from '@/lib/env';
+import { readMonthlySeries } from '@/lib/opinet/save-monthly-series';
+import { readWeeklySeries } from '@/lib/opinet/save-weekly-series';
 
-import type { FscSourceDailyPriceRow, FscSourceForecastRunRecord, LoadFscSourceDataResult } from './types';
+import type {
+  FscSourceDailyPriceRow,
+  FscSourceForecastRunRecord,
+  FscSourceOfficialMonthlyPriceRow,
+  FscSourceOfficialWeeklyPriceRow,
+  LoadFscSourceDataResult,
+} from './types';
 
 function toForecastRunRecord(run: {
   id: string;
   mapePct: Prisma.Decimal | null;
   maeKrwPerL: Prisma.Decimal | null;
-  metadata: Prisma.JsonValue | null;
+  metadata: PrismaTypes.JsonValue | null;
   createdAt: Date;
   completedAt: Date | null;
   points: Array<{
@@ -50,8 +58,44 @@ function toDailyPriceRow(row: {
   };
 }
 
+function toOfficialWeeklyPriceRow(row: {
+  weekKey: string;
+  weekLabel: string;
+  weekStartDate: string;
+  weekEndDate: string;
+  price: number;
+  fetchedAt: string;
+}): FscSourceOfficialWeeklyPriceRow {
+  return {
+    weekKey: row.weekKey,
+    weekLabel: row.weekLabel,
+    weekStartDate: new Date(`${row.weekStartDate}T00:00:00.000Z`),
+    weekEndDate: new Date(`${row.weekEndDate}T00:00:00.000Z`),
+    priceKrwPerL: new Prisma.Decimal(row.price),
+    fetchedAt: new Date(row.fetchedAt),
+  };
+}
+
+function toOfficialMonthlyPriceRow(row: {
+  monthKey: string;
+  monthLabel: string;
+  monthStartDate: string;
+  monthEndDate: string;
+  price: number;
+  fetchedAt: string;
+}): FscSourceOfficialMonthlyPriceRow {
+  return {
+    monthKey: row.monthKey,
+    monthLabel: row.monthLabel,
+    monthStartDate: new Date(`${row.monthStartDate}T00:00:00.000Z`),
+    monthEndDate: new Date(`${row.monthEndDate}T00:00:00.000Z`),
+    priceKrwPerL: new Prisma.Decimal(row.price),
+    fetchedAt: new Date(row.fetchedAt),
+  };
+}
+
 export async function loadFscSourceData(
-  tx: Prisma.TransactionClient = db,
+  tx: PrismaTypes.TransactionClient = db,
 ): Promise<LoadFscSourceDataResult> {
   const recomputeSnapshot = await tx.recomputeSnapshot.findFirst({
     where: {
@@ -98,28 +142,34 @@ export async function loadFscSourceData(
     },
   });
 
-  const dailyPrices = await tx.dailyPriceCurrent.findMany({
-    where: {
-      datasetKey: env.datasetKey,
-      latestRecomputeSnapshotId: recomputeSnapshot.id,
-    },
-    orderBy: {
-      priceDate: 'asc',
-    },
-    select: {
-      priceDate: true,
-      currentRevisionId: true,
-      currentRevision: {
-        select: {
-          observedPriceKrwPerL: true,
+  const [dailyPrices, officialWeeklyPrices, officialMonthlyPrices] = await Promise.all([
+    tx.dailyPriceCurrent.findMany({
+      where: {
+        datasetKey: env.datasetKey,
+        latestRecomputeSnapshotId: recomputeSnapshot.id,
+      },
+      orderBy: {
+        priceDate: 'asc',
+      },
+      select: {
+        priceDate: true,
+        currentRevisionId: true,
+        currentRevision: {
+          select: {
+            observedPriceKrwPerL: true,
+          },
         },
       },
-    },
-  });
+    }),
+    readWeeklySeries(),
+    readMonthlySeries(),
+  ]);
 
   return {
     recomputeSnapshot,
     forecastRun: forecastRun === null ? null : toForecastRunRecord(forecastRun),
     dailyPrices: dailyPrices.map(toDailyPriceRow),
+    officialWeeklyPrices: officialWeeklyPrices.map(toOfficialWeeklyPriceRow),
+    officialMonthlyPrices: officialMonthlyPrices.map(toOfficialMonthlyPriceRow),
   };
 }
