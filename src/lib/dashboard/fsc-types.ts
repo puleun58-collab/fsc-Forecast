@@ -84,11 +84,7 @@ export interface FscDashboardResultSection {
   }>;
 }
 
-export interface FscDashboardExportSection {
-  status: 'coming_soon';
-  label: string;
-  message: string;
-}
+
 
 export interface FscDashboardSupportSection {
   currentPrice: FscDashboardCurrentPriceSection;
@@ -105,15 +101,14 @@ export interface FscDashboardEmptyData {
   state: 'empty';
   quarter: FscDashboardQuarterSummary;
   support: FscDashboardSupportSection;
-  export: FscDashboardExportSection;
 }
+
 
 export interface FscDashboardAvailableData {
   state: 'available';
   quarter: FscDashboardQuarterSummary;
   fsc: FscDashboardResultSection;
   support: FscDashboardSupportSection;
-  export: FscDashboardExportSection;
 }
 
 export type FscDashboardData = FscDashboardUnavailableData | FscDashboardEmptyData | FscDashboardAvailableData;

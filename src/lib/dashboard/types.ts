@@ -3,7 +3,6 @@ export type DashboardAvailability = 'available' | 'unavailable';
 export type DashboardTrendDirection = 'up' | 'down' | 'flat';
 export type DashboardForecastApproval = 'pending' | 'approved' | 'degraded';
 export type DashboardCommentaryStatus = 'ready' | 'insufficient_data' | 'unavailable';
-export type DashboardExportFormat = 'xlsx';
 
 export interface DashboardUnavailableState {
   availability: 'unavailable';
@@ -86,18 +85,7 @@ export interface DashboardCommentarySection {
   unavailableReason?: string;
 }
 
-export interface DashboardExportItem {
-  format: DashboardExportFormat;
-  availability: DashboardAvailability;
-  completedAt: string | null;
-  storageKey: string | null;
-  unavailableReason?: string;
-}
 
-export interface DashboardExportSection {
-  snapshotId: string | null;
-  items: DashboardExportItem[];
-}
 
 export interface DashboardAvailableData {
   availability: 'available';
@@ -109,7 +97,6 @@ export interface DashboardAvailableData {
   trend: DashboardTrendSection;
   forecast: DashboardForecastSection;
   commentary: DashboardCommentarySection;
-  exports: DashboardExportSection;
 }
 
 export interface DashboardUnavailableData {

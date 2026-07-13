@@ -3,8 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'FSC Forecast Dashboard',
-  description:
-    'FSC calculation MVP 대시보드로 현재 유가, FSC 기준 시나리오, 해설, 산출표 다운로드 상태를 보여줍니다.',
+  description: 'FSC calculation MVP 대시보드로 현재 유가, FSC 기준 시나리오, 해설을 보여줍니다.',
 };
 
 export default function RootLayout({

@@ -5,11 +5,11 @@ import type {
   DashboardCommentarySection,
   DashboardCurrentStatus,
   DashboardData,
-  DashboardExportItem,
   DashboardForecastPoint,
   DashboardSummaryValue,
   DashboardTrendDirection,
 } from './types';
+
 
 function formatDate(value: Date): string {
   return value.toISOString().slice(0, 10);
@@ -134,8 +134,9 @@ export async function loadDashboardData(): Promise<DashboardData> {
     if (!snapshot) {
       return createUnavailableData(
         '전국 평균 스냅샷이 아직 없습니다.',
-        '성공한 recompute snapshot이 없어 현재 진실값, 예측, 해설, 내보내기 상태를 공개할 수 없습니다.',
+        '성공한 recompute snapshot이 없어 현재 진실값, 예측, 해설 상태를 공개할 수 없습니다.',
       );
+
     }
 
     const currentRows = await db.dailyPriceCurrent.findMany({
@@ -325,35 +326,7 @@ export async function loadDashboardData(): Promise<DashboardData> {
       unavailableReason: getCommentaryUnavailableReason(commentaryResult.status) || undefined,
     };
 
-    const exportRuns = await db.exportRun.findMany({
-      where: {
-        recomputeSnapshotId: snapshot.id,
-        status: RunStatus.succeeded,
-        exportFormat: {
-          in: ['xlsx'],
-        },
-      },
-      orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }],
-      select: {
-        exportFormat: true,
-        completedAt: true,
-        storageKey: true,
-      },
-    });
 
-    const exportItems: DashboardExportItem[] = ['xlsx'].map((format) => {
-      const run = exportRuns.find((item) => item.exportFormat.toLowerCase() === format);
-
-      return {
-        format: format as 'xlsx',
-        availability: 'available',
-        completedAt: run ? formatTimestamp(run.completedAt) : null,
-        storageKey: run?.storageKey ?? null,
-        unavailableReason: run
-          ? undefined
-          : '실행 이력은 아직 없지만 최신 성공 스냅샷 기준 다운로드는 즉시 생성할 수 있습니다.',
-      };
-    });
 
     const data: DashboardAvailableData = {
       availability: 'available',
@@ -381,10 +354,6 @@ export async function loadDashboardData(): Promise<DashboardData> {
       },
       forecast,
       commentary,
-      exports: {
-        snapshotId: snapshot.id,
-        items: exportItems,
-      },
     };
 
     return data;

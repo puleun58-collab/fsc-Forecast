@@ -25,7 +25,8 @@ const summaryCardStyle: CSSProperties = {
   padding: 16,
   border: '1px solid var(--border)',
   borderRadius: 16,
-  background: 'rgba(255, 255, 255, 0.8)',
+  background: 'var(--surface-strong)',
+  boxShadow: 'var(--shadow-soft)',
 };
 
 const labelStyle: CSSProperties = {
@@ -38,7 +39,6 @@ const valueStyle: CSSProperties = {
   fontSize: '1.1rem',
   fontWeight: 700,
 };
-
 
 const compactSummaryStyle: CSSProperties = {
   display: 'flex',
@@ -53,7 +53,8 @@ const compactSummaryItemStyle: CSSProperties = {
   padding: '8px 10px',
   borderRadius: 999,
   border: '1px solid var(--border)',
-  background: 'rgba(255, 255, 255, 0.82)',
+  background: 'var(--surface-strong)',
+  boxShadow: 'var(--shadow-soft)',
   fontSize: '0.84rem',
 };
 
@@ -73,19 +74,7 @@ const rowStyle: CSSProperties = {
   gap: 8,
 };
 
-const disabledButtonStyle: CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: 'fit-content',
-  padding: '10px 14px',
-  borderRadius: 12,
-  border: '1px solid var(--border)',
-  background: '#f4f6f8',
-  color: 'var(--text-muted)',
-  fontWeight: 700,
-  cursor: 'not-allowed',
-};
+
 
 const DISPLAY_DECIMALS = 2;
 
@@ -464,22 +453,6 @@ export function DashboardShell({ data }: DashboardShellProps) {
           </SectionCard>
         </div>
 
-        <SectionCard
-          title="FSC 산출표 다운로드"
-          badge={data.export.label}
-          description="FSC 전용 분기 산출표 XLSX route는 준비됐지만 public 화면에서는 비활성 상태로 유지합니다."
-          highlights={[
-            'public 화면에서는 FSC 분기 XLSX 링크를 활성화하지 않습니다.',
-            '개발용 관리자 화면에서만 분기 산출표 다운로드를 제공합니다.',
-          ]}
-        >
-          <div style={blockStyle}>
-            <button type="button" disabled style={disabledButtonStyle}>
-              FSC 분기 XLSX 공개 비활성
-            </button>
-            <span style={labelStyle}>{data.export.message}</span>
-          </div>
-        </SectionCard>
       </div>
     </main>
   );

@@ -249,19 +249,15 @@ export async function loadFscDashboardData(): Promise<FscDashboardData> {
     const quarter = await ensureActiveQuarter();
     const support = await loadSupportSection();
     const result = await findLatestBaseFscResultByQuarter(quarter.targetYear, quarter.targetQuarter);
-    const exportSection = {
-      status: 'coming_soon' as const,
-      label: '공개 비활성',
-      message: 'FSC 분기 XLSX는 관리자 화면에서만 다운로드할 수 있습니다.',
-    };
+
 
     if (result === null) {
       return {
         state: 'empty',
         quarter: toQuarterSummary(quarter),
         support,
-        export: exportSection,
       };
+
     }
 
     const fsc = serializeFscResultDto(result);
@@ -271,7 +267,6 @@ export async function loadFscDashboardData(): Promise<FscDashboardData> {
       state: 'available',
       quarter: toQuarterSummary(quarter),
       support,
-      export: exportSection,
       fsc: {
         resultId: fsc.id,
         createdAt: fsc.createdAt,

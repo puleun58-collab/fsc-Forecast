@@ -5,7 +5,7 @@ import { AdminLogoutButton } from '@/components/admin-logout-button';
 import { SectionCard } from '@/components/section-card';
 import { getAdminSession } from '@/lib/auth/admin';
 import { db } from '@/lib/db';
-import { buildFscExportDataset } from '@/lib/fsc/build-fsc-export-dataset';
+
 import { findLatestBaseFscResultByQuarter } from '@/lib/fsc/load-latest-fsc-result';
 import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
@@ -63,7 +63,7 @@ export default async function AdminPage() {
   const nextDraft = quarters.find(
     (quarter) => quarter.status === 'draft' && (quarter.targetYear > activeQuarter.targetYear || (quarter.targetYear === activeQuarter.targetYear && quarter.targetQuarter > activeQuarter.targetQuarter)),
   );
-  const activeExport = await buildFscExportDataset({ year: activeQuarter.targetYear, quarter: activeQuarter.targetQuarter });
+
 
   return (
     <main className="dashboard-shell" style={{ display: 'grid', gap: 24 }}>
@@ -107,12 +107,7 @@ export default async function AdminPage() {
                 payload={{ force: true }}
                 confirmMessage="현재 active quarter를 강제로 다음 분기로 넘깁니다. 계속할까요?"
               />
-              <a
-                href={`/export/fsc-quarter/xlsx?year=${activeQuarter.targetYear}&quarter=${activeQuarter.targetQuarter}`}
-                style={{ display: 'inline-flex', alignItems: 'center', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 12, textDecoration: 'none', color: 'var(--text)', fontWeight: 700, background: activeExport.status === 'ready' ? 'white' : '#f4f6f8' }}
-              >
-                분기별 FSC XLSX 다운로드
-              </a>
+
             </div>
             {activeResultDto ? (
               <div style={{ display: 'grid', gap: 12 }}>
@@ -200,12 +195,6 @@ export default async function AdminPage() {
                       confirmMessage={`${quarterLabel(quarter.targetYear, quarter.targetQuarter)}를 active로 전환합니다. 계속할까요?`}
                     />
                   ) : null}
-                  <a
-                    href={`/export/fsc-quarter/xlsx?year=${quarter.targetYear}&quarter=${quarter.targetQuarter}`}
-                    style={{ display: 'inline-flex', alignItems: 'center', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 12, textDecoration: 'none', color: 'var(--text)', fontWeight: 700, background: 'white' }}
-                  >
-                    분기 XLSX
-                  </a>
                 </div>
               </li>
             ))}
