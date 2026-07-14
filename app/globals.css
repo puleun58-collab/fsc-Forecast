@@ -17,6 +17,8 @@
   --border-default: #dde3ea;
   --border-strong: #cbd3dd;
   --chart-grid: #e4e7ec;
+  --chart-benchmark: #98a2b3;
+
 
   --brand: #356ae6;
   --brand-hover: #2857c5;
@@ -349,9 +351,12 @@ main {
 .dashboard-shell__summary-card,
 .dashboard-shell__info-block,
 .dashboard-shell__summary-chip,
-.dashboard-shell__table-wrap {
+.dashboard-shell__table-wrap,
+.dashboard-shell__reference-card,
+.dashboard-shell__trend-summary-card {
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
+
 
 .dashboard-shell__summary-card,
 .dashboard-shell__summary-chip,
@@ -376,6 +381,12 @@ main {
   transform: translateY(-1px);
   box-shadow: var(--shadow-hover);
 }
+.dashboard-shell__reference-card:hover,
+.dashboard-shell__trend-summary-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-hover);
+}
+
 
 .dashboard-shell__summary-card--brand {
   border-color: var(--brand-border);
@@ -408,6 +419,175 @@ main {
   font-size: 0.84rem;
   line-height: 1.45;
 }
+.dashboard-shell__metric-caption {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.dashboard-shell__price-value {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.dashboard-shell__price-value--hero .dashboard-shell__price-number {
+  font-size: clamp(2rem, 4vw, 2.5rem);
+}
+
+.dashboard-shell__price-value--hero .dashboard-shell__price-unit {
+  font-size: 1rem;
+}
+
+.dashboard-shell__price-number {
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-shell__price-unit {
+  color: var(--text-secondary);
+  font-size: 0.88em;
+  font-weight: 600;
+}
+
+.dashboard-shell__subheading {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.dashboard-shell__info-divider,
+.dashboard-shell__reference-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--border-strong);
+}
+
+.dashboard-shell__reference-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.dashboard-shell__reference-header,
+.dashboard-shell__reference-highlight,
+.dashboard-shell__reference-monthly {
+  display: grid;
+  gap: 6px;
+}
+
+.dashboard-shell__reference-price,
+.dashboard-shell__latest-price {
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.dashboard-shell__reference-price .dashboard-shell__price-number {
+  font-size: 1.5rem;
+}
+
+.dashboard-shell__monthly-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.dashboard-shell__latest-card {
+  display: grid;
+  gap: 14px;
+}
+
+.dashboard-shell__latest-meta,
+.dashboard-shell__latest-footer,
+.dashboard-shell__trend-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.dashboard-shell__change-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.dashboard-shell__change-line--up {
+  color: var(--approved);
+}
+
+.dashboard-shell__change-line--down {
+  color: var(--danger);
+}
+
+.dashboard-shell__change-line--flat {
+  color: var(--text-secondary);
+}
+
+.dashboard-shell__change-parts {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.dashboard-shell__change-icon {
+  font-size: 0.95rem;
+}
+
+.dashboard-shell__trend-period {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.dashboard-shell__trend-summary-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dashboard-shell__trend-summary-card {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  background: var(--bg-muted);
+  box-shadow: var(--shadow-card);
+}
+
+.dashboard-shell__trend-summary-value {
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.dashboard-shell__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 
 .dashboard-shell__metric-value,
 .dashboard-shell__info-value {
@@ -546,6 +726,20 @@ main {
   }
 }
 
+@media (max-width: 720px) {
+  .dashboard-shell__trend-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-shell__latest-meta,
+  .dashboard-shell__latest-footer,
+  .dashboard-shell__trend-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+
 @media (max-width: 640px) {
   .section-card__header {
     align-items: flex-start;
@@ -562,5 +756,16 @@ main {
 
   .dashboard-shell__summary-card {
     min-height: unset;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-shell__monthly-row {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-shell__change-line,
+  .dashboard-shell__change-parts {
+    align-items: flex-start;
   }
 }

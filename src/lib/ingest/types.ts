@@ -59,6 +59,23 @@ export interface RecomputeSnapshotResult {
   latestCurrentRevisionIds: string[];
 }
 
+export interface IngestCacheRefreshSummary {
+  status: 'succeeded' | 'failed';
+  errorSummary: string | null;
+  daily: {
+    fetchedCount: number;
+    savedCount: number;
+  };
+  weekly: {
+    fetchedCount: number;
+    savedCount: number;
+  };
+  monthly: {
+    fetchedCount: number;
+    savedCount: number;
+  };
+}
+
 export interface IngestForecastSummary {
   forecastRunId: string;
   approvalState: string;
@@ -75,4 +92,5 @@ export interface OpinetIngestResult {
   reconcile: ReconcileDailyPricesResult;
   snapshot: RecomputeSnapshotResult;
   forecast: IngestForecastSummary;
+  cacheRefresh: IngestCacheRefreshSummary;
 }

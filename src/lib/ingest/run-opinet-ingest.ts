@@ -2,6 +2,8 @@ import type { Prisma, RunStatus } from "@prisma/client";
 
 import { db } from "../db";
 import { runForecastPipeline } from "../forecast/run-forecast-pipeline";
+import { refreshOpinetSeriesCache } from "../opinet/refresh-series-cache";
+
 import { fetchOpinetDieselDailyHistory } from "../opinet/fetch-daily-history";
 import { createRecomputeSnapshot } from "./create-recompute-snapshot";
 import {
@@ -18,6 +20,11 @@ interface QueuedOpinetIngestRequest extends OpinetIngestRequest {
   queuedRunId?: string;
   queueMetadata?: Prisma.InputJsonObject;
 }
+
+function toJsonObject(value: Record<string, unknown>): Prisma.InputJsonObject {
+  return value as Prisma.InputJsonObject;
+}
+
 
 function toLifecycleRecord(run: {
   id: string;
@@ -76,6 +83,42 @@ export async function runOpinetIngest(
       throw new Error("Opinet diesel ingest returned no national average rows.");
     }
 
+    await recordStartedIngestRun(queuedRun.id, {
+      stage: "refreshing-opinet-cache-files",
+      queue: request.queueMetadata ?? {},
+    });
+
+    let cacheRefresh: OpinetIngestResult['cacheRefresh'];
+
+    try {
+      const summary = await refreshOpinetSeriesCache({
+        fetchImpl: request.fetchImpl,
+        dailyEntries: fetchedRows,
+      });
+      cacheRefresh = {
+        status: 'succeeded',
+        errorSummary: null,
+        ...summary,
+      };
+    } catch (error) {
+      cacheRefresh = {
+        status: 'failed',
+        errorSummary: error instanceof Error ? error.message : String(error),
+        daily: {
+          fetchedCount: fetchedRows.length,
+          savedCount: 0,
+        },
+        weekly: {
+          fetchedCount: 0,
+          savedCount: 0,
+        },
+        monthly: {
+          fetchedCount: 0,
+          savedCount: 0,
+        },
+      };
+    }
+
     const { reconcile, snapshot } = await db.$transaction(async (tx) => {
       const reconcileResult = await reconcileDailyPrices({
         ingestRunId: queuedRun.id,
@@ -113,6 +156,13 @@ export async function runOpinetIngest(
       stage: "completed",
       queue: request.queueMetadata ?? {},
       fetchedRowCount: fetchedRows.length,
+      cacheRefresh: toJsonObject({
+        status: cacheRefresh.status,
+        errorSummary: cacheRefresh.errorSummary,
+        daily: cacheRefresh.daily,
+        weekly: cacheRefresh.weekly,
+        monthly: cacheRefresh.monthly,
+      }),
       reconcile: {
         processedRowCount: reconcile.processedRowCount,
         createdRevisionCount: reconcile.createdRevisionCount,
@@ -136,6 +186,7 @@ export async function runOpinetIngest(
       },
     });
 
+
     return {
       ingestRun: completedRun,
       fetchedRows,
@@ -150,6 +201,7 @@ export async function runOpinetIngest(
         weeklyForecastPointCount: forecast.weeklyForecastPoints.length,
         monthlyForecastPointCount: forecast.monthlyForecastPoints.length,
       },
+      cacheRefresh,
     };
   } catch (error) {
     await recordFailedIngestRun(queuedRun.id, error, {

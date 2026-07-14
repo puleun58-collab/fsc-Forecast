@@ -278,10 +278,12 @@ npm run ingest:opinet
 ```
 - 오피넷 현재 평균 + 최근 7일 일평균을 함께 수집
 - revision/current truth 반영
+- ingest 실행 중 `data/oil-price-daily.json`, `data/oil-price-weekly.json`, `data/oil-price-monthly.json`도 함께 최신화
 - recompute snapshot 생성
 - 월간 집계는 누적된 일별 데이터 기준으로 계산
 - 예측 기록이 부족하면 오피넷 제품별 통계 화면의 2분기(4~6월) 주간/월간 평균판매가격을 보강 이력으로 사용해 다음 4주·3개월 예측을 생성
 - active quarter 기반 FSC quarter result / week row 재계산 foundation을 포함합니다.
+
 
 
 ### 외부 지표 동기화
@@ -473,8 +475,8 @@ npm run build
 - `npm run dev` — Next.js dev server
 - `npm run build` — production build
 - `npm run start` — production server
-- `npm run fetch:opinet` — raw fetch to `data/oil-price-daily.json` and `data/oil-price-weekly.json`
-- `npm run ingest:opinet` — DB-backed ingest + recompute snapshot + forecast 생성
+- `npm run fetch:opinet` — raw fetch to `data/oil-price-daily.json`, `data/oil-price-weekly.json`, `data/oil-price-monthly.json`
+- `npm run ingest:opinet` — DB-backed ingest + local JSON cache refresh + recompute snapshot + forecast 생성
 - `npm run sync:indicators` — 외부 지표 sync
 - `npm run worker` — scheduled worker entrypoint
 - `npm run vercel-build` — Vercel용 Prisma generate + production build

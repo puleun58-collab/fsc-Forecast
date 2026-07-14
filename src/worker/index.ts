@@ -46,6 +46,23 @@ export interface WorkerRunSummary {
     currentRowCount: number;
     currentTruthCutoffAt: string;
   };
+  cacheRefresh: {
+    status: 'succeeded' | 'failed';
+    errorSummary: string | null;
+    daily: {
+      fetchedCount: number;
+      savedCount: number;
+    };
+    weekly: {
+      fetchedCount: number;
+      savedCount: number;
+    };
+    monthly: {
+      fetchedCount: number;
+      savedCount: number;
+    };
+  };
+
   forecast: {
     forecastRunId: string;
     approvalState: string;
@@ -141,6 +158,7 @@ export async function runScheduledWorkerOnce(): Promise<WorkerRunSummary> {
     },
     fetchedRowCount: execution.result.fetchedRows.length,
     forecast: execution.result.forecast,
+    cacheRefresh: execution.result.cacheRefresh,
   };
 }
 
