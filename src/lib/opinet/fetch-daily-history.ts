@@ -6,6 +6,23 @@ function compareByDateAscending(left: NormalizedDieselPriceRow, right: Normalize
   return left.date.localeCompare(right.date);
 }
 
+export function mergeOpinetDieselDailyHistory(
+  currentRows: readonly NormalizedDieselPriceRow[],
+  recentRows: readonly NormalizedDieselPriceRow[],
+): NormalizedDieselPriceRow[] {
+  const mergedRows = new Map<string, NormalizedDieselPriceRow>();
+
+  for (const row of currentRows) {
+    mergedRows.set(row.date, row);
+  }
+
+  for (const row of recentRows) {
+    mergedRows.set(row.date, row);
+  }
+
+  return Array.from(mergedRows.values()).sort(compareByDateAscending);
+}
+
 export async function fetchOpinetDieselDailyHistory(
   fetchImpl: typeof fetch = fetch,
 ): Promise<NormalizedDieselPriceRow[]> {
@@ -19,15 +36,5 @@ export async function fetchOpinetDieselDailyHistory(
     recentRows = [];
   }
 
-  const mergedRows = new Map<string, NormalizedDieselPriceRow>();
-
-  for (const row of recentRows) {
-    mergedRows.set(row.date, row);
-  }
-
-  for (const row of currentRows) {
-    mergedRows.set(row.date, row);
-  }
-
-  return Array.from(mergedRows.values()).sort(compareByDateAscending);
+  return mergeOpinetDieselDailyHistory(currentRows, recentRows);
 }

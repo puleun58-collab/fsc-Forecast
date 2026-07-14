@@ -144,6 +144,10 @@ main {
   line-height: 1.7;
 }
 
+.dashboard-shell__keep-together {
+  white-space: nowrap;
+}
+
 .dashboard-shell__meta {
   display: flex;
   flex-wrap: wrap;

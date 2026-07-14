@@ -265,7 +265,8 @@ export function DashboardShell({ data }: DashboardShellProps) {
         <p className="dashboard-shell__eyebrow">FSC calculation MVP</p>
         <h1 className="dashboard-shell__title">FSC Forecast Dashboard</h1>
         <p className="dashboard-shell__description">
-          {quarterText} active quarter 기준으로 FSC 기준유가, 분기 평균 예상 유가, 주차별 actual/forecast 반영 결과를 공개합니다.
+          {quarterText} active quarter 기준으로 FSC 기준유가, 분기 평균 예상 유가, 주차별 actual/forecast{' '}
+          <span className="dashboard-shell__keep-together">반영 결과를 공개합니다.</span>
         </p>
         <div className="dashboard-shell__meta" aria-label="분기 기준 정보">
           <span className="dashboard-shell__meta-item dashboard-shell__meta-item--active">산출 대상 분기: {quarterText}</span>

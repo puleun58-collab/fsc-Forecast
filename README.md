@@ -268,6 +268,7 @@ npm run fetch:opinet
 ```
 - `.env.local`의 `OPINET_API_KEY`, `OPINET_AVG_PRICE_URL` 사용
 - 최근 7일 일평균은 `OPINET_RECENT_PRICE_URL`에서 추가 수집해 `data/oil-price-daily.json`에 누적 반영
+- 동일 날짜가 `avgAllPrice`와 최근 7일 API에 함께 있으면 최근 7일 API 값을 우선 반영
 - 최근 1주 주간 평균은 `OPINET_STATS_PRICE_URL` 기반 CSV 응답에서 추출해 `data/oil-price-weekly.json`에 저장
 - 현재 평균가격 API는 `code`로 먼저 호출하고, 비면 `certkey`로 한 번 더 시도
 - 자동차용경유(`D047` 또는 `자동차용경유`)만 반영
@@ -277,6 +278,7 @@ npm run fetch:opinet
 npm run ingest:opinet
 ```
 - 오피넷 현재 평균 + 최근 7일 일평균을 함께 수집
+- 동일 날짜가 겹치면 최근 7일 API 값으로 최신 일별 가격을 덮어써 대시보드 현재값과 변동값 기준으로 사용
 - revision/current truth 반영
 - ingest 실행 중 `data/oil-price-daily.json`, `data/oil-price-weekly.json`, `data/oil-price-monthly.json`도 함께 최신화
 - recompute snapshot 생성
