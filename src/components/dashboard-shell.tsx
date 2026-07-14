@@ -24,6 +24,28 @@ type StatusTone = 'success' | 'warning' | 'approved' | 'danger' | 'neutral';
 type SummaryCardTone = 'default' | 'brand' | 'success' | 'warning' | 'approved' | 'danger';
 type MetricKind = 'price' | 'ratio' | 'text';
 
+type SummaryMetric = {
+  label: string;
+  kind: MetricKind;
+  value: string | null;
+  caption?: string;
+};
+
+function findLatestActualWeek(weeks: readonly FscDashboardWeekItem[]): FscDashboardWeekItem | null {
+  for (let index = weeks.length - 1; index >= 0; index -= 1) {
+    const week = weeks[index];
+    if (week.priceKind === 'actual') {
+      return week;
+    }
+  }
+
+  return null;
+}
+
+function formatWeekDateRange(startDate: string, endDate: string): string {
+  return `${formatDotDate(startDate.slice(0, 10)) ?? startDate.slice(0, 10)}~${formatDotDate(endDate.slice(0, 10)) ?? endDate.slice(0, 10)}`;
+}
+
 function parseOptionalNumber(value: string | null): number | null {
   if (value === null) {
     return null;
@@ -165,7 +187,7 @@ function renderPriceValue(value: number | string | null, fallback = '기록 없�
   );
 }
 
-function renderMetricValue(kind: MetricKind, value: string): ReactNode {
+function renderMetricValue(kind: MetricKind, value: string | null): ReactNode {
   if (kind === 'price') {
     return renderPriceValue(value);
   }
@@ -174,7 +196,7 @@ function renderMetricValue(kind: MetricKind, value: string): ReactNode {
     return <span>{formatRatioPercentText(value)}</span>;
   }
 
-  return <span>{value}</span>;
+  return <span>{value ?? '기록 없음'}</span>;
 }
 
 function renderWeekRows(weeks: readonly FscDashboardWeekItem[]): ReactNode {
@@ -257,6 +279,21 @@ export function DashboardShell({ data }: DashboardShellProps) {
   const referenceQuarterText = formatQuarterLabel(data.quarter.referenceYear, data.quarter.referenceQuarter);
   const referenceQuarterMonths = getQuarterMonths(data.quarter.referenceQuarter);
   const referenceQuarterAverage = data.state === 'available' ? parseOptionalNumber(data.fsc.referenceQuarterAverageKrwPerL) : null;
+  const latestActualWeek = data.state === 'available' ? findLatestActualWeek(data.fsc.weeks) : null;
+  const actualWeekMetric: SummaryMetric = latestActualWeek
+    ? {
+        label: `${latestActualWeek.sequenceNo}주차 실제 반영 가격`,
+        kind: 'price',
+        value: latestActualWeek.priceKrwPerL,
+        caption: `${formatWeekDateRange(latestActualWeek.weekStartDate, latestActualWeek.weekEndDate)} 확정값`,
+      }
+    : {
+        label: '실제 반영 주차 가격',
+        kind: 'text',
+        value: '기록 없음',
+        caption: '아직 실제 반영이 완료된 주차가 없습니다.',
+      };
+
 
 
   return (
@@ -307,7 +344,7 @@ export function DashboardShell({ data }: DashboardShellProps) {
                   { label: 'FSC 70%', kind: 'price' as const, value: data.fsc.fscHighKrwPerL },
                   { label: '데이터 최신성', kind: 'text' as const, value: mapFreshnessStatus(data.fsc.dataFreshnessStatus) },
                   { label: '승인 상태', kind: 'text' as const, value: mapApprovalStatus(data.fsc.approvalStatus) },
-                  { label: '신뢰도 등급', kind: 'text' as const, value: data.fsc.reliabilityGrade },
+                  actualWeekMetric,
                 ].map((metric) => (
                   <div
                     key={metric.label}
@@ -319,11 +356,16 @@ export function DashboardShell({ data }: DashboardShellProps) {
                   >
                     <span className="dashboard-shell__metric-label">{metric.label}</span>
                     <p className="dashboard-shell__metric-value">{renderMetricValue(metric.kind, metric.value)}</p>
+                    {metric.caption ? <span className="dashboard-shell__metric-caption dashboard-shell__summary-card-caption">{metric.caption}</span> : null}
                   </div>
                 ))}
               </div>
               <div className="dashboard-shell__support-grid">
                 <div className="dashboard-shell__info-block">
+                  <div className="dashboard-shell__info-row">
+                    <span className="dashboard-shell__metric-label">신뢰도 등급</span>
+                    <strong className="dashboard-shell__info-value">{data.fsc.reliabilityGrade}</strong>
+                  </div>
                   <div className="dashboard-shell__info-row">
                     <span className="dashboard-shell__metric-label">최근 13주 주간 MAPE</span>
                     <strong className="dashboard-shell__info-value">{formatPercentText(data.fsc.recent13wWeeklyPriceMape)}</strong>

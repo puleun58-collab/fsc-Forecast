@@ -429,6 +429,10 @@ main {
   line-height: 1.5;
 }
 
+.dashboard-shell__summary-card-caption {
+  margin-top: auto;
+}
+
 .dashboard-shell__price-value {
   display: inline-flex;
   align-items: flex-end;
