@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
+
 
 import { PriceTrendChart } from './price-trend-chart';
 import { SectionCard } from './section-card';
@@ -197,16 +198,41 @@ function renderMetricValue(kind: MetricKind, value: string | null): ReactNode {
 }
 
 function renderWeekRows(weeks: readonly FscDashboardWeekItem[]): ReactNode {
+  const actualWeeks = weeks.filter((week) => week.priceKind === 'actual');
+  const forecastWeeks = weeks.filter((week) => week.priceKind === 'forecast');
+  const firstForecastSequenceNo = forecastWeeks[0]?.sequenceNo ?? null;
+
   return (
     <div className="dashboard-shell__panel">
-      <div className="dashboard-shell__summary-chips">
-        {weeks.map((week) => (
-          <span key={`summary-${week.sequenceNo}`} className="dashboard-shell__summary-chip">
-            <strong>{week.sequenceNo}주차</strong>
-            <span>{week.priceKind === 'actual' ? '실제' : '예측'}</span>
-            <span>{formatPriceText(week.priceKrwPerL)}</span>
-          </span>
-        ))}
+      <div className="dashboard-shell__summary-chip-groups">
+        {actualWeeks.length > 0 ? (
+          <div className="dashboard-shell__summary-chip-section">
+            <span className="section-card__badge-pill">실제 반영 구간</span>
+            <div className="dashboard-shell__summary-chips">
+              {actualWeeks.map((week) => (
+                <span key={`summary-${week.sequenceNo}`} className="dashboard-shell__summary-chip dashboard-shell__summary-chip--actual">
+                  <strong>{week.sequenceNo}주차</strong>
+                  <span>실제</span>
+                  <span>{formatPriceText(week.priceKrwPerL)}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        {forecastWeeks.length > 0 ? (
+          <div className="dashboard-shell__summary-chip-section">
+            <span className="section-card__badge-pill">예측 구간</span>
+            <div className="dashboard-shell__summary-chips">
+              {forecastWeeks.map((week) => (
+                <span key={`summary-${week.sequenceNo}`} className="dashboard-shell__summary-chip dashboard-shell__summary-chip--forecast">
+                  <strong>{week.sequenceNo}주차</strong>
+                  <span>예측</span>
+                  <span>{formatPriceText(week.priceKrwPerL)}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
       <div className="dashboard-shell__table-wrap">
         <table className="dashboard-shell__week-table">
@@ -223,31 +249,46 @@ function renderWeekRows(weeks: readonly FscDashboardWeekItem[]): ReactNode {
           </thead>
           <tbody>
             {weeks.map((week) => (
-              <tr key={week.sequenceNo}>
-                <td>
-                  <strong>{week.sequenceNo}주차</strong>
-                  <div className="dashboard-shell__cell-meta">ISO week {week.weekNo} · {week.targetMonth}월</div>
-                </td>
-                <td>{week.weekStartDate.slice(0, 10)} ~ {week.weekEndDate.slice(0, 10)}</td>
-                <td>
-                  <span
-                    className={
-                      week.priceKind === 'actual'
-                        ? 'dashboard-shell__kind-badge dashboard-shell__kind-badge--actual'
-                        : 'dashboard-shell__kind-badge dashboard-shell__kind-badge--forecast'
-                    }
-                  >
-                    {week.priceKind === 'actual' ? '실제값' : '예측값'}
-                  </span>
-                </td>
-                <td>{formatPriceText(week.priceKrwPerL)}</td>
-                <td>{formatPriceText(week.priceDiffKrwPerL)}</td>
-                <td>{formatRatioPercentText(week.diffRatio)}</td>
-                <td>
-                  {mapForecastSourceKind(week.forecastSourceKind)}
-                  {week.fallbackUsed ? ' · fallback' : ''}
-                </td>
-              </tr>
+              <Fragment key={week.sequenceNo}>
+                {firstForecastSequenceNo === week.sequenceNo ? (
+                  <tr className="dashboard-shell__week-row-separator">
+                    <td colSpan={7}>
+                      <span className="dashboard-shell__week-row-separator-label">예측 구간</span>
+                    </td>
+                  </tr>
+                ) : null}
+                <tr
+                  className={
+                    week.priceKind === 'actual'
+                      ? 'dashboard-shell__week-row dashboard-shell__week-row--actual'
+                      : 'dashboard-shell__week-row dashboard-shell__week-row--forecast'
+                  }
+                >
+                  <td>
+                    <strong>{week.sequenceNo}주차</strong>
+                    <div className="dashboard-shell__cell-meta">ISO week {week.weekNo} · {week.targetMonth}월</div>
+                  </td>
+                  <td>{week.weekStartDate.slice(0, 10)} ~ {week.weekEndDate.slice(0, 10)}</td>
+                  <td>
+                    <span
+                      className={
+                        week.priceKind === 'actual'
+                          ? 'dashboard-shell__kind-badge dashboard-shell__kind-badge--actual'
+                          : 'dashboard-shell__kind-badge dashboard-shell__kind-badge--forecast'
+                      }
+                    >
+                      {week.priceKind === 'actual' ? '실제값' : '예측값'}
+                    </span>
+                  </td>
+                  <td>{formatPriceText(week.priceKrwPerL)}</td>
+                  <td>{formatPriceText(week.priceDiffKrwPerL)}</td>
+                  <td>{formatRatioPercentText(week.diffRatio)}</td>
+                  <td>
+                    {mapForecastSourceKind(week.forecastSourceKind)}
+                    {week.fallbackUsed ? ' · fallback' : ''}
+                  </td>
+                </tr>
+              </Fragment>
             ))}
           </tbody>
         </table>
@@ -331,13 +372,13 @@ const actualWeekMetric: SummaryMetric = latestActualWeek
               <div className="dashboard-shell__summary-grid">
                 {[
                   { label: '기준유가', kind: 'price' as const, value: data.fsc.basePriceKrwPerL },
+                  actualWeekMetric,
                   { label: '현재 적용유가', kind: 'price' as const, value: data.fsc.appliedPriceKrwPerL },
                   { label: '분기 평균 예상 유가', kind: 'price' as const, value: data.fsc.quarterAverageKrwPerL },
                   { label: '기준유가 대비 차이금액', kind: 'price' as const, value: data.fsc.priceDiffKrwPerL },
                   { label: '기준유가 대비 차이율', kind: 'ratio' as const, value: data.fsc.diffRatio },
                   { label: 'FSC 30%', kind: 'price' as const, value: data.fsc.fscLowKrwPerL },
                   { label: 'FSC 70%', kind: 'price' as const, value: data.fsc.fscHighKrwPerL },
-                  actualWeekMetric,
                   { label: '데이터 최신성', kind: 'text' as const, value: mapFreshnessStatus(data.fsc.dataFreshnessStatus) },
                   { label: '승인 상태', kind: 'text' as const, value: mapApprovalStatus(data.fsc.approvalStatus) },
                 ].map((metric) => (

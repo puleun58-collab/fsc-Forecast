@@ -631,6 +631,16 @@ main {
   color: var(--danger);
 }
 
+.dashboard-shell__summary-chip-groups {
+  display: grid;
+  gap: 12px;
+}
+
+.dashboard-shell__summary-chip-section {
+  display: grid;
+  gap: 8px;
+}
+
 .dashboard-shell__summary-chips {
   display: flex;
   flex-wrap: wrap;
@@ -646,6 +656,18 @@ main {
   background: var(--bg-card);
   color: var(--text-primary);
   font-size: 0.84rem;
+}
+
+.dashboard-shell__summary-chip--actual {
+  background: var(--success-soft);
+  border-color: var(--success-border);
+  color: var(--success);
+}
+
+.dashboard-shell__summary-chip--forecast {
+  background: var(--brand-soft);
+  border-color: var(--brand-border);
+  color: var(--brand-text);
 }
 
 .dashboard-shell__info-block {
@@ -704,11 +726,36 @@ main {
   border-bottom: none;
 }
 
-.dashboard-shell__week-table tbody tr:nth-child(2n) {
-  background: #fbfcfd;
+.dashboard-shell__week-row-separator td {
+  padding: 10px 14px;
+  border-top: 2px solid var(--brand-border);
+  border-bottom: 1px solid var(--chart-grid);
+  background: var(--bg-card);
 }
 
-.dashboard-shell__week-table tbody tr:hover {
+.dashboard-shell__week-row-separator-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 6px 11px;
+  border: 1px solid var(--brand-border);
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-text);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.dashboard-shell__week-row--actual td {
+  background: #f3fbf8;
+}
+
+.dashboard-shell__week-row--actual:hover td {
+  background: #e8f7f2;
+}
+
+.dashboard-shell__week-row--forecast:hover td {
   background: #f3f6fb;
 }
 

@@ -40,6 +40,11 @@ forecast fallback 우선순위는 아래와 같습니다.
 
 fallback 사용 여부와 종류는 `FscQuarterWeek.forecastSourceKind`, `fallbackUsed`, 그리고 `FscResult.calculationPayload`에 기록됩니다.
 
+대시보드 표시는 actual/forecast 경계를 바로 읽을 수 있게 구성합니다.
+- 상단 요약 카드에는 마지막 `priceKind=actual` 주차를 `N주차 실제 반영 가격`으로 표시
+- 주차 chip/표는 `실제 반영 구간`과 `예측 구간`을 시각적으로 분리
+- 실제값 행은 예측값 행과 다른 톤으로 표시하고, 첫 forecast 행 앞에는 구분선을 둡니다.
+
 ## 0.3) FSC 계산식과 formula version
 
 현재 계산식 버전은 `fsc-v1`입니다.
