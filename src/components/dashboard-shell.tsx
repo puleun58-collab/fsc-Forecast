@@ -42,9 +42,6 @@ function findLatestActualWeek(weeks: readonly FscDashboardWeekItem[]): FscDashbo
   return null;
 }
 
-function formatWeekDateRange(startDate: string, endDate: string): string {
-  return `${formatDotDate(startDate.slice(0, 10)) ?? startDate.slice(0, 10)}~${formatDotDate(endDate.slice(0, 10)) ?? endDate.slice(0, 10)}`;
-}
 
 function parseOptionalNumber(value: string | null): number | null {
   if (value === null) {
@@ -280,19 +277,17 @@ export function DashboardShell({ data }: DashboardShellProps) {
   const referenceQuarterMonths = getQuarterMonths(data.quarter.referenceQuarter);
   const referenceQuarterAverage = data.state === 'available' ? parseOptionalNumber(data.fsc.referenceQuarterAverageKrwPerL) : null;
   const latestActualWeek = data.state === 'available' ? findLatestActualWeek(data.fsc.weeks) : null;
-  const actualWeekMetric: SummaryMetric = latestActualWeek
-    ? {
-        label: `${latestActualWeek.sequenceNo}주차 실제 반영 가격`,
-        kind: 'price',
-        value: latestActualWeek.priceKrwPerL,
-        caption: `${formatWeekDateRange(latestActualWeek.weekStartDate, latestActualWeek.weekEndDate)} 확정값`,
-      }
-    : {
-        label: '실제 반영 주차 가격',
-        kind: 'text',
-        value: '기록 없음',
-        caption: '아직 실제 반영이 완료된 주차가 없습니다.',
-      };
+const actualWeekMetric: SummaryMetric = latestActualWeek
+  ? {
+      label: `${latestActualWeek.sequenceNo}주차 실제 반영 가격`,
+      kind: 'price',
+      value: latestActualWeek.priceKrwPerL,
+    }
+  : {
+      label: '실제 반영 주차 가격',
+      kind: 'text',
+      value: '기록 없음',
+    };
 
 
 
@@ -342,9 +337,9 @@ export function DashboardShell({ data }: DashboardShellProps) {
                   { label: '기준유가 대비 차이율', kind: 'ratio' as const, value: data.fsc.diffRatio },
                   { label: 'FSC 30%', kind: 'price' as const, value: data.fsc.fscLowKrwPerL },
                   { label: 'FSC 70%', kind: 'price' as const, value: data.fsc.fscHighKrwPerL },
+                  actualWeekMetric,
                   { label: '데이터 최신성', kind: 'text' as const, value: mapFreshnessStatus(data.fsc.dataFreshnessStatus) },
                   { label: '승인 상태', kind: 'text' as const, value: mapApprovalStatus(data.fsc.approvalStatus) },
-                  actualWeekMetric,
                 ].map((metric) => (
                   <div
                     key={metric.label}
