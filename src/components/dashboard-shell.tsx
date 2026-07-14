@@ -418,7 +418,7 @@ const actualWeekMetric: SummaryMetric = latestActualWeek
         >
           {data.state === 'available' ? (
             <div className="dashboard-shell__panel">
-              <div className="dashboard-shell__summary-grid">
+              <div className="dashboard-shell__summary-grid dashboard-shell__summary-grid--with-support">
                 {[
                   { label: '기준유가', kind: 'price' as const, value: data.fsc.basePriceKrwPerL },
                   { label: '분기 평균 예상 유가', kind: 'price' as const, value: data.fsc.quarterAverageKrwPerL },
@@ -443,34 +443,7 @@ const actualWeekMetric: SummaryMetric = latestActualWeek
                     {metric.caption ? <span className="dashboard-shell__metric-caption dashboard-shell__summary-card-caption">{metric.caption}</span> : null}
                   </div>
                 ))}
-              </div>
-              <div className="dashboard-shell__support-grid">
-                <div className="dashboard-shell__info-block">
-                  <div className="dashboard-shell__info-row">
-                    <span className="dashboard-shell__metric-label">신뢰도 등급</span>
-                    <strong className="dashboard-shell__info-value">{data.fsc.reliabilityGrade}</strong>
-                  </div>
-                  <div className="dashboard-shell__info-row">
-                    <span className="dashboard-shell__metric-label">최근 13주 주간 MAPE</span>
-                    <strong className="dashboard-shell__info-value">{formatPercentText(data.fsc.recent13wWeeklyPriceMape)}</strong>
-                  </div>
-                  <div className="dashboard-shell__info-row">
-                    <span className="dashboard-shell__metric-label">최근 26주 주간 MAE</span>
-                    <strong className="dashboard-shell__info-value">{formatPriceText(data.fsc.recent26wWeeklyPriceMae)}</strong>
-                  </div>
-                  <div className="dashboard-shell__info-row">
-                    <span className="dashboard-shell__metric-label">최근 4주 오차 추세</span>
-                    <strong className="dashboard-shell__info-value">{data.fsc.recent4wErrorTrend ?? '기록 없음'}</strong>
-                  </div>
-                  <div className="dashboard-shell__info-divider" aria-hidden="true" />
-                  <div className="dashboard-shell__info-row">
-                    <span className="dashboard-shell__metric-label">최신 시세 안내</span>
-                    <strong className="dashboard-shell__info-value">아래 최신 가격 카드에서 확인</strong>
-                  </div>
-                  <span className="dashboard-shell__metric-caption">전일 변동과 갱신 시각은 최신 전국 평균 경유가 카드에 분리해 표시합니다.</span>
-                </div>
-
-                <div className="dashboard-shell__reference-card">
+                <div className="dashboard-shell__reference-card dashboard-shell__reference-card--summary">
                   <div className="dashboard-shell__reference-header">
                     <h3 className="dashboard-shell__subheading">참조 분기 유가</h3>
                     <p className="dashboard-shell__metric-caption">{referenceQuarterText} · FSC 기준 참조값</p>
@@ -497,6 +470,30 @@ const actualWeekMetric: SummaryMetric = latestActualWeek
                       <span className="dashboard-shell__metric-caption">공식 월간 평균판매가격이 아직 없습니다.</span>
                     )}
                   </div>
+                </div>
+                <div className="dashboard-shell__info-block dashboard-shell__info-block--summary">
+                  <div className="dashboard-shell__info-row">
+                    <span className="dashboard-shell__metric-label">신뢰도 등급</span>
+                    <strong className="dashboard-shell__info-value">{data.fsc.reliabilityGrade}</strong>
+                  </div>
+                  <div className="dashboard-shell__info-row">
+                    <span className="dashboard-shell__metric-label">최근 13주 주간 MAPE</span>
+                    <strong className="dashboard-shell__info-value">{formatPercentText(data.fsc.recent13wWeeklyPriceMape)}</strong>
+                  </div>
+                  <div className="dashboard-shell__info-row">
+                    <span className="dashboard-shell__metric-label">최근 26주 주간 MAE</span>
+                    <strong className="dashboard-shell__info-value">{formatPriceText(data.fsc.recent26wWeeklyPriceMae)}</strong>
+                  </div>
+                  <div className="dashboard-shell__info-row">
+                    <span className="dashboard-shell__metric-label">최근 4주 오차 추세</span>
+                    <strong className="dashboard-shell__info-value">{data.fsc.recent4wErrorTrend ?? '기록 없음'}</strong>
+                  </div>
+                  <div className="dashboard-shell__info-divider" aria-hidden="true" />
+                  <div className="dashboard-shell__info-row">
+                    <span className="dashboard-shell__metric-label">최신 시세 안내</span>
+                    <strong className="dashboard-shell__info-value">아래 최신 가격 카드에서 확인</strong>
+                  </div>
+                  <span className="dashboard-shell__metric-caption">전일 변동과 갱신 시각은 최신 전국 평균 경유가 카드에 분리해 표시합니다.</span>
                 </div>
               </div>
             </div>

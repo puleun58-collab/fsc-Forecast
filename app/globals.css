@@ -482,6 +482,28 @@ main {
   background: var(--bg-card);
   box-shadow: var(--shadow-card);
 }
+.dashboard-shell__reference-card--summary,
+.dashboard-shell__info-block--summary {
+  height: 100%;
+}
+
+@media (min-width: 1101px) {
+  .dashboard-shell__summary-grid--with-support {
+    grid-auto-flow: row dense;
+  }
+
+  .dashboard-shell__reference-card--summary {
+    grid-column: 4 / -1;
+    grid-row: 2 / span 2;
+    align-self: stretch;
+  }
+
+  .dashboard-shell__info-block--summary {
+    grid-column: 1 / span 3;
+    grid-row: 3;
+    align-self: stretch;
+  }
+}
 
 .dashboard-shell__reference-header,
 .dashboard-shell__reference-highlight,
