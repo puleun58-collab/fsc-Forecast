@@ -2,6 +2,7 @@ import { pathToFileURL } from "node:url";
 import { db } from "../lib/db";
 import { env } from "../lib/env";
 import { runOpinetIngest } from "../lib/ingest/run-opinet-ingest";
+import { syncExternalIndicators } from "../lib/external-indicators/sync-external-indicators";
 import { recordQueuedIngestRun } from "../lib/ingest/record-ingest-run";
 import { runtimeQueue, runtimeQueueContract } from "../lib/queue";
 
@@ -15,6 +16,15 @@ export interface WorkerRunSummary {
   startedAt: string;
   completedAt: string;
   status: "succeeded";
+  indicatorSync: {
+    status: "succeeded" | "failed";
+    errorSummary: string | null;
+    providerKey: string | null;
+    acceptedPointCount: number;
+    persistedCount: number;
+    createdCount: number;
+    updatedCount: number;
+  };
   queue: {
     jobKind: "ingest";
     runId: string;
@@ -102,7 +112,32 @@ export async function runScheduledWorkerOnce(): Promise<WorkerRunSummary> {
       requestedByRuntime: env.workerRuntimeId,
     },
     async ({ receipt }) => {
-      return runOpinetIngest({
+      const indicatorSync = await (async () => {
+        try {
+          const result = await syncExternalIndicators();
+          return {
+            status: "succeeded" as const,
+            errorSummary: null,
+            providerKey: result.providerKey,
+            acceptedPointCount: result.acceptedPointCount,
+            persistedCount: result.persistedCount,
+            createdCount: result.createdCount,
+            updatedCount: result.updatedCount,
+          };
+        } catch (error) {
+          return {
+            status: "failed" as const,
+            errorSummary: error instanceof Error ? error.message : String(error),
+            providerKey: null,
+            acceptedPointCount: 0,
+            persistedCount: 0,
+            createdCount: 0,
+            updatedCount: 0,
+          };
+        }
+      })();
+
+      const ingest = await runOpinetIngest({
         triggerKind: "scheduled",
         requestedByRuntime: env.workerRuntimeId,
         queuedRunId: queuedRun.id,
@@ -112,6 +147,11 @@ export async function runScheduledWorkerOnce(): Promise<WorkerRunSummary> {
           scheduledJobName: env.scheduledJobName,
         },
       });
+
+      return {
+        indicatorSync,
+        ingest,
+      };
     },
   );
 
@@ -138,27 +178,28 @@ export async function runScheduledWorkerOnce(): Promise<WorkerRunSummary> {
       lockStartedAt: execution.startedAt,
       lockCompletedAt: execution.completedAt,
     },
+    indicatorSync: execution.result.indicatorSync,
     ingestRun: {
-      id: execution.result.ingestRun.id,
-      status: execution.result.ingestRun.status,
-      startedAt: execution.result.ingestRun.startedAt?.toISOString() ?? null,
-      completedAt: execution.result.ingestRun.completedAt?.toISOString() ?? null,
+      id: execution.result.ingest.ingestRun.id,
+      status: execution.result.ingest.ingestRun.status,
+      startedAt: execution.result.ingest.ingestRun.startedAt?.toISOString() ?? null,
+      completedAt: execution.result.ingest.ingestRun.completedAt?.toISOString() ?? null,
     },
     reconcile: {
-      processedRowCount: execution.result.reconcile.processedRowCount,
-      createdRevisionCount: execution.result.reconcile.createdRevisionCount,
-      supersededRevisionCount: execution.result.reconcile.supersededRevisionCount,
-      unchangedRowCount: execution.result.reconcile.unchangedRowCount,
-      currentRowCount: execution.result.reconcile.currentRowCount,
+      processedRowCount: execution.result.ingest.reconcile.processedRowCount,
+      createdRevisionCount: execution.result.ingest.reconcile.createdRevisionCount,
+      supersededRevisionCount: execution.result.ingest.reconcile.supersededRevisionCount,
+      unchangedRowCount: execution.result.ingest.reconcile.unchangedRowCount,
+      currentRowCount: execution.result.ingest.reconcile.currentRowCount,
     },
     snapshot: {
-      snapshotId: execution.result.snapshot.snapshotId,
-      currentRowCount: execution.result.snapshot.currentRowCount,
-      currentTruthCutoffAt: execution.result.snapshot.currentTruthCutoffAt.toISOString(),
+      snapshotId: execution.result.ingest.snapshot.snapshotId,
+      currentRowCount: execution.result.ingest.snapshot.currentRowCount,
+      currentTruthCutoffAt: execution.result.ingest.snapshot.currentTruthCutoffAt.toISOString(),
     },
-    fetchedRowCount: execution.result.fetchedRows.length,
-    forecast: execution.result.forecast,
-    cacheRefresh: execution.result.cacheRefresh,
+    fetchedRowCount: execution.result.ingest.fetchedRows.length,
+    forecast: execution.result.ingest.forecast,
+    cacheRefresh: execution.result.ingest.cacheRefresh,
   };
 }
 

@@ -6,6 +6,9 @@ import { findLatestBaseFscResultByQuarter } from '@/lib/fsc/load-latest-fsc-resu
 import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
 
+import { runCommentaryPipeline } from '@/lib/commentary';
+import { externalIndicatorCodes } from '@/lib/external-indicators/catalog';
+
 import type {
   FscDashboardCurrentPriceSection,
   FscDashboardData,
@@ -42,6 +45,18 @@ function normalizeError(error: unknown): string {
   }
 
   return '알 수 없는 오류가 발생했습니다.';
+}
+
+function getCommentaryUnavailableReason(status: 'ready' | 'insufficient_data' | 'unavailable'): string {
+  switch (status) {
+    case 'insufficient_data':
+      return '외부 지표 근거가 아직 충분하지 않습니다.';
+    case 'unavailable':
+      return '국제·외부 이슈 해설을 불러오지 못했습니다.';
+    case 'ready':
+    default:
+      return '';
+  }
 }
 
 function readMonthlyBasis(
@@ -146,7 +161,15 @@ async function loadSupportSection(): Promise<FscDashboardSupportSection> {
     return {
       currentPrice: unavailableCurrent,
       trend: unavailableTrend,
+      commentary: {
+        status: 'unavailable',
+        generatedAt: null,
+        text: '국제·외부 이슈 해설을 생성할 스냅샷 데이터가 아직 없습니다.',
+        signals: [],
+        unavailableReason: '국제·외부 이슈 해설을 생성할 스냅샷 데이터가 아직 없습니다.',
+      },
     };
+
   }
 
   const currentRows = await db.dailyPriceCurrent.findMany({
@@ -190,6 +213,13 @@ async function loadSupportSection(): Promise<FscDashboardSupportSection> {
         latestMonthlyAverageKrwPerL: null,
         unavailableReason: '최근 추이를 그릴 일별 데이터가 아직 없습니다.',
       },
+      commentary: {
+        status: 'unavailable',
+        generatedAt: null,
+        text: '국제·외부 이슈 해설을 생성할 일별 가격 데이터가 아직 없습니다.',
+        signals: [],
+        unavailableReason: '국제·외부 이슈 해설을 생성할 일별 가격 데이터가 아직 없습니다.',
+      },
     };
   }
 
@@ -216,6 +246,60 @@ async function loadSupportSection(): Promise<FscDashboardSupportSection> {
       ? null
       : roundPrice((absoluteChangeKrwPerL! / previousPriceKrwPerL) * 100);
 
+  const indicatorRows = await Promise.all(
+    externalIndicatorCodes.map(async (indicatorCode) => ({
+      indicatorCode,
+      rows: await db.externalIndicatorHistory.findMany({
+        where: {
+          indicatorCode,
+          observedAt: snapshot.currentTruthCutoffAt
+            ? {
+                lte: snapshot.currentTruthCutoffAt,
+              }
+            : undefined,
+        },
+        orderBy: {
+          observedAt: 'desc',
+        },
+        take: 2,
+      }),
+    })),
+  );
+
+  const commentaryInput = indicatorRows.map((entry) => ({
+    indicatorCode: entry.indicatorCode,
+    points: [...entry.rows]
+      .reverse()
+      .map((row) => ({ observedAt: row.observedAt, value: Number(row.value) })),
+  }));
+
+  const commentaryResult = runCommentaryPipeline({
+    recomputeSnapshotId: snapshot.id,
+    latestPrice: {
+      observedAt: latestRow.priceDate,
+      priceKrwPerL: latestPriceKrwPerL,
+    },
+    previousPrice: previousRow
+      ? {
+          observedAt: previousRow.priceDate,
+          priceKrwPerL: previousPriceKrwPerL!,
+        }
+      : null,
+    indicators: commentaryInput,
+  });
+
+  const commentary = {
+    status: commentaryResult.status,
+    generatedAt: commentaryResult.generatedAt.toISOString(),
+    text: commentaryResult.commentaryText,
+    signals: commentaryResult.signals.map((signal) => ({
+      indicatorCode: signal.indicatorCode,
+      direction: signal.direction,
+      reasonText: signal.reasonText,
+    })),
+    unavailableReason: getCommentaryUnavailableReason(commentaryResult.status) || undefined,
+  };
+
   return {
     currentPrice: {
       availability: 'available',
@@ -241,6 +325,7 @@ async function loadSupportSection(): Promise<FscDashboardSupportSection> {
       unavailableReason:
         seriesSnapshot.daily.points.length > 1 ? undefined : '최근 추이를 그릴 수 있을 만큼의 일별 데이터가 없습니다.',
     },
+    commentary,
   };
 }
 

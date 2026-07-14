@@ -15,7 +15,7 @@ import {
   getDirectionalChangeDisplay,
 } from '@/lib/dashboard/display-format';
 
-import type { FscDashboardData, FscDashboardWeekItem } from '@/lib/dashboard/fsc-types';
+import type { FscDashboardCommentarySection, FscDashboardData, FscDashboardWeekItem } from '@/lib/dashboard/fsc-types';
 
 type DashboardShellProps = {
   data: FscDashboardData;
@@ -83,6 +83,31 @@ function mapFreshnessStatus(value: string): string {
     case 'unavailable':
     default:
       return '확인 불가';
+  }
+}
+
+function mapIndicatorLabel(value: 'dubai' | 'brent' | 'wti' | 'usd-krw'): string {
+  switch (value) {
+    case 'dubai':
+      return '두바이유';
+    case 'brent':
+      return '브렌트유';
+    case 'wti':
+      return 'WTI';
+    case 'usd-krw':
+      return 'USD/KRW';
+  }
+}
+
+function mapDirectionLabel(value: 'up' | 'down' | 'flat'): string {
+  switch (value) {
+    case 'up':
+      return '상승';
+    case 'down':
+      return '하락';
+    case 'flat':
+    default:
+      return '보합';
   }
 }
 
@@ -195,6 +220,30 @@ function renderMetricValue(kind: MetricKind, value: string | null): ReactNode {
   }
 
   return <span>{value ?? '기록 없음'}</span>;
+}
+
+function renderCommentaryBox(data: FscDashboardCommentarySection): ReactNode {
+  return (
+    <div className="dashboard-shell__commentary-card">
+      <div className="dashboard-shell__commentary-header">
+        <span className="dashboard-shell__metric-label">국제·외부 요인</span>
+        <span className="dashboard-shell__metric-caption">참고 해설</span>
+      </div>
+      <p className="dashboard-shell__commentary-text">{data.text}</p>
+      {data.signals.length > 0 ? (
+        <div className="dashboard-shell__commentary-chips" aria-label="외부 지표 신호">
+          {data.signals.map((signal) => (
+            <span key={signal.indicatorCode} className="dashboard-shell__commentary-chip" title={signal.reasonText}>
+              {mapIndicatorLabel(signal.indicatorCode)} {mapDirectionLabel(signal.direction)}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {data.status !== 'ready' && data.unavailableReason ? (
+        <span className="dashboard-shell__metric-caption">{data.unavailableReason}</span>
+      ) : null}
+    </div>
+  );
 }
 
 function renderWeekRows(weeks: readonly FscDashboardWeekItem[]): ReactNode {
@@ -426,6 +475,7 @@ const actualWeekMetric: SummaryMetric = latestActualWeek
                     <h3 className="dashboard-shell__subheading">참조 분기 유가</h3>
                     <p className="dashboard-shell__metric-caption">{referenceQuarterText} · FSC 기준 참조값</p>
                   </div>
+                  {renderCommentaryBox(data.support.commentary)}
                   <div className="dashboard-shell__reference-highlight">
                     <span className="dashboard-shell__metric-label">{`${data.quarter.referenceQuarter}분기 평균 판매가격`}</span>
                     <p className="dashboard-shell__reference-price">{renderPriceValue(data.fsc.referenceQuarterAverageKrwPerL)}</p>

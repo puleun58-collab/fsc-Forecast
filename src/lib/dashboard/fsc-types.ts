@@ -40,6 +40,20 @@ export interface FscDashboardTrendSection {
   unavailableReason?: string;
 }
 
+export interface FscDashboardCommentarySignal {
+  indicatorCode: 'dubai' | 'brent' | 'wti' | 'usd-krw';
+  direction: DashboardTrendDirection;
+  reasonText: string;
+}
+
+export interface FscDashboardCommentarySection {
+  status: 'ready' | 'insufficient_data' | 'unavailable';
+  generatedAt: string | null;
+  text: string;
+  signals: FscDashboardCommentarySignal[];
+  unavailableReason?: string;
+}
+
 export interface FscDashboardWeekItem {
   sequenceNo: number;
   targetMonth: number;
@@ -89,6 +103,7 @@ export interface FscDashboardResultSection {
 export interface FscDashboardSupportSection {
   currentPrice: FscDashboardCurrentPriceSection;
   trend: FscDashboardTrendSection;
+  commentary: FscDashboardCommentarySection;
 }
 
 export interface FscDashboardUnavailableData {

@@ -44,6 +44,7 @@ fallback 사용 여부와 종류는 `FscQuarterWeek.forecastSourceKind`, `fallba
 - 상단 요약 카드에는 마지막 `priceKind=actual` 주차를 `N주차 실제 반영 가격`으로 표시
 - 주차 chip/표는 `실제 반영 구간`과 `예측 구간`을 시각적으로 분리
 - 실제값 행은 예측값 행과 다른 톤으로 표시하고, 첫 forecast 행 앞에는 구분선을 둡니다.
+- 참조 분기 유가 카드 상단에는 WTI·Brent·Dubai·USD/KRW 기반 `국제·외부 요인` 참고 해설을 함께 표시합니다.
 
 ## 0.3) FSC 계산식과 formula version
 
@@ -178,6 +179,13 @@ Vercel production 주소:
 기본값 허용:
 - `ADMIN_SESSION_MAX_AGE_DAYS=14`
 
+Vercel 입력 예시:
+- Key `ADMIN_PASSWORD_HASH` → Value `scrypt$...` (생성한 해시 전체)
+- Key `ADMIN_SESSION_SECRET` → Value 32바이트 이상 랜덤 문자열
+- Key `ADMIN_SESSION_MAX_AGE_DAYS` → Value `14`
+
+환경 선택은 최소 `Production`을 포함하고, 저장 후 새 배포를 다시 실행합니다.
+
 현재 코드 사용 시 함께 유지:
 - `OPINET_AVG_PRICE_URL`
 - `OPINET_RECENT_PRICE_URL`
@@ -304,6 +312,8 @@ npm run sync:indicators
 - USD/KRW: `DEXKOUS`
 
 ### worker 실행
+worker는 외부 지표를 먼저 동기화한 뒤, 같은 실행 흐름에서 오피넷 ingest/recompute snapshot/forecast를 이어서 수행합니다.
+
 macOS/Linux:
 ```bash
 RUNTIME_ROLE=worker npm run worker
@@ -359,26 +369,19 @@ artifacts/                # 검증 산출물
 
 ## 5) 자동 실행 방법
 
-현재 repo가 제공하는 자동화 포인트는 `worker` entrypoint입니다. 반복 실행 자체는 외부 스케줄러가 호출해야 합니다.
+현재 repo가 제공하는 자동화 포인트는 `worker` entrypoint입니다. 반복 실행 자체는 외부 스케줄러가 호출해야 합니다. worker는 한 번 실행될 때 외부 지표 sync와 오피넷 ingest를 같은 serialized 흐름으로 묶어 처리합니다.
 
 ### 권장 흐름
-1. `npm run sync:indicators`
-2. `RUNTIME_ROLE=worker npm run worker`
+1. 외부 스케줄러가 `RUNTIME_ROLE=worker npm run worker`를 주기적으로 호출
+2. worker가 외부 지표 sync → 오피넷 ingest → snapshot/forecast 갱신을 순서대로 처리
 3. 앱은 최신 snapshot 기준으로 대시보드를 제공합니다
-
 
 ### Linux cron 예시
 ```cron
-0 9 * * * cd /path/to/project && /usr/bin/npm run sync:indicators >> logs/indicator-sync.log 2>&1
-10 9 * * * cd /path/to/project && RUNTIME_ROLE=worker /usr/bin/npm run worker >> logs/worker.log 2>&1
+0 9 * * * cd /path/to/project && RUNTIME_ROLE=worker /usr/bin/npm run worker >> logs/worker.log 2>&1
 ```
 
 ### Windows 작업 스케줄러 예시
-- 프로그램: `npm`
-- 인수: `run sync:indicators`
-- 시작 위치: 프로젝트 루트
-
-별도 작업 하나 더:
 - 프로그램: `cmd.exe`
 - 인수: `/c set RUNTIME_ROLE=worker && npm run worker`
 - 시작 위치: 프로젝트 루트
@@ -447,8 +450,8 @@ npx prisma migrate deploy
 
 대응:
 ```bash
-npm run ingest:opinet
 npm run sync:indicators
+npm run ingest:opinet
 npm run dev
 ```
 
@@ -458,8 +461,8 @@ npm run dev
 
 대응:
 - `npm run ingest:opinet` 먼저 실행
-- 필요하면 `npm run sync:indicators`도 함께 실행
-
+- worker 자동화를 쓴다면 `RUNTIME_ROLE=worker npm run worker`가 정상 실행되는지 확인
+- 필요하면 `npm run sync:indicators`로 외부 지표만 별도 재동기화
 ## 7) 빠른 점검 순서
 
 로컬에서 최소 점검:
@@ -467,8 +470,8 @@ npm run dev
 npm install
 npx prisma migrate deploy
 npm run fetch:opinet
-npm run ingest:opinet
 npm run sync:indicators
+npm run ingest:opinet
 npm run dev
 ```
 
@@ -485,6 +488,6 @@ npm run build
 - `npm run fetch:opinet` — raw fetch to `data/oil-price-daily.json`, `data/oil-price-weekly.json`, `data/oil-price-monthly.json`
 - `npm run ingest:opinet` — DB-backed ingest + local JSON cache refresh + recompute snapshot + forecast 생성
 - `npm run sync:indicators` — 외부 지표 sync
-- `npm run worker` — scheduled worker entrypoint
+- `npm run worker` — 외부 지표 sync + scheduled Opinet ingest/recompute/forecast를 한 번 실행하는 worker entrypoint
 - `npm run vercel-build` — Vercel용 Prisma generate + production build
 - `npm run generate:admin-password-hash` — 관리자 비밀번호를 숨김 입력으로 hash 생성
