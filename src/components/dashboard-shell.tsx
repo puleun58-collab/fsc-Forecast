@@ -372,13 +372,12 @@ const actualWeekMetric: SummaryMetric = latestActualWeek
               <div className="dashboard-shell__summary-grid">
                 {[
                   { label: '기준유가', kind: 'price' as const, value: data.fsc.basePriceKrwPerL },
-                  { label: '현재 적용유가', kind: 'price' as const, value: data.fsc.appliedPriceKrwPerL },
                   { label: '분기 평균 예상 유가', kind: 'price' as const, value: data.fsc.quarterAverageKrwPerL },
                   { label: '기준유가 대비 차이금액', kind: 'price' as const, value: data.fsc.priceDiffKrwPerL },
                   { label: '기준유가 대비 차이율', kind: 'ratio' as const, value: data.fsc.diffRatio },
-                  actualWeekMetric,
                   { label: 'FSC 30%', kind: 'price' as const, value: data.fsc.fscLowKrwPerL },
                   { label: 'FSC 70%', kind: 'price' as const, value: data.fsc.fscHighKrwPerL },
+                  actualWeekMetric,
                   { label: '데이터 최신성', kind: 'text' as const, value: mapFreshnessStatus(data.fsc.dataFreshnessStatus) },
                   { label: '승인 상태', kind: 'text' as const, value: mapApprovalStatus(data.fsc.approvalStatus) },
                 ].map((metric) => (
