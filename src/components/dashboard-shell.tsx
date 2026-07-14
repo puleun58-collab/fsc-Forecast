@@ -225,10 +225,6 @@ function renderMetricValue(kind: MetricKind, value: string | null): ReactNode {
 function renderCommentaryBox(data: FscDashboardCommentarySection): ReactNode {
   return (
     <div className="dashboard-shell__commentary-card">
-      <div className="dashboard-shell__commentary-header">
-        <span className="dashboard-shell__metric-label">국제·외부 요인</span>
-        <span className="dashboard-shell__metric-caption">참고 해설</span>
-      </div>
       <p className="dashboard-shell__commentary-text">{data.text}</p>
       {data.signals.length > 0 ? (
         <div className="dashboard-shell__commentary-chips" aria-label="외부 지표 신호">
