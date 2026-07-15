@@ -401,26 +401,30 @@ artifacts/                # 검증 산출물
 
 
 ### GitHub Actions 스케줄 예시
-Vercel처럼 별도 상시 worker 프로세스를 두기 어려운 환경에서는 `.github/workflows/scheduled-opinet-worker.yml`을 사용해 GitHub Actions가 15분마다 worker를 실행하도록 구성할 수 있습니다.
+Vercel처럼 별도 상시 worker 프로세스를 두기 어려운 환경에서는 `.github/workflows/scheduled-opinet-worker.yml`을 사용해 GitHub Actions가 15분마다 외부 지표 sync와 오피넷 ingest를 순서대로 실행하도록 구성할 수 있습니다.
 
 필수 GitHub Actions secrets:
 - `DATABASE_URL`
 - `OPINET_API_KEY`
 - `OPINET_AVG_PRICE_URL`
 
-선택 secrets(비워두면 코드 기본값 사용):
+선택 GitHub Actions secrets:
 - `OPINET_RECENT_PRICE_URL`
 - `OPINET_STATS_PRICE_URL`
 
-workflow는 `workflow_dispatch` 수동 실행도 지원합니다.
-### Linux cron 예시
+중요:
+- GitHub Actions `DATABASE_URL`은 production 앱이 사용하는 DB와 같아야 합니다.
+- Actions 비밀값에 `""` 같은 placeholder를 넣으면 Prisma가 연결 문자열로 인식하지 못합니다.
+- 이 workflow는 `npm run sync:indicators` → `npm run ingest:opinet` 순서로 실행해 장시간 advisory-lock 트랜잭션을 피합니다.
+
+Linux cron 예시:
 ```cron
-0 9 * * * cd /path/to/project && RUNTIME_ROLE=worker /usr/bin/npm run worker >> logs/worker.log 2>&1
+0 9 * * * cd /path/to/project && npm run sync:indicators && npm run ingest:opinet >> logs/worker.log 2>&1
 ```
 
 ### Windows 작업 스케줄러 예시
 - 프로그램: `cmd.exe`
-- 인수: `/c set RUNTIME_ROLE=worker && npm run worker`
+- 인수: `/c npm run sync:indicators && npm run ingest:opinet`
 - 시작 위치: 프로젝트 루트
 
 ### Docker Compose 기반 운영 시
