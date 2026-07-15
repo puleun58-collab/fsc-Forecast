@@ -26,10 +26,22 @@ export function formatSourceObservation(
   return formatDashboardDate(value);
 }
 
+export function formatSourceCollectionDate(value: string | null): string {
+  if (value === null) {
+    return '확인 불가';
+  }
+
+  return formatDashboardDateTime(value);
+}
+
+
 export function buildDashboardDataSources(input: {
   latestOpinetObservedAt: string | null;
+  latestOpinetCollectedAt: string | null;
   latestDubaiObservedAt: string | null;
+  latestDubaiCollectedAt: string | null;
   latestUsdKrwObservedAt: string | null;
+  latestUsdKrwCollectedAt: string | null;
   opinetFreshnessStatus?: 'fresh' | 'delayed' | 'stale' | 'unavailable';
 }): DashboardDataSource[] {
   const opinetFreshnessStatus = input.opinetFreshnessStatus ?? calculateDataFreshness(input.latestOpinetObservedAt);
@@ -38,7 +50,8 @@ export function buildDashboardDataSources(input: {
     {
       ...DASHBOARD_DATA_SOURCE_CONFIG.opinetDiesel,
       latestObservedAt: input.latestOpinetObservedAt,
-      observationGranularity: 'datetime',
+      latestCollectedAt: input.latestOpinetCollectedAt,
+      observationGranularity: 'date',
       status:
         opinetFreshnessStatus === 'fresh'
           ? 'available'
@@ -49,12 +62,14 @@ export function buildDashboardDataSources(input: {
     {
       ...DASHBOARD_DATA_SOURCE_CONFIG.dubai,
       latestObservedAt: input.latestDubaiObservedAt,
+      latestCollectedAt: input.latestDubaiCollectedAt,
       observationGranularity: 'month',
       status: input.latestDubaiObservedAt === null ? 'unavailable' : 'available',
     },
     {
       ...DASHBOARD_DATA_SOURCE_CONFIG.usdKrw,
       latestObservedAt: input.latestUsdKrwObservedAt,
+      latestCollectedAt: input.latestUsdKrwCollectedAt,
       observationGranularity: 'date',
       status: input.latestUsdKrwObservedAt === null ? 'unavailable' : 'available',
     },

@@ -15,10 +15,12 @@ export interface DashboardDataSource {
   purpose: string;
   description: string;
   latestObservedAt: string | null;
+  latestCollectedAt: string | null;
   observationGranularity: 'datetime' | 'date' | 'month';
   sourceUrl: string;
   status: DashboardDataSourceStatus;
 }
+
 
 export interface FscDashboardQuarterSummary {
   targetYear: number;
@@ -63,6 +65,7 @@ export interface FscDashboardMarketSignal {
   indicatorCode: 'dubai' | 'usd-krw';
   displayName: string;
   observedAt: string | null;
+  collectedAt: string | null;
   previousObservedAt: string | null;
   value: number | null;
   previousValue: number | null;

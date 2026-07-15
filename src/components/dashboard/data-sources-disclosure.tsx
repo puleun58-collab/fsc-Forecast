@@ -1,4 +1,5 @@
-import { formatSourceObservation } from '@/lib/dashboard/data-sources';
+import { formatSourceCollectionDate, formatSourceObservation } from '@/lib/dashboard/data-sources';
+
 import type { DashboardDataSource } from '@/lib/dashboard/fsc-types';
 
 type DataSourcesDisclosureProps = {
@@ -34,10 +35,9 @@ export function DataSourcesDisclosure({ dataSources }: DataSourcesDisclosureProp
           </div>
           <div className="data-sources__cards" aria-label="출처별 상세 정보">
             {dataSources.map((source) => {
-              const formattedObservedAt = formatSourceObservation(
-                source.latestObservedAt,
-                source.observationGranularity,
-              );
+              const formattedObservedAt = formatSourceObservation(source.latestObservedAt, source.observationGranularity);
+              const formattedCollectedAt = formatSourceCollectionDate(source.latestCollectedAt);
+
 
               return (
                 <article className="data-source-card" key={source.sourceCode}>
@@ -75,6 +75,12 @@ export function DataSourcesDisclosure({ dataSources }: DataSourcesDisclosureProp
                       <dt>최종 관측 기준</dt>
                       <dd>
                         <time dateTime={source.latestObservedAt ?? undefined}>{formattedObservedAt}</time>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>데이터 수집일</dt>
+                      <dd>
+                        <time dateTime={source.latestCollectedAt ?? undefined}>{formattedCollectedAt}</time>
                       </dd>
                     </div>
                     <div>

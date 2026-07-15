@@ -13,18 +13,23 @@
 - `DecisionSummary`: 분기 평균 예상 유가, 기준유가 대비 차이, FSC 30% / 70% 파생 결과
 - `WeeklyForecastSection`: actual 실선, forecast 점선, 기준유가 reference line, `예측 시작` boundary band
 - `WeeklyDetailTable`: 주차별 가격, 상태, 기준유가 대비 차이, 산출 방식
-- `MarketReferencePanel`: 오피넷 최신 전국 평균 경유가, 주간/월간 평균, 작은 sparkline, 공개 시장 요인(Dubai·USD/KRW)
+- `MarketReferencePanel`: 오피넷 날짜 기준 최종 평균 경유가, 주간/월간 평균, 작은 sparkline, 공개 시장 요인(Dubai·USD/KRW)
 - `MethodologyDisclosure`: actual-first 정책, 데이터 산출 기준, 데이터 처리 시각
-- `DataSourcesDisclosure`: 오피넷·두바이유·USD/KRW 출처 정보와 유의사항
+- `DataSourcesDisclosure`: 오피넷·두바이유·USD/KRW 출처 정보, 최종 관측 기준, 데이터 수집일, 유의사항
+
 
 표시 규칙:
 - 주차 라벨은 사용자 화면에서 `1주`, `2주` 형식으로 표시합니다.
 - 완료된 actual 주차는 forecast가 덮어쓰지 않습니다.
+- 일별 actual 완료 판정은 스냅샷 생성 시각이 아니라 최신 일별 `priceDate` 기준으로 처리합니다.
 - 첫 forecast 행과 차트 경계에는 `예측 시작`을 표시합니다.
 - 공개 시장 요인은 두바이유와 USD/KRW만 노출하고 Brent·WTI는 내부 분석용으로 유지합니다.
 - 모든 날짜·시각은 `Asia/Seoul` 기준으로 `YYYY.MM.DD HH:mm KST` 형식으로 표시합니다.
-- 현재 숫자는 UI에 하드코딩하지 않고 `loadFscDashboardData()`가 반환한 계산 결과와 데이터에 바인딩합니다.
+- 오피넷 시장 참고값 카드는 `YYYY.MM.DD 최종 평균 경유가` 형식으로 표시하고, 값은 같은 날짜의 오피넷 일별 최종 평균과 일치시킵니다.
+- 두바이유와 USD/KRW는 원천 관측일과 데이터 수집일을 분리해 표시하고, 상단 시장 요인과 하단 출처 카드가 같은 관측일 필드를 참조합니다.
+- 현재 숫자는 UI에 하드코딩하지 않고 `loadFscDashboardData()`가 반환한 계산 결과와 원천 데이터에 바인딩합니다.
 - 공식 신뢰도 등급은 `forecastRun.metadata.qualityGate.backtestPoints`에서 읽은 유효한 주간 백테스트 13개가 확보된 뒤 최근 13개 MAPE 기준으로만 산정합니다.
+
 
 ## 0) 프로젝트 목적과 아키텍처
 
@@ -333,6 +338,12 @@ npm run sync:indicators
 - Brent: `DCOILBRENTEU`
 - Dubai: `POILDUBUSDM`
 - USD/KRW: `DEXKOUS`
+
+동작 규칙:
+- 두바이유는 FRED `POILDUBUSDM`에서 값이 존재하는 가장 최근 월을 최종 관측 기준으로 사용합니다.
+- USD/KRW는 FRED `DEXKOUS`에서 빈 값(`.`/empty), 휴일, 주말을 제외한 가장 최근 유효 관측일을 최종 관측 기준으로 사용합니다.
+- 배치 실행일은 최종 관측 기준으로 쓰지 않고 별도 `데이터 수집일`로 구분합니다.
+- 원천 조회 실패 시 기존 정상 수집값을 유지하고, 마지막 성공 수집일만 계속 표시합니다.
 
 ### worker 실행
 worker는 외부 지표를 먼저 동기화한 뒤, 같은 실행 흐름에서 오피넷 ingest/recompute snapshot/forecast를 이어서 수행합니다.
