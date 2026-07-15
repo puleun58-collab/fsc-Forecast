@@ -26,6 +26,7 @@ notepad/
 
 # Local agent and visual QA outputs
 .agents/
+.codegraph
 skills-lock.json
 artifacts/visual-qa/
 

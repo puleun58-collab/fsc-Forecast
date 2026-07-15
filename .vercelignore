@@ -1,4 +1,5 @@
 .agents/
+.codegraph
 .codegraph/
 .gjc/
 .next/
