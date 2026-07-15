@@ -1,0 +1,10 @@
+.agents/
+.codegraph/
+.gjc/
+.next/
+.tmp/
+artifacts/visual-qa/
+node_modules/
+skills-lock.json
+*.log
+tsconfig.tsbuildinfo
