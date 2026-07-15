@@ -40,16 +40,18 @@ export function MarketReferencePanel({ support }: MarketReferencePanelProps) {
       {current.availability === 'available' ? (
         <div className="market-reference__grid">
           <div className="market-reference__latest">
-            <span className="metric-label">최신 전국 평균 경유가</span>
+            <span className="metric-label">
+              {current.latestPriceDate === null
+                ? '최종 평균 경유가'
+                : `${formatDisplayDate(current.latestPriceDate)} 최종 평균 경유가`}
+            </span>
             <PriceValue value={current.latestPriceKrwPerL} size="scenario" />
             <p>
               전일 대비 {mapDirectionLabel(current.direction)}{' '}
               {formatDirectionalPriceChange(current.direction, current.absoluteChangeKrwPerL)} ·{' '}
               {formatPercentText(current.percentChange)}
             </p>
-            <span className="metric-caption">
-              기준일 {formatDisplayDate(current.latestPriceDate)} · {formatDisplayDateTime(current.sourceObservedAt)}
-            </span>
+            <span className="metric-caption">수집 시각 {formatDisplayDateTime(current.sourceObservedAt)}</span>
           </div>
           <div className="market-reference__facts" aria-label="시장 참고 요약">
             <MarketFact label="최신 주간 평균" value={formatPriceText(trend.latestWeeklyAverageKrwPerL)} />

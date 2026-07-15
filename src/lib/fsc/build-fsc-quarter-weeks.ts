@@ -60,6 +60,22 @@ function daysInclusive(startDate: Date, endDate: Date): number {
   return Math.floor((endDate.getTime() - startDate.getTime()) / 86_400_000) + 1;
 }
 
+function resolveLatestDailyPriceDate(dailyPrices: readonly FscSourceDailyPriceRow[]): Date | null {
+  if (dailyPrices.length === 0) {
+    return null;
+  }
+
+  return dailyPrices.reduce<Date | null>((latest, row) => {
+    const priceDate = toDateOnly(row.priceDate);
+
+    if (latest === null || priceDate.getTime() > latest.getTime()) {
+      return priceDate;
+    }
+
+    return latest;
+  }, null);
+}
+
 function overlapDays(leftStart: Date, leftEnd: Date, rightStart: Date, rightEnd: Date): number {
   const start = clampStart(leftStart, rightStart);
   const end = clampEnd(leftEnd, rightEnd);
@@ -295,8 +311,9 @@ function createForecastWeekDraft(
 export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFscQuarterWeeksResult {
   const quarterStartDate = toDateOnly(input.quarterSetting.quarterStartDate);
   const quarterEndDate = toDateOnly(input.quarterSetting.quarterEndDate);
-  const currentTruthCutoffAt = input.currentTruthCutoffAt === null ? null : toDateOnly(input.currentTruthCutoffAt);
+  const latestDailyPriceDate = resolveLatestDailyPriceDate(input.dailyPrices);
   const dailyPriceMap = new Map(input.dailyPrices.map((row) => [formatDateKey(toDateOnly(row.priceDate)), row]));
+
   const weeks: FscQuarterWeekDraft[] = [];
   const sourceBreakdown = {
     actual: 0,
@@ -332,8 +349,8 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
     const expectedDayCount = daysInclusive(effectiveStart, effectiveEnd);
     const officialWeeklyMatch = findOfficialWeeklyMatch(input.officialWeeklyPrices, effectiveStart, effectiveEnd);
     const hasCompletedDailyActual =
-      currentTruthCutoffAt !== null &&
-      effectiveEnd.getTime() <= currentTruthCutoffAt.getTime() &&
+      latestDailyPriceDate !== null &&
+      effectiveEnd.getTime() <= latestDailyPriceDate.getTime() &&
       slotRows.length === expectedDayCount;
     const hasPublishedOfficialWeeklyActual = officialWeeklyMatch !== null;
 
