@@ -1,6 +1,9 @@
 import type { DashboardTrendDirection } from './fsc-types';
+import {
+  formatDashboardDate,
+  formatDashboardDateTime,
+} from './dashboard-time';
 
-const KOREA_TIME_ZONE = 'Asia/Seoul';
 const PRICE_FORMATTER = new Intl.NumberFormat('ko-KR', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
@@ -9,48 +12,6 @@ const PERCENT_FORMATTER = new Intl.NumberFormat('ko-KR', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
-
-function parseDateInput(value: string | Date): Date {
-  if (value instanceof Date) {
-    return new Date(value.getTime());
-  }
-
-  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (dateOnlyMatch) {
-    return new Date(Date.UTC(Number(dateOnlyMatch[1]), Number(dateOnlyMatch[2]) - 1, Number(dateOnlyMatch[3])));
-  }
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    throw new Error(`Invalid date value: ${value}`);
-  }
-
-  return parsed;
-}
-
-function formatPartsInTimeZone(value: Date): Record<'year' | 'month' | 'day' | 'hour' | 'minute', string> {
-  const parts = new Intl.DateTimeFormat('ko-KR', {
-    timeZone: KOREA_TIME_ZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).formatToParts(value);
-
-  const picked = Object.fromEntries(
-    parts
-      .filter((part) => ['year', 'month', 'day', 'hour', 'minute'].includes(part.type))
-      .map((part) => [part.type, part.value]),
-  ) as Record<'year' | 'month' | 'day' | 'hour' | 'minute', string>;
-
-  return picked;
-}
-
-function formatDatePieces(year: string, month: string, day: string): string {
-  return `${year}.${month}.${day}`;
-}
 
 export function formatPriceNumber(value: number | string): string {
   const parsed = typeof value === 'number' ? value : Number(value);
@@ -100,18 +61,8 @@ export function formatDotDate(value: string | Date | null): string | null {
     return null;
   }
 
-  if (typeof value === 'string') {
-    const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-    if (dateOnlyMatch) {
-      return formatDatePieces(dateOnlyMatch[1], dateOnlyMatch[2], dateOnlyMatch[3]);
-    }
-  }
-
-  const parsed = parseDateInput(value);
-  const year = parsed.getUTCFullYear();
-  const month = String(parsed.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(parsed.getUTCDate()).padStart(2, '0');
-  return formatDatePieces(String(year), month, day);
+  const formatted = formatDashboardDate(value);
+  return formatted === '기록 없음' ? null : formatted;
 }
 
 export function formatDotDateTime(value: string | Date | null): string | null {
@@ -119,9 +70,8 @@ export function formatDotDateTime(value: string | Date | null): string | null {
     return null;
   }
 
-  const parsed = parseDateInput(value);
-  const parts = formatPartsInTimeZone(parsed);
-  return `${formatDatePieces(parts.year, parts.month, parts.day)} ${parts.hour}:${parts.minute}`;
+  const formatted = formatDashboardDateTime(value);
+  return formatted === '기록 없음' ? null : formatted;
 }
 
 export function formatQuarterLabel(year: number, quarter: number): string {

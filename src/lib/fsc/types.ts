@@ -155,6 +155,8 @@ export interface BuildFscQuarterWeeksResult {
   calculationPayload: Prisma.InputJsonValue;
 }
 
+export const MIN_RELIABILITY_SAMPLE_COUNT = 13;
+
 export interface CalculateFscReliabilityInput {
   forecastRun: FscSourceForecastRunRecord | null;
   currentTruthCutoffAt: Date | null;
@@ -171,6 +173,8 @@ export interface CalculateFscReliabilityOutput {
   recent26wWeeklyPriceMae: Prisma.Decimal | null;
   forecastBias4w: Prisma.Decimal | null;
   forecastBias13w: Prisma.Decimal | null;
+  reliabilitySampleCount: number;
+  reliabilityMinimumSampleCount: number;
   reliabilityGrade: string;
   dataFreshnessStatus: 'fresh' | 'delayed' | 'stale' | 'unavailable';
 }

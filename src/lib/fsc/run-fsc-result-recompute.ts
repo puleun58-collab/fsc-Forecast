@@ -81,6 +81,8 @@ export async function runFscResultRecompute(now = new Date()): Promise<FscResult
           recent26wWeeklyPriceMae: reliability.recent26wWeeklyPriceMae,
           forecastBias4w: reliability.forecastBias4w,
           forecastBias13w: reliability.forecastBias13w,
+          reliabilitySampleCount: reliability.reliabilitySampleCount,
+          reliabilityMinimumSampleCount: reliability.reliabilityMinimumSampleCount,
           reliabilityGrade: reliability.reliabilityGrade,
           dataFreshnessStatus: reliability.dataFreshnessStatus,
           calculationPayload: {
@@ -133,6 +135,16 @@ export async function runFscResultRecompute(now = new Date()): Promise<FscResult
         },
         include: {
           quarterSetting: true,
+          sourceRecomputeSnapshot: {
+            select: {
+              currentTruthCutoffAt: true,
+            },
+          },
+          forecastRun: {
+            select: {
+              completedAt: true,
+            },
+          },
           weeks: {
             orderBy: {
               sequenceNo: 'asc',

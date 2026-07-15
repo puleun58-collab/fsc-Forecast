@@ -279,6 +279,8 @@ model FscResult {
   recent26wWeeklyPriceMae         Decimal?               @db.Decimal(10, 3)
   forecastBias4w                  Decimal?               @db.Decimal(10, 3)
   forecastBias13w                 Decimal?               @db.Decimal(10, 3)
+  reliabilitySampleCount          Int                    @default(0)
+  reliabilityMinimumSampleCount   Int                    @default(13)
   reliabilityGrade                String
   dataFreshnessStatus             FscDataFreshnessStatus
   calculationPayload              Json

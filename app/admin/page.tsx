@@ -8,6 +8,7 @@ import { db } from '@/lib/db';
 
 import { findLatestBaseFscResultByQuarter } from '@/lib/fsc/load-latest-fsc-result';
 import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
+import { mapReliabilityStatus } from '@/components/dashboard/dashboard-format';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
 
 
@@ -25,6 +26,15 @@ function formatDiff(current: string, previous: string | null): string {
 
   const diff = Number(current) - Number(previous);
   return `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}`;
+}
+
+function formatMapeSummary(value: string | null): string {
+  if (value === null) {
+    return '기록 없음';
+  }
+
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? `${numericValue.toFixed(1)}%` : '기록 없음';
 }
 
 export default async function AdminPage() {
@@ -48,6 +58,16 @@ export default async function AdminPage() {
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       include: {
         quarterSetting: true,
+        sourceRecomputeSnapshot: {
+          select: {
+            currentTruthCutoffAt: true,
+          },
+        },
+        forecastRun: {
+          select: {
+            completedAt: true,
+          },
+        },
         weeks: {
           orderBy: {
             sequenceNo: 'asc',
@@ -60,6 +80,17 @@ export default async function AdminPage() {
 
   const activeResultDto = activeResult ? serializeFscResultDto(activeResult) : null;
   const previousResultDto = activeResultHistory[1] ? serializeFscResultDto(activeResultHistory[1]) : null;
+  const reliabilityStatus = activeResultDto
+    ? mapReliabilityStatus({
+        grade: activeResultDto.reliabilityGrade,
+        sampleCount: activeResultDto.reliabilitySampleCount,
+        minimumSampleCount: activeResultDto.reliabilityMinimumSampleCount,
+        recent13wWeeklyPriceMape: activeResultDto.qualityMetrics.recent13wWeeklyPriceMape,
+      })
+    : null;
+  const remainingSampleCount = activeResultDto
+    ? Math.max(activeResultDto.reliabilityMinimumSampleCount - activeResultDto.reliabilitySampleCount, 0)
+    : 0;
   const nextDraft = quarters.find(
     (quarter) => quarter.status === 'draft' && (quarter.targetYear > activeQuarter.targetYear || (quarter.targetYear === activeQuarter.targetYear && quarter.targetQuarter > activeQuarter.targetQuarter)),
   );
@@ -115,7 +146,7 @@ export default async function AdminPage() {
                   {[
                     ['approval', activeResultDto.approvalStatus],
                     ['freshness', activeResultDto.dataFreshnessStatus],
-                    ['reliability', activeResultDto.reliabilityGrade],
+                    ['reliability', reliabilityStatus?.label ?? activeResultDto.reliabilityGrade],
                     ['actual weeks', String(activeResultDto.actualWeekCount)],
                     ['forecast weeks', String(activeResultDto.forecastWeekCount)],
                     ['quarter average', activeResultDto.quarterAverageKrwPerL],
@@ -136,6 +167,21 @@ export default async function AdminPage() {
                 </div>
                 <div className="admin-panel">
                   <strong>Reliability 상세</strong>
+                  <span>유효 백테스트 수: {activeResultDto.reliabilitySampleCount}</span>
+                  <span>최소 필요 백테스트 수: {activeResultDto.reliabilityMinimumSampleCount}</span>
+                  <span>추가로 필요한 백테스트 수: {remainingSampleCount}</span>
+                  {remainingSampleCount > 0 || activeResultDto.reliabilityGrade === 'U' || activeResultDto.qualityMetrics.recent13wWeeklyPriceMape === null ? (
+                    <>
+                      <span>공식 등급 미산정</span>
+                      <span>주간 백테스트 {activeResultDto.reliabilitySampleCount}/{activeResultDto.reliabilityMinimumSampleCount}개 확보</span>
+                      <span>{remainingSampleCount}개가 추가로 필요합니다.</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>공식 신뢰도 {activeResultDto.reliabilityGrade}</span>
+                      <span>최근 13개 백테스트 MAPE {formatMapeSummary(activeResultDto.qualityMetrics.recent13wWeeklyPriceMape)}</span>
+                    </>
+                  )}
                   <span>4주 MAE: {activeResultDto.qualityMetrics.recent4wWeeklyPriceMae ?? '기록 없음'}</span>
                   <span>13주 MAE: {activeResultDto.qualityMetrics.recent13wWeeklyPriceMae ?? '기록 없음'}</span>
                   <span>13주 MAPE: {activeResultDto.qualityMetrics.recent13wWeeklyPriceMape ?? '기록 없음'}</span>

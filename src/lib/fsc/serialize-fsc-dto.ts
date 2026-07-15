@@ -1,10 +1,12 @@
 import type {
+  ForecastRun,
   FscDataFreshnessStatus,
   FscForecastSourceKind,
   FscPriceKind,
   FscQuarterWeek,
   FscResult,
   QuarterSetting,
+  RecomputeSnapshot,
 } from '@prisma/client';
 
 export interface FscQuarterWeekDto {
@@ -60,18 +62,24 @@ export interface FscResultDto {
     forecastBias4w: string | null;
     forecastBias13w: string | null;
   };
+  reliabilitySampleCount: number;
+  reliabilityMinimumSampleCount: number;
   reliabilityGrade: string;
   dataFreshnessStatus: FscDataFreshnessStatus;
   approvalStatus: string;
   approvedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  dataBasisAt: string | null;
+  forecastCompletedAt: string | null;
   weeks: FscQuarterWeekDto[];
 }
 
 export type FscResultRecord = FscResult & {
   quarterSetting: QuarterSetting;
   weeks: FscQuarterWeek[];
+  sourceRecomputeSnapshot: Pick<RecomputeSnapshot, 'currentTruthCutoffAt'>;
+  forecastRun: Pick<ForecastRun, 'completedAt'> | null;
 };
 
 const PRICE_SCALE = 2;
@@ -79,7 +87,6 @@ const PRICE_SCALE = 2;
 function formatOptionalDecimal(value: { toFixed: (scale: number) => string } | null, scale: number): string | null {
   return value === null ? null : value.toFixed(scale);
 }
-
 
 function serializeFscQuarterWeek(value: FscQuarterWeek): FscQuarterWeekDto {
   return {
@@ -98,11 +105,15 @@ function serializeFscQuarterWeek(value: FscQuarterWeek): FscQuarterWeekDto {
     basePriceKrwPerL: value.basePriceKrwPerL.toFixed(PRICE_SCALE),
     priceDiffKrwPerL: value.priceDiffKrwPerL.toFixed(PRICE_SCALE),
     diffRatio: value.diffRatio.toFixed(6),
-
   };
 }
 
 export function serializeFscResultDto(value: FscResultRecord): FscResultDto {
+  const reliabilitySampleCount = value.reliabilitySampleCount ?? 0;
+  const reliabilityMinimumSampleCount = value.reliabilityMinimumSampleCount ?? 13;
+  const reliabilityGrade =
+    reliabilitySampleCount >= reliabilityMinimumSampleCount ? value.reliabilityGrade : 'U';
+
   return {
     id: value.id,
     scenarioName: value.scenarioName,
@@ -125,7 +136,6 @@ export function serializeFscResultDto(value: FscResultRecord): FscResultDto {
     fscHighRate: value.fscHighRate.toFixed(4),
     fscLowKrwPerL: value.fscLowKrwPerL.toFixed(PRICE_SCALE),
     fscHighKrwPerL: value.fscHighKrwPerL.toFixed(PRICE_SCALE),
-
     actualWeekCount: value.actualWeekCount,
     forecastWeekCount: value.forecastWeekCount,
     qualityMetrics: {
@@ -139,12 +149,16 @@ export function serializeFscResultDto(value: FscResultRecord): FscResultDto {
       forecastBias4w: formatOptionalDecimal(value.forecastBias4w, PRICE_SCALE),
       forecastBias13w: formatOptionalDecimal(value.forecastBias13w, PRICE_SCALE),
     },
-    reliabilityGrade: value.reliabilityGrade,
+    reliabilitySampleCount,
+    reliabilityMinimumSampleCount,
+    reliabilityGrade,
     dataFreshnessStatus: value.dataFreshnessStatus,
     approvalStatus: value.approvalStatus,
     approvedAt: value.approvedAt?.toISOString() ?? null,
     createdAt: value.createdAt.toISOString(),
     updatedAt: value.updatedAt.toISOString(),
+    dataBasisAt: value.sourceRecomputeSnapshot.currentTruthCutoffAt?.toISOString() ?? null,
+    forecastCompletedAt: value.forecastRun?.completedAt?.toISOString() ?? null,
     weeks: [...value.weeks]
       .sort((left, right) => left.sequenceNo - right.sequenceNo)
       .map(serializeFscQuarterWeek),

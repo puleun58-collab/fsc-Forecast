@@ -4,6 +4,27 @@ import type { DashboardTrendDirection, FscDashboardWeekItem } from '@/lib/dashbo
 
 export type StatusTone = 'ok' | 'warning' | 'critical' | 'neutral';
 
+export type ReliabilityStatusInput = {
+  grade: string;
+  sampleCount: number;
+  minimumSampleCount: number;
+  recent13wWeeklyPriceMape: number | string | null;
+};
+
+export type ReliabilityStatusView = {
+  label: string;
+  detail: string;
+  tone: StatusTone;
+};
+
+export const RELIABILITY_POLICY_ITEMS = [
+  '공식 신뢰도 등급은 유효한 주간 백테스트 13개가 확보된 후 산정합니다.',
+  '현재 분기의 Actual·Forecast 주차 수는 신뢰도 표본 수에 포함하지 않습니다.',
+  '등급은 최근 13개 백테스트의 MAPE를 기준으로 산정합니다.',
+  'MAE와 Bias는 품질 참고 지표로 사용하며 공식 등급에는 반영하지 않습니다.',
+] as const;
+
+
 type PriceValueSize = 'headline' | 'scenario' | 'regular' | 'compact';
 
 type PriceValueProps = {
@@ -152,19 +173,56 @@ export function mapFreshnessStatus(value: string): { label: string; tone: Status
   }
 }
 
-export function mapReliabilityGrade(value: string): { label: string; detail: string; tone: StatusTone } {
-  if (value === 'U') {
+function mapReliabilityTone(grade: string): StatusTone {
+  if (grade === 'A' || grade === 'B') {
+    return 'ok';
+  }
+
+  if (grade === 'C') {
+    return 'warning';
+  }
+
+  return 'critical';
+}
+
+export function mapReliabilityStatus(input: ReliabilityStatusInput): ReliabilityStatusView {
+  const {
+    grade,
+    sampleCount,
+    minimumSampleCount,
+    recent13wWeeklyPriceMape,
+  } = input;
+
+  if (sampleCount === 0) {
     return {
       label: '신뢰도 산정 전',
-      detail: '원본 등급 U. 최근 오차 지표가 충분히 쌓이면 신뢰도 등급을 산정합니다.',
+      detail: '비교 가능한 완료 예측이 아직 없습니다.',
+      tone: 'neutral',
+    };
+  }
+
+  if (sampleCount < minimumSampleCount || grade === 'U' || recent13wWeeklyPriceMape === null) {
+    return {
+      label: `신뢰도 산정 중 · ${sampleCount}/${minimumSampleCount}`,
+      detail: `공식 신뢰도 등급은 주간 백테스트 ${minimumSampleCount}개가 확보된 후 산정합니다. 현재 ${sampleCount}개가 확보되었습니다.`,
+      tone: 'neutral',
+    };
+  }
+
+  const mape = parseNumeric(recent13wWeeklyPriceMape);
+
+  if (mape === null) {
+    return {
+      label: `신뢰도 산정 중 · ${sampleCount}/${minimumSampleCount}`,
+      detail: `공식 신뢰도 등급은 주간 백테스트 ${minimumSampleCount}개가 확보된 후 산정합니다.`,
       tone: 'neutral',
     };
   }
 
   return {
-    label: `신뢰도 ${value}`,
-    detail: `원본 등급 ${value}. 최근 예측 오차 지표를 기준으로 산정합니다.`,
-    tone: 'ok',
+    label: `신뢰도 ${grade} · MAPE ${mape.toFixed(1)}%`,
+    detail: `최근 ${minimumSampleCount}개 주간 백테스트의 MAPE를 기준으로 산정한 등급입니다.`,
+    tone: mapReliabilityTone(grade),
   };
 }
 

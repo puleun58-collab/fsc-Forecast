@@ -8,7 +8,7 @@ import {
 } from './dashboard-format';
 
 import type {
-  FscDashboardCommentarySignal,
+  FscDashboardMarketSignal,
   FscDashboardSupportSection,
   FscDashboardTrendPoint,
 } from '@/lib/dashboard/fsc-types';
@@ -64,7 +64,7 @@ export function MarketReferencePanel({ support }: MarketReferencePanelProps) {
             latestWeeklyAverageKrwPerL={trend.latestWeeklyAverageKrwPerL}
             latestMonthlyAverageKrwPerL={trend.latestMonthlyAverageKrwPerL}
           />
-          <MarketCommentary text={support.commentary.text} signals={support.commentary.signals} />
+          <MarketSignalsSection support={support} />
         </div>
       ) : (
         <div className="empty-state" role="status">
@@ -85,60 +85,42 @@ function MarketFact({ label, value }: { label: string; value: string }) {
   );
 }
 
-function MarketCommentary({
-  text,
-  signals,
-}: {
-  text: string;
-  signals: readonly FscDashboardCommentarySignal[];
-}) {
-  if (text.length === 0 && signals.length === 0) {
-    return null;
-  }
-
-  const evidenceMarker = '주요 근거는 ';
-  const evidenceTerminator = '입니다.';
-  const evidenceStartIndex = text.indexOf(evidenceMarker);
-  const evidenceEndIndex =
-    evidenceStartIndex >= 0 ? text.indexOf(evidenceTerminator, evidenceStartIndex) : -1;
-  const evidenceText =
-    evidenceEndIndex >= 0 ? text.slice(evidenceStartIndex, evidenceEndIndex + evidenceTerminator.length) : null;
-  const beforeEvidenceText = evidenceText === null ? text : text.slice(0, evidenceStartIndex);
-  const afterEvidenceText = evidenceText === null ? '' : text.slice(evidenceEndIndex + evidenceTerminator.length);
+function MarketSignalsSection({ support }: { support: FscDashboardSupportSection }) {
+  const marketSignals = support.marketSignals;
 
   return (
-    <div className="market-commentary">
-      {text.length > 0 ? (
-        <p>
-          {beforeEvidenceText}
-          {evidenceText === null ? null : <span className="market-commentary__evidence">{evidenceText}</span>}
-          {afterEvidenceText}
-        </p>
-      ) : null}
-      {signals.length > 0 ? (
-        <div className="market-commentary__signals" aria-label="외부 지표 신호">
-          {signals.map((signal) => (
-            <span key={signal.indicatorCode} title={signal.reasonText}>
-              {mapIndicatorLabel(signal.indicatorCode)} {mapDirectionLabel(signal.direction)}
-            </span>
+    <div className="market-signals">
+      <div className="market-signals__heading">
+        <strong>주요 시장 요인</strong>
+        <span>두바이유와 USD/KRW만 공개 표시합니다.</span>
+      </div>
+      {marketSignals.signals.length > 0 ? (
+        <div className="market-signals__grid" aria-label="공개 시장 요인">
+          {marketSignals.signals.map((signal) => (
+            <MarketSignalCard key={signal.indicatorCode} signal={signal} />
           ))}
         </div>
+      ) : null}
+      <p>{marketSignals.summaryText}</p>
+      {marketSignals.status !== 'ready' && marketSignals.unavailableReason ? (
+        <span className="metric-caption">{marketSignals.unavailableReason}</span>
       ) : null}
     </div>
   );
 }
 
-function mapIndicatorLabel(value: FscDashboardCommentarySignal['indicatorCode']): string {
-  switch (value) {
-    case 'dubai':
-      return '두바이유';
-    case 'brent':
-      return '브렌트유';
-    case 'wti':
-      return 'WTI';
-    case 'usd-krw':
-      return 'USD/KRW';
-  }
+function MarketSignalCard({ signal }: { signal: FscDashboardMarketSignal }) {
+  const percentText = signal.percentChange === null ? '변화율 산정 불가' : formatPercentText(signal.percentChange);
+
+  return (
+    <article className="market-signal-card" title={signal.explanation}>
+      <span className="metric-label">{signal.displayName}</span>
+      <strong>
+        {percentText} · {mapDirectionLabel(signal.direction)}
+      </strong>
+      <span className="metric-caption">관측 기준 {formatDisplayDate(signal.observedAt)}</span>
+    </article>
+  );
 }
 
 export function MarketSparkline({

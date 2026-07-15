@@ -1,0 +1,47 @@
+export const DASHBOARD_DATA_SOURCE_CONFIG = {
+  opinetDiesel: {
+    sourceCode: 'opinet-diesel',
+    displayName: '오피넷',
+    dataName: '전국 평균 자동차용경유 판매가격',
+    dataCode: 'D047',
+    providerName: '한국석유공사 오피넷',
+    originalProviderName: null,
+    unitLabel: '원/L',
+    providerFrequencyLabel: '수집 파이프라인 기준',
+    collectionFrequencyLabel: '자동 수집 작업 실행 시',
+    purpose: '국내 경유 실제가격과 완료 주차 Actual 산정',
+    description:
+      '오피넷에서 제공하는 전국 평균 자동차용경유 판매가격을 국내 경유 실제가격과 완료 주차 Actual 산정에 사용합니다.',
+    sourceUrl: 'https://www.opinet.co.kr/',
+  },
+  dubai: {
+    sourceCode: 'fred-dubai',
+    displayName: '두바이유',
+    dataName: 'Global price of Dubai Crude',
+    dataCode: 'POILDUBUSDM',
+    providerName: 'FRED',
+    originalProviderName: 'International Monetary Fund',
+    unitLabel: '미국 달러/배럴',
+    providerFrequencyLabel: '월간',
+    collectionFrequencyLabel: '자동 수집 작업 실행 시',
+    purpose: '아시아 지역 국제 원유가격 흐름 참고',
+    description:
+      '두바이유 가격은 국제 원유가격의 방향을 파악하기 위한 시장 참고 지표로 사용합니다.',
+    sourceUrl: 'https://fred.stlouisfed.org/series/POILDUBUSDM',
+  },
+  usdKrw: {
+    sourceCode: 'fred-usd-krw',
+    displayName: 'USD/KRW',
+    dataName: 'South Korean Won to U.S. Dollar Spot Exchange Rate',
+    dataCode: 'DEXKOUS',
+    providerName: 'FRED',
+    originalProviderName: 'Board of Governors of the Federal Reserve System',
+    unitLabel: '원/USD',
+    providerFrequencyLabel: '일간',
+    collectionFrequencyLabel: '자동 수집 작업 실행 시',
+    purpose: '달러 표시 원유가격의 원화 환산 영향 참고',
+    description:
+      'USD/KRW는 달러 표시 원유와 석유제품 가격이 원화 기준 비용에 미치는 영향을 파악하기 위한 참고 지표입니다.',
+    sourceUrl: 'https://fred.stlouisfed.org/series/DEXKOUS',
+  },
+} as const;

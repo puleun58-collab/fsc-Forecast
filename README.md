@@ -8,20 +8,23 @@
 현재 대시보드는 운영 의사결정용 `Fuel Operations Ledger` 콘셉트로 구성되어 있습니다. 랜딩 페이지형 hero나 반복 KPI 카드 대신, 분기 평균 예상 유가를 가장 먼저 읽고 그 값에서 FSC 30% / 70% 적용 결과가 파생된다는 관계를 한 화면에서 파악하도록 설계했습니다.
 
 주요 화면 구조:
-- `DashboardHeader`: `FSC Forecast`, active quarter, 산출 기준일, 데이터 갱신 액션
-- `StatusRail`: 데이터 최신성, 승인 상태, 신뢰도 상태
+- `DashboardHeader`: `FSC Forecast`, active quarter, 데이터 기준 시각, 데이터 갱신 액션
+- `StatusRail`: 데이터 최신성, 승인 상태, 신뢰도 상태(표본 0개/산정 중/공식 등급 구분)
 - `DecisionSummary`: 분기 평균 예상 유가, 기준유가 대비 차이, FSC 30% / 70% 파생 결과
 - `WeeklyForecastSection`: actual 실선, forecast 점선, 기준유가 reference line, `예측 시작` boundary band
 - `WeeklyDetailTable`: 주차별 가격, 상태, 기준유가 대비 차이, 산출 방식
-- `MarketReferencePanel`: 오피넷 최신 전국 평균 경유가, 주간/월간 평균, 작은 sparkline, 외부 지표 근거
-- `MethodologyDisclosure`: actual-first 정책과 데이터 산출 기준
+- `MarketReferencePanel`: 오피넷 최신 전국 평균 경유가, 주간/월간 평균, 작은 sparkline, 공개 시장 요인(Dubai·USD/KRW)
+- `MethodologyDisclosure`: actual-first 정책, 데이터 산출 기준, 데이터 처리 시각
+- `DataSourcesDisclosure`: 오피넷·두바이유·USD/KRW 출처 정보와 유의사항
 
 표시 규칙:
 - 주차 라벨은 사용자 화면에서 `1주`, `2주` 형식으로 표시합니다.
 - 완료된 actual 주차는 forecast가 덮어쓰지 않습니다.
 - 첫 forecast 행과 차트 경계에는 `예측 시작`을 표시합니다.
-- 오피넷 commentary의 주요 근거 문장은 모바일에서도 어색하게 중간 분리되지 않도록 한 문장 단위로 유지합니다.
+- 공개 시장 요인은 두바이유와 USD/KRW만 노출하고 Brent·WTI는 내부 분석용으로 유지합니다.
+- 모든 날짜·시각은 `Asia/Seoul` 기준으로 `YYYY.MM.DD HH:mm KST` 형식으로 표시합니다.
 - 현재 숫자는 UI에 하드코딩하지 않고 `loadFscDashboardData()`가 반환한 계산 결과와 데이터에 바인딩합니다.
+- 공식 신뢰도 등급은 `forecastRun.metadata.qualityGate.backtestPoints`에서 읽은 유효한 주간 백테스트 13개가 확보된 뒤 최근 13개 MAPE 기준으로만 산정합니다.
 
 ## 0) 프로젝트 목적과 아키텍처
 
@@ -64,7 +67,7 @@ fallback 사용 여부와 종류는 `FscQuarterWeek.forecastSourceKind`, `fallba
 - Decision Summary에는 분기 평균 예상 유가를 대표 수치로 표시하고, FSC 30% / 70% 결과는 같은 surface 안의 파생 결과로 정렬합니다.
 - 차트는 actual 구간을 실선, forecast 구간을 점선으로 표시하고 actual에서 forecast로 전환되는 지점에 `예측 시작` boundary band를 둡니다.
 - 주차별 상세 데이터는 첫 forecast 행 앞에 구분선을 두고, 모바일에서는 actual 목록과 forecast 목록 사이에 `예측 시작` 헤더를 표시합니다.
-- 오피넷 시장 참고값은 FSC 판단의 보조 지표로 배치하고, WTI·Brent·Dubai·USD/KRW 기반 근거를 하단 commentary로 표시합니다.
+- 오피넷 시장 참고값은 FSC 판단의 보조 지표로 배치하고, 공개 시장 요인은 Dubai·USD/KRW만 하단에 표시합니다.
 
 ## 0.3) FSC 계산식과 formula version
 
@@ -396,6 +399,20 @@ artifacts/                # 검증 산출물
 2. worker가 외부 지표 sync → 오피넷 ingest → snapshot/forecast 갱신을 순서대로 처리
 3. 앱은 최신 snapshot 기준으로 대시보드를 제공합니다
 
+
+### GitHub Actions 스케줄 예시
+Vercel처럼 별도 상시 worker 프로세스를 두기 어려운 환경에서는 `.github/workflows/scheduled-opinet-worker.yml`을 사용해 GitHub Actions가 15분마다 worker를 실행하도록 구성할 수 있습니다.
+
+필수 GitHub Actions secrets:
+- `DATABASE_URL`
+- `OPINET_API_KEY`
+- `OPINET_AVG_PRICE_URL`
+
+선택 secrets(비워두면 코드 기본값 사용):
+- `OPINET_RECENT_PRICE_URL`
+- `OPINET_STATS_PRICE_URL`
+
+workflow는 `workflow_dispatch` 수동 실행도 지원합니다.
 ### Linux cron 예시
 ```cron
 0 9 * * * cd /path/to/project && RUNTIME_ROLE=worker /usr/bin/npm run worker >> logs/worker.log 2>&1

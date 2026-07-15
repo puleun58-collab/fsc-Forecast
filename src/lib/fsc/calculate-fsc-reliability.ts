@@ -1,6 +1,8 @@
 import { Prisma } from '@prisma/client';
 
-import type { CalculateFscReliabilityInput, CalculateFscReliabilityOutput } from './types';
+import { calculateDataFreshness } from '@/lib/dashboard/dashboard-time';
+
+import { MIN_RELIABILITY_SAMPLE_COUNT, type CalculateFscReliabilityInput, type CalculateFscReliabilityOutput } from './types';
 
 const ROUND_HALF_UP = Prisma.Decimal.ROUND_HALF_UP;
 const ZERO = new Prisma.Decimal(0);
@@ -12,9 +14,6 @@ interface BacktestPointRecord {
   absolutePercentageErrorPct: number | null;
 }
 
-function toDateOnly(value: Date): Date {
-  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -139,68 +138,41 @@ function calculateRecent4wErrorTrend(points: readonly BacktestPointRecord[]): st
 }
 
 function calculateReliabilityGrade(
-  recent26wWeeklyPriceMae: Prisma.Decimal | null,
+  sampleCount: number,
   recent13wWeeklyPriceMape: Prisma.Decimal | null,
 ): string {
-  if (recent26wWeeklyPriceMae === null && recent13wWeeklyPriceMape === null) {
+  if (sampleCount < MIN_RELIABILITY_SAMPLE_COUNT || recent13wWeeklyPriceMape === null) {
     return 'U';
   }
 
-  const mape = recent13wWeeklyPriceMape?.toNumber() ?? null;
-  const mae = recent26wWeeklyPriceMae?.toNumber() ?? null;
+  const mape = recent13wWeeklyPriceMape.toNumber();
 
-  if (mape !== null) {
-    if (mape <= 3) {
-      return 'A';
-    }
-    if (mape <= 5) {
-      return 'B';
-    }
-    if (mape <= 7.5) {
-      return 'C';
-    }
-    if (mape <= 10) {
-      return 'D';
-    }
+  if (mape <= 3) {
+    return 'A';
   }
-
-  if (mae !== null) {
-    if (mae <= 30) {
-      return 'B';
-    }
-    if (mae <= 60) {
-      return 'C';
-    }
-    if (mae <= 90) {
-      return 'D';
-    }
+  if (mape <= 5) {
+    return 'B';
+  }
+  if (mape <= 7.5) {
+    return 'C';
+  }
+  if (mape <= 10) {
+    return 'D';
   }
 
   return 'E';
 }
 
-function calculateFreshnessStatus(currentTruthCutoffAt: Date | null, now: Date): CalculateFscReliabilityOutput['dataFreshnessStatus'] {
-  if (currentTruthCutoffAt === null) {
-    return 'unavailable';
-  }
-
-  const currentDate = toDateOnly(now);
-  const cutoffDate = toDateOnly(currentTruthCutoffAt);
-  const dayDelta = Math.max(0, Math.floor((currentDate.getTime() - cutoffDate.getTime()) / 86_400_000));
-
-  if (dayDelta <= 1) {
-    return 'fresh';
-  }
-
-  if (dayDelta <= 7) {
-    return 'delayed';
-  }
-
-  return 'stale';
+function calculateFreshnessStatus(
+  currentTruthCutoffAt: Date | null,
+  now: Date,
+): CalculateFscReliabilityOutput['dataFreshnessStatus'] {
+  return calculateDataFreshness(currentTruthCutoffAt, now);
 }
 
 export function calculateFscReliability(input: CalculateFscReliabilityInput): CalculateFscReliabilityOutput {
   const backtestPoints = readBacktestPoints(input.forecastRun?.metadata ?? null);
+  const reliabilitySampleCount = backtestPoints.length;
   const recent13wWeeklyPriceMae = calculateMae(backtestPoints, 13);
   const recent13wWeeklyPriceMape = calculateMape(backtestPoints, 13);
   const recent13wQuarterAveragePriceMae = null;
@@ -211,7 +183,7 @@ export function calculateFscReliability(input: CalculateFscReliabilityInput): Ca
     input.forecastRun?.maeKrwPerL?.toDecimalPlaces(3, ROUND_HALF_UP) ?? calculateMae(backtestPoints, 26);
   const forecastBias4w = calculateBias(backtestPoints, 4);
   const forecastBias13w = calculateBias(backtestPoints, 13);
-  const reliabilityGrade = calculateReliabilityGrade(recent26wWeeklyPriceMae, recent13wWeeklyPriceMape);
+  const reliabilityGrade = calculateReliabilityGrade(reliabilitySampleCount, recent13wWeeklyPriceMape);
   const dataFreshnessStatus = calculateFreshnessStatus(input.currentTruthCutoffAt, input.now ?? new Date());
 
   return {
@@ -224,6 +196,8 @@ export function calculateFscReliability(input: CalculateFscReliabilityInput): Ca
     recent26wWeeklyPriceMae,
     forecastBias4w,
     forecastBias13w,
+    reliabilitySampleCount,
+    reliabilityMinimumSampleCount: MIN_RELIABILITY_SAMPLE_COUNT,
     reliabilityGrade,
     dataFreshnessStatus,
   };

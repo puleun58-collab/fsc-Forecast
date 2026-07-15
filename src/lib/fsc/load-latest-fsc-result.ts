@@ -4,6 +4,16 @@ import type { FscResultRecord } from './serialize-fsc-dto';
 
 const FSC_RESULT_INCLUDE = {
   quarterSetting: true,
+  sourceRecomputeSnapshot: {
+    select: {
+      currentTruthCutoffAt: true,
+    },
+  },
+  forecastRun: {
+    select: {
+      completedAt: true,
+    },
+  },
   weeks: {
     orderBy: {
       sequenceNo: 'asc' as const,

@@ -1,5 +1,24 @@
 export type DashboardAvailability = 'available' | 'unavailable';
 export type DashboardTrendDirection = 'up' | 'down' | 'flat';
+export type DashboardDataSourceStatus = 'available' | 'delayed' | 'unavailable';
+
+export interface DashboardDataSource {
+  sourceCode: 'opinet-diesel' | 'fred-dubai' | 'fred-usd-krw';
+  displayName: string;
+  dataName: string;
+  dataCode: string | null;
+  providerName: string;
+  originalProviderName: string | null;
+  unitLabel: string;
+  providerFrequencyLabel: string;
+  collectionFrequencyLabel: string | null;
+  purpose: string;
+  description: string;
+  latestObservedAt: string | null;
+  observationGranularity: 'datetime' | 'date' | 'month';
+  sourceUrl: string;
+  status: DashboardDataSourceStatus;
+}
 
 export interface FscDashboardQuarterSummary {
   targetYear: number;
@@ -40,17 +59,23 @@ export interface FscDashboardTrendSection {
   unavailableReason?: string;
 }
 
-export interface FscDashboardCommentarySignal {
-  indicatorCode: 'dubai' | 'brent' | 'wti' | 'usd-krw';
+export interface FscDashboardMarketSignal {
+  indicatorCode: 'dubai' | 'usd-krw';
+  displayName: string;
+  observedAt: string | null;
+  previousObservedAt: string | null;
+  value: number | null;
+  previousValue: number | null;
+  absoluteChange: number | null;
+  percentChange: number | null;
   direction: DashboardTrendDirection;
-  reasonText: string;
+  explanation: string;
 }
 
-export interface FscDashboardCommentarySection {
+export interface FscDashboardMarketSignalsSection {
   status: 'ready' | 'insufficient_data' | 'unavailable';
-  generatedAt: string | null;
-  text: string;
-  signals: FscDashboardCommentarySignal[];
+  summaryText: string;
+  signals: FscDashboardMarketSignal[];
   unavailableReason?: string;
 }
 
@@ -73,6 +98,11 @@ export interface FscDashboardWeekItem {
 export interface FscDashboardResultSection {
   resultId: string;
   createdAt: string;
+  dataBasisAt: string | null;
+  forecastCompletedAt: string | null;
+  approvedAt: string | null;
+  dataDelayMinutes: number | null;
+  timezone: 'Asia/Seoul';
   approvalStatus: string;
   dataFreshnessStatus: string;
   reliabilityGrade: string;
@@ -87,6 +117,8 @@ export interface FscDashboardResultSection {
   fscHighKrwPerL: string;
   actualWeekCount: number;
   forecastWeekCount: number;
+  reliabilitySampleCount: number;
+  reliabilityMinimumSampleCount: number;
   recent13wWeeklyPriceMape: string | null;
   recent26wWeeklyPriceMae: string | null;
   recent4wErrorTrend: string | null;
@@ -98,32 +130,32 @@ export interface FscDashboardResultSection {
   }>;
 }
 
-
-
 export interface FscDashboardSupportSection {
   currentPrice: FscDashboardCurrentPriceSection;
   trend: FscDashboardTrendSection;
-  commentary: FscDashboardCommentarySection;
+  marketSignals: FscDashboardMarketSignalsSection;
 }
 
 export interface FscDashboardUnavailableData {
   state: 'unavailable';
   reason: string;
   detail: string;
+  dataSources: DashboardDataSource[];
 }
 
 export interface FscDashboardEmptyData {
   state: 'empty';
   quarter: FscDashboardQuarterSummary;
   support: FscDashboardSupportSection;
+  dataSources: DashboardDataSource[];
 }
-
 
 export interface FscDashboardAvailableData {
   state: 'available';
   quarter: FscDashboardQuarterSummary;
   fsc: FscDashboardResultSection;
   support: FscDashboardSupportSection;
+  dataSources: DashboardDataSource[];
 }
 
 export type FscDashboardData = FscDashboardUnavailableData | FscDashboardEmptyData | FscDashboardAvailableData;

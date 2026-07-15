@@ -1,9 +1,8 @@
 import {
-  formatDisplayDate,
   formatDisplayDateTime,
   mapApprovalStatus,
   mapFreshnessStatus,
-  mapReliabilityGrade,
+  mapReliabilityStatus,
 } from './dashboard-format';
 
 import type { FscDashboardQuarterSummary, FscDashboardResultSection } from '@/lib/dashboard/fsc-types';
@@ -16,7 +15,7 @@ type DashboardHeaderProps = {
 
 export function DashboardHeader({ quarter, fsc }: DashboardHeaderProps) {
   const quarterLabel = quarter === undefined ? 'Active quarter 없음' : formatQuarterLabel(quarter.targetYear, quarter.targetQuarter);
-  const basisDate = fsc === undefined ? '산출 결과 없음' : formatDisplayDate(fsc.createdAt.slice(0, 10));
+  const basisDateTime = fsc === undefined ? '산출 결과 없음' : formatDisplayDateTime(fsc.dataBasisAt, '기록 없음');
 
   return (
     <header className="ops-header">
@@ -32,8 +31,8 @@ export function DashboardHeader({ quarter, fsc }: DashboardHeaderProps) {
           </select>
         </label>
         <div className="ops-header__basis">
-          <span>산출 기준일</span>
-          <strong>{basisDate}</strong>
+          <span>데이터 기준 시각</span>
+          <strong>{basisDateTime}</strong>
         </div>
         <a className="button button--secondary ops-header__refresh" href="/">
           데이터 갱신
@@ -48,7 +47,12 @@ export function StatusRail({ fsc }: { fsc?: FscDashboardResultSection }) {
   const approval = fsc === undefined ? { label: '승인 대기', tone: 'warning' as const } : mapApprovalStatus(fsc.approvalStatus);
   const reliability = fsc === undefined
     ? { label: '신뢰도 산정 전', detail: 'FSC 결과 생성 후 신뢰도 조건을 평가합니다.', tone: 'neutral' as const }
-    : mapReliabilityGrade(fsc.reliabilityGrade);
+    : mapReliabilityStatus({
+        grade: fsc.reliabilityGrade,
+        sampleCount: fsc.reliabilitySampleCount,
+        minimumSampleCount: fsc.reliabilityMinimumSampleCount,
+        recent13wWeeklyPriceMape: fsc.recent13wWeeklyPriceMape,
+      });
 
   return (
     <div className="status-rail" aria-label="데이터 상태">

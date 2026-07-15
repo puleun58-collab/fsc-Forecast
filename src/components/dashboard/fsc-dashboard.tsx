@@ -1,4 +1,5 @@
 import { DashboardHeader, StatusRail } from './dashboard-header';
+import { DataSourcesDisclosure } from './data-sources-disclosure';
 import { DecisionSummary } from './decision-summary';
 import { MarketReferencePanel } from './market-reference-panel';
 import { MethodologyDisclosure } from './methodology-disclosure';
@@ -21,6 +22,7 @@ export function FscDashboard({ data }: FscDashboardProps) {
           <h1 id="dashboard-unavailable-title">{data.reason}</h1>
           <p>{data.detail}</p>
         </section>
+        <DataSourcesDisclosure dataSources={data.dataSources} />
       </main>
     );
   }
@@ -38,6 +40,7 @@ export function FscDashboard({ data }: FscDashboardProps) {
           <span className="metric-caption">대상 분기 {quarterLabel}</span>
         </section>
         <MarketReferencePanel support={data.support} />
+        <DataSourcesDisclosure dataSources={data.dataSources} />
       </main>
     );
   }
@@ -51,6 +54,7 @@ export function FscDashboard({ data }: FscDashboardProps) {
       <WeeklyDetailTable weeks={data.fsc.weeks} />
       <MarketReferencePanel support={data.support} />
       <MethodologyDisclosure fsc={data.fsc} />
+      <DataSourcesDisclosure dataSources={data.dataSources} />
     </main>
   );
 }

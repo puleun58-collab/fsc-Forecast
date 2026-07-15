@@ -6,12 +6,21 @@ import { findLatestBaseFscResultByQuarter } from '@/lib/fsc/load-latest-fsc-resu
 import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
 
-import { runCommentaryPipeline } from '@/lib/commentary';
 import { externalIndicatorCodes } from '@/lib/external-indicators/catalog';
 
+import { buildDashboardDataSources } from './data-sources';
+import {
+  calculateDataDelayMinutes,
+  calculateDataFreshness,
+} from './dashboard-time';
+import {
+  buildPublicMarketSignals,
+  buildPublicMarketSummaryText,
+} from './market-signals';
 import type {
   FscDashboardCurrentPriceSection,
   FscDashboardData,
+  FscDashboardMarketSignalsSection,
   FscDashboardQuarterSummary,
   FscDashboardSupportSection,
   FscDashboardTrendSection,
@@ -45,18 +54,6 @@ function normalizeError(error: unknown): string {
   }
 
   return '알 수 없는 오류가 발생했습니다.';
-}
-
-function getCommentaryUnavailableReason(status: 'ready' | 'insufficient_data' | 'unavailable'): string {
-  switch (status) {
-    case 'insufficient_data':
-      return '외부 지표 근거가 아직 충분하지 않습니다.';
-    case 'unavailable':
-      return '국제·외부 이슈 해설을 불러오지 못했습니다.';
-    case 'ready':
-    default:
-      return '';
-  }
 }
 
 function readMonthlyBasis(
@@ -121,6 +118,38 @@ function toQuarterSummary(value: {
   };
 }
 
+function buildUnavailableDataSources(opinetFreshnessStatus: 'fresh' | 'delayed' | 'stale' | 'unavailable' = 'unavailable') {
+  return buildDashboardDataSources({
+    latestOpinetObservedAt: null,
+    latestDubaiObservedAt: null,
+    latestUsdKrwObservedAt: null,
+    opinetFreshnessStatus,
+  });
+}
+
+function unavailableMarketSignals(reason: string): FscDashboardMarketSignalsSection {
+  return {
+    status: 'unavailable',
+    summaryText: reason,
+    signals: [],
+    unavailableReason: reason,
+  };
+}
+
+function buildSupportDataSources(support: FscDashboardSupportSection) {
+  return buildDashboardDataSources({
+    latestOpinetObservedAt: support.currentPrice.sourceObservedAt,
+    latestDubaiObservedAt:
+      support.marketSignals.signals.find((signal) => signal.indicatorCode === 'dubai')?.observedAt ?? null,
+    latestUsdKrwObservedAt:
+      support.marketSignals.signals.find((signal) => signal.indicatorCode === 'usd-krw')?.observedAt ?? null,
+    opinetFreshnessStatus:
+      support.currentPrice.sourceObservedAt === null
+        ? 'unavailable'
+        : calculateDataFreshness(support.currentPrice.sourceObservedAt),
+  });
+}
+
 async function loadSupportSection(): Promise<FscDashboardSupportSection> {
   const snapshot = await db.recomputeSnapshot.findFirst({
     where: {
@@ -161,15 +190,8 @@ async function loadSupportSection(): Promise<FscDashboardSupportSection> {
     return {
       currentPrice: unavailableCurrent,
       trend: unavailableTrend,
-      commentary: {
-        status: 'unavailable',
-        generatedAt: null,
-        text: '국제·외부 이슈 해설을 생성할 스냅샷 데이터가 아직 없습니다.',
-        signals: [],
-        unavailableReason: '국제·외부 이슈 해설을 생성할 스냅샷 데이터가 아직 없습니다.',
-      },
+      marketSignals: unavailableMarketSignals('주요 시장 요인을 생성할 스냅샷 데이터가 아직 없습니다.'),
     };
-
   }
 
   const currentRows = await db.dailyPriceCurrent.findMany({
@@ -213,13 +235,7 @@ async function loadSupportSection(): Promise<FscDashboardSupportSection> {
         latestMonthlyAverageKrwPerL: null,
         unavailableReason: '최근 추이를 그릴 일별 데이터가 아직 없습니다.',
       },
-      commentary: {
-        status: 'unavailable',
-        generatedAt: null,
-        text: '국제·외부 이슈 해설을 생성할 일별 가격 데이터가 아직 없습니다.',
-        signals: [],
-        unavailableReason: '국제·외부 이슈 해설을 생성할 일별 가격 데이터가 아직 없습니다.',
-      },
+      marketSignals: unavailableMarketSignals('주요 시장 요인을 생성할 일별 가격 데이터가 아직 없습니다.'),
     };
   }
 
@@ -266,38 +282,22 @@ async function loadSupportSection(): Promise<FscDashboardSupportSection> {
     })),
   );
 
-  const commentaryInput = indicatorRows.map((entry) => ({
-    indicatorCode: entry.indicatorCode,
-    points: [...entry.rows]
-      .reverse()
-      .map((row) => ({ observedAt: row.observedAt, value: Number(row.value) })),
-  }));
-
-  const commentaryResult = runCommentaryPipeline({
-    recomputeSnapshotId: snapshot.id,
-    latestPrice: {
-      observedAt: latestRow.priceDate,
-      priceKrwPerL: latestPriceKrwPerL,
-    },
-    previousPrice: previousRow
-      ? {
-          observedAt: previousRow.priceDate,
-          priceKrwPerL: previousPriceKrwPerL!,
-        }
-      : null,
-    indicators: commentaryInput,
-  });
-
-  const commentary = {
-    status: commentaryResult.status,
-    generatedAt: commentaryResult.generatedAt.toISOString(),
-    text: commentaryResult.commentaryText,
-    signals: commentaryResult.signals.map((signal) => ({
-      indicatorCode: signal.indicatorCode,
-      direction: signal.direction,
-      reasonText: signal.reasonText,
+  const publicSignals = buildPublicMarketSignals(
+    indicatorRows.map((entry) => ({
+      indicatorCode: entry.indicatorCode,
+      rows: entry.rows.map((row) => ({
+        observedAt: row.observedAt,
+        value: Number(row.value),
+      })),
     })),
-    unavailableReason: getCommentaryUnavailableReason(commentaryResult.status) || undefined,
+  );
+
+  const marketSignals: FscDashboardMarketSignalsSection = {
+    status: publicSignals.length === 2 ? 'ready' : 'insufficient_data',
+    summaryText: buildPublicMarketSummaryText(publicSignals),
+    signals: publicSignals,
+    unavailableReason:
+      publicSignals.length === 2 ? undefined : '두바이유와 USD/KRW 관측값이 모두 확보되면 핵심 시장 요인을 표시합니다.',
   };
 
   return {
@@ -325,7 +325,7 @@ async function loadSupportSection(): Promise<FscDashboardSupportSection> {
       unavailableReason:
         seriesSnapshot.daily.points.length > 1 ? undefined : '최근 추이를 그릴 수 있을 만큼의 일별 데이터가 없습니다.',
     },
-    commentary,
+    marketSignals,
   };
 }
 
@@ -333,30 +333,37 @@ export async function loadFscDashboardData(): Promise<FscDashboardData> {
   try {
     const quarter = await ensureActiveQuarter();
     const support = await loadSupportSection();
+    const dataSources = buildSupportDataSources(support);
     const result = await findLatestBaseFscResultByQuarter(quarter.targetYear, quarter.targetQuarter);
-
 
     if (result === null) {
       return {
         state: 'empty',
         quarter: toQuarterSummary(quarter),
         support,
+        dataSources,
       };
-
     }
 
     const fsc = serializeFscResultDto(result);
     const monthlyBasis = readMonthlyBasis(result.calculationPayload);
+    const dataBasisAt = fsc.dataBasisAt;
 
     return {
       state: 'available',
       quarter: toQuarterSummary(quarter),
       support,
+      dataSources,
       fsc: {
         resultId: fsc.id,
         createdAt: fsc.createdAt,
+        dataBasisAt,
+        forecastCompletedAt: fsc.forecastCompletedAt,
+        approvedAt: fsc.approvedAt,
+        dataDelayMinutes: calculateDataDelayMinutes(dataBasisAt),
+        timezone: 'Asia/Seoul',
         approvalStatus: fsc.approvalStatus,
-        dataFreshnessStatus: fsc.dataFreshnessStatus,
+        dataFreshnessStatus: calculateDataFreshness(dataBasisAt),
         reliabilityGrade: fsc.reliabilityGrade,
         basePriceKrwPerL: fsc.basePriceKrwPerL,
         appliedPriceKrwPerL: fsc.appliedPriceKrwPerL,
@@ -369,6 +376,8 @@ export async function loadFscDashboardData(): Promise<FscDashboardData> {
         fscHighKrwPerL: fsc.fscHighKrwPerL,
         actualWeekCount: fsc.actualWeekCount,
         forecastWeekCount: fsc.forecastWeekCount,
+        reliabilitySampleCount: fsc.reliabilitySampleCount,
+        reliabilityMinimumSampleCount: fsc.reliabilityMinimumSampleCount,
         recent13wWeeklyPriceMape: fsc.qualityMetrics.recent13wWeeklyPriceMape,
         recent26wWeeklyPriceMae: fsc.qualityMetrics.recent26wWeeklyPriceMae,
         recent4wErrorTrend: fsc.qualityMetrics.recent4wErrorTrend,
@@ -382,6 +391,7 @@ export async function loadFscDashboardData(): Promise<FscDashboardData> {
       state: 'unavailable',
       reason: 'active quarter FSC 대시보드를 불러오지 못했습니다.',
       detail: normalizeError(error),
+      dataSources: buildUnavailableDataSources(),
     };
   }
 }

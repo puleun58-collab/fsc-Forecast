@@ -22,7 +22,7 @@ test('formatPrice helpers add separators and units', () => {
 
 test('date helpers format dot notation for dates and timestamps', () => {
   assert.equal(formatDotDate('2026-07-13'), '2026.07.13');
-  assert.equal(formatDotDateTime('2026-07-13T02:07:00.000Z'), '2026.07.13 11:07');
+  assert.equal(formatDotDateTime('2026-07-13T02:07:00.000Z'), '2026.07.13 11:07 KST');
   assert.equal(formatCompactDateRange('2026-07-01', '2026-07-13'), '2026.07.01–07.13');
 });
 

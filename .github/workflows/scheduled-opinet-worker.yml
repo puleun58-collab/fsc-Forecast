@@ -1,0 +1,55 @@
+name: scheduled-opinet-worker
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'
+
+concurrency:
+  group: scheduled-opinet-worker-production
+  cancel-in-progress: false
+
+jobs:
+  run-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      OPINET_API_KEY: ${{ secrets.OPINET_API_KEY }}
+      OPINET_AVG_PRICE_URL: ${{ secrets.OPINET_AVG_PRICE_URL }}
+      OPINET_RECENT_PRICE_URL: ${{ secrets.OPINET_RECENT_PRICE_URL }}
+      OPINET_STATS_PRICE_URL: ${{ secrets.OPINET_STATS_PRICE_URL }}
+      RUNTIME_FAMILY: container-web-postgres-cron
+      RUNTIME_ROLE: worker
+      OPINET_DATASET_KEY: national-average-opinet-diesel
+      QUEUE_DOMAIN: national-average-opinet-diesel
+      APP_RUNTIME_ID: github-actions-worker
+      WORKER_RUNTIME_ID: github-actions-scheduled-worker
+      SCHEDULED_JOB_NAME: github-actions-opinet-worker
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          test -n "$DATABASE_URL"
+          test -n "$OPINET_API_KEY"
+          test -n "$OPINET_AVG_PRICE_URL"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run scheduled worker
+        run: npm run worker
