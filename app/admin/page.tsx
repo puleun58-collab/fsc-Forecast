@@ -66,12 +66,12 @@ export default async function AdminPage() {
 
 
   return (
-    <main className="dashboard-shell" style={{ display: 'grid', gap: 24 }}>
-      <section className="dashboard-shell__hero" style={{ display: 'grid', gap: 16 }}>
-        <p className="dashboard-shell__eyebrow">Authenticated admin</p>
+    <main id="main-content" className="dashboard-shell admin-grid">
+      <section className="dashboard-shell__masthead">
+        <p className="dashboard-shell__kicker">Authenticated admin</p>
         <h1 className="dashboard-shell__title">FSC Admin</h1>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-          <p className="dashboard-shell__lead" style={{ margin: 0 }}>
+        <div className="admin-row">
+          <p className="dashboard-shell__lead">
             관리자 비밀번호 인증이 완료된 세션에서만 quarter 운영과 FSC 재계산을 수행할 수 있습니다.
           </p>
           <AdminLogoutButton />
@@ -90,8 +90,8 @@ export default async function AdminPage() {
           ]}
           highlight
         >
-          <div style={{ display: 'grid', gap: 16 }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+          <div className="admin-detail-stack">
+            <div className="admin-action">
               <AdminActionButton label="FSC 재계산" endpoint="/api/fsc/recompute" confirmMessage="새 immutable FSC 결과를 생성합니다. 계속할까요?" />
               {activeResultDto ? (
                 <AdminActionButton
@@ -110,8 +110,8 @@ export default async function AdminPage() {
 
             </div>
             {activeResultDto ? (
-              <div style={{ display: 'grid', gap: 12 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+              <div className="admin-detail-stack">
+                <div className="admin-metric-grid">
                   {[
                     ['approval', activeResultDto.approvalStatus],
                     ['freshness', activeResultDto.dataFreshnessStatus],
@@ -122,19 +122,19 @@ export default async function AdminPage() {
                     ['FSC 30%', activeResultDto.fscLowKrwPerL],
                     ['FSC 70%', activeResultDto.fscHighKrwPerL],
                   ].map(([label, value]) => (
-                    <div key={label} style={{ display: 'grid', gap: 6, padding: 16, border: '1px solid var(--border)', borderRadius: 16, background: 'rgba(255,255,255,0.8)' }}>
-                      <span style={{ color: 'var(--text-muted)', fontSize: '0.84rem' }}>{label}</span>
+                    <div key={label} className="admin-metric">
+                      <span className="dashboard-shell__metric-label">{label}</span>
                       <strong>{value}</strong>
                     </div>
                   ))}
                 </div>
-                <div style={{ display: 'grid', gap: 8, padding: 16, border: '1px solid var(--border)', borderRadius: 16, background: 'var(--surface-muted)' }}>
+                <div className="admin-panel">
                   <strong>직전 결과 대비</strong>
                   <span>quarter average 변화: {formatDiff(activeResultDto.quarterAverageKrwPerL, previousResultDto?.quarterAverageKrwPerL ?? null)}</span>
                   <span>FSC 30% 변화: {formatDiff(activeResultDto.fscLowKrwPerL, previousResultDto?.fscLowKrwPerL ?? null)}</span>
                   <span>FSC 70% 변화: {formatDiff(activeResultDto.fscHighKrwPerL, previousResultDto?.fscHighKrwPerL ?? null)}</span>
                 </div>
-                <div style={{ display: 'grid', gap: 8, padding: 16, border: '1px solid var(--border)', borderRadius: 16, background: 'var(--surface-muted)' }}>
+                <div className="admin-panel">
                   <strong>Reliability 상세</strong>
                   <span>4주 MAE: {activeResultDto.qualityMetrics.recent4wWeeklyPriceMae ?? '기록 없음'}</span>
                   <span>13주 MAE: {activeResultDto.qualityMetrics.recent13wWeeklyPriceMae ?? '기록 없음'}</span>
@@ -146,7 +146,10 @@ export default async function AdminPage() {
                 </div>
               </div>
             ) : (
-              <div style={{ padding: 16, border: '1px dashed var(--border)', borderRadius: 16 }}>아직 active quarter FSC 결과가 없습니다.</div>
+              <div className="section-card__placeholder">
+                <span className="section-card__placeholder-title">아직 active quarter FSC 결과가 없습니다.</span>
+                <span className="section-card__placeholder-copy">FSC 재계산을 실행하면 최신 기준 시나리오가 표시됩니다.</span>
+              </div>
             )}
           </div>
         </SectionCard>
@@ -157,9 +160,9 @@ export default async function AdminPage() {
           description="actual/forecast 구분과 fallback source를 개발용 상세로 확인합니다."
         >
           {activeResultDto ? (
-            <ul style={{ display: 'grid', gap: 10, margin: 0, padding: 0, listStyle: 'none' }}>
+            <ul className="admin-list">
               {activeResultDto.weeks.map((week) => (
-                <li key={week.sequenceNo} style={{ display: 'grid', gap: 8, padding: 16, border: '1px solid var(--border)', borderRadius: 16, background: 'var(--surface-muted)' }}>
+                <li key={week.sequenceNo} className="admin-panel">
                   <strong>
                     {week.sequenceNo}주차 · {week.weekStartDate.slice(0, 10)} ~ {week.weekEndDate.slice(0, 10)}
                   </strong>
@@ -178,15 +181,15 @@ export default async function AdminPage() {
           badge={nextDraft ? `다음 draft ${quarterLabel(nextDraft.targetYear, nextDraft.targetQuarter)}` : 'draft 없음'}
           description="과거 quarter 기록과 활성 전환 가능한 draft를 보여줍니다."
         >
-          <ul style={{ display: 'grid', gap: 10, margin: 0, padding: 0, listStyle: 'none' }}>
+          <ul className="admin-list">
             {quarters.map((quarter) => (
-              <li key={quarter.id} style={{ display: 'grid', gap: 8, padding: 16, border: '1px solid var(--border)', borderRadius: 16, background: 'var(--surface-muted)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <li key={quarter.id} className="admin-panel">
+                <div className="admin-row">
                   <strong>{quarterLabel(quarter.targetYear, quarter.targetQuarter)}</strong>
                   <span>{quarter.status}{quarter.isActive ? ' · ACTIVE' : ''}</span>
                 </div>
                 <span>참조 분기 {quarterLabel(quarter.referenceYear, quarter.referenceQuarter)}</span>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <div className="admin-action">
                   {quarter.status === 'draft' ? (
                     <AdminActionButton
                       label="특정 quarter 활성화"

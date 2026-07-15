@@ -1,13 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
-type LoginResponse = {
-  ok: boolean;
-  message?: string;
-};
+import { readActionResponseMessage } from './action-response';
 
 export function AdminLoginForm() {
+  const passwordHelpId = useId();
+  const messageId = useId();
   const [password, setPassword] = useState('');
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -32,14 +31,12 @@ export function AdminLoginForm() {
         body: JSON.stringify({ password }),
       });
 
-      const data = (await response.json().catch(() => null)) as LoginResponse | null;
-
       if (response.ok) {
         window.location.href = '/admin';
         return;
       }
 
-      setMessage(data?.message ?? '로그인을 처리하지 못했습니다.');
+      setMessage(await readActionResponseMessage(response, '로그인을 처리하지 못했습니다.'));
     } catch (error) {
       setMessage(error instanceof Error ? error.message : '로그인을 처리하지 못했습니다.');
     } finally {
@@ -48,9 +45,9 @@ export function AdminLoginForm() {
   }
 
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} style={{ display: 'grid', gap: 14 }}>
-      <label style={{ display: 'grid', gap: 8 }}>
-        <span style={{ fontWeight: 700 }}>관리자 비밀번호</span>
+    <form onSubmit={(event) => void handleSubmit(event)} className="form-stack">
+      <label className="form-field">
+        <span className="form-label">관리자 비밀번호</span>
         <input
           type="password"
           name="password"
@@ -60,36 +57,24 @@ export function AdminLoginForm() {
             setPassword(event.target.value);
           }}
           required
-          style={{
-            width: '100%',
-            padding: '12px 14px',
-            borderRadius: 12,
-            border: '1px solid var(--border)',
-            background: 'white',
-            color: 'var(--text)',
-          }}
+          disabled={pending}
+          className="input"
+          aria-describedby={[passwordHelpId, message ? messageId : null].filter(Boolean).join(' ')}
         />
+        <span id={passwordHelpId} className="dashboard-shell__metric-caption">
+          인증 후 quarter 운영과 FSC 재계산 기능이 열립니다.
+        </span>
       </label>
-      <button
-        type="submit"
-        disabled={pending}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: 'fit-content',
-          padding: '10px 16px',
-          borderRadius: 12,
-          border: '1px solid var(--border)',
-          background: pending ? '#f4f6f8' : 'white',
-          color: pending ? 'var(--text-muted)' : 'var(--text)',
-          cursor: pending ? 'wait' : 'pointer',
-          fontWeight: 700,
-        }}
-      >
-        {pending ? '검증 중...' : '로그인'}
-      </button>
-      {message ? <p style={{ margin: 0, color: '#b42318' }}>{message}</p> : null}
+      <div className="form-actions">
+        <button type="submit" disabled={pending} className="button button--primary">
+          {pending ? '검증 중...' : '로그인'}
+        </button>
+      </div>
+      {message ? (
+        <p id={messageId} className="form-message form-message--error" aria-live="polite">
+          {message}
+        </p>
+      ) : null}
     </form>
   );
 }

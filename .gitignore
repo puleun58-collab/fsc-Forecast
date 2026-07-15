@@ -24,6 +24,11 @@ pnpm-debug.log*
 # Notes / local scratch
 notepad/
 
+# Local agent and visual QA outputs
+.agents/
+skills-lock.json
+artifacts/visual-qa/
+
 # GJC runtime
 .gjc/
 
