@@ -1530,6 +1530,7 @@ main {
 .weekly-detail,
 .market-reference,
 .methodology,
+.data-sources,
 .dashboard-state {
   display: grid;
   gap: 18px;
