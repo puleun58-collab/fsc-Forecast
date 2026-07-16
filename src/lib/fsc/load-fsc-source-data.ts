@@ -2,6 +2,7 @@ import { Prisma, RunStatus, type Prisma as PrismaTypes } from '@prisma/client';
 
 import { db } from '@/lib/db';
 import { env } from '@/lib/env';
+import { loadPublicConfirmedLatestDate } from '@/lib/opinet/resolve-public-confirmed-date';
 import { readMonthlySeries } from '@/lib/opinet/save-monthly-series';
 import { readWeeklySeries } from '@/lib/opinet/save-weekly-series';
 
@@ -62,16 +63,15 @@ function toDateOnly(value: Date): Date {
   return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
 }
 
-function filterDailyPricesByCutoffDate(
+function filterDailyPricesByConfirmedDate(
   dailyPrices: readonly FscSourceDailyPriceRow[],
-  currentTruthCutoffAt: Date | null,
+  latestConfirmedDate: Date | null,
 ): FscSourceDailyPriceRow[] {
-  if (currentTruthCutoffAt === null) {
+  if (latestConfirmedDate === null) {
     return [...dailyPrices];
   }
 
-  const cutoffDate = toDateOnly(currentTruthCutoffAt);
-  return dailyPrices.filter((row) => toDateOnly(row.priceDate).getTime() <= cutoffDate.getTime());
+  return dailyPrices.filter((row) => toDateOnly(row.priceDate).getTime() <= latestConfirmedDate.getTime());
 }
 
 function toOfficialWeeklyPriceRow(row: {
@@ -180,10 +180,13 @@ export async function loadFscSourceData(
     readWeeklySeries(),
     readMonthlySeries(),
   ]);
-
-  const normalizedDailyPrices = filterDailyPricesByCutoffDate(
+  const latestConfirmedDate = await loadPublicConfirmedLatestDate(tx, {
+    datasetKey: env.datasetKey,
+    observedBeforeOrAt: recomputeSnapshot.currentTruthCutoffAt,
+  });
+  const normalizedDailyPrices = filterDailyPricesByConfirmedDate(
     dailyPrices.map(toDailyPriceRow),
-    recomputeSnapshot.currentTruthCutoffAt,
+    latestConfirmedDate,
   );
 
   return {

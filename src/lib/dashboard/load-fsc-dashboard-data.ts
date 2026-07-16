@@ -4,9 +4,9 @@ import { buildSeriesSnapshot, NATIONAL_AVERAGE_DATASET_KEY } from '@/lib/aggrega
 import { db } from '@/lib/db';
 import { findLatestBaseFscResultByQuarter } from '@/lib/fsc/load-latest-fsc-result';
 import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
+import { loadPublicConfirmedLatestDate } from '@/lib/opinet/resolve-public-confirmed-date';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
 
-import { OPINET_DAILY_AVERAGE_PRICE_SOURCE } from '@/lib/opinet/normalize-diesel';
 import { externalIndicatorCodes } from '@/lib/external-indicators/catalog';
 
 import { buildDashboardDataSources } from './data-sources';
@@ -61,20 +61,23 @@ type DashboardCurrentRow = {
   };
 };
 
-function readOpinetRowSource(row: DashboardCurrentRow): string | null {
-  const payload = row.currentRevision.sourcePayload;
-
-  if (!payload || typeof payload !== 'object') {
-    return null;
-  }
-
-  const candidate = (payload as { source?: unknown }).source;
-  return typeof candidate === 'string' ? candidate : null;
+function toDateOnly(value: Date): Date {
+  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
 }
 
-function selectDisplayCurrentRows(rows: readonly DashboardCurrentRow[]): readonly DashboardCurrentRow[] {
-  const officialRows = rows.filter((row) => readOpinetRowSource(row) === OPINET_DAILY_AVERAGE_PRICE_SOURCE);
-  return officialRows.length > 0 ? officialRows : rows;
+function selectDisplayCurrentRows(
+  rows: readonly DashboardCurrentRow[],
+  latestConfirmedDate: Date | null,
+): readonly DashboardCurrentRow[] {
+  if (latestConfirmedDate === null) {
+    return rows;
+  }
+
+  const filteredRows = rows.filter(
+    (row) => toDateOnly(row.priceDate).getTime() <= latestConfirmedDate.getTime(),
+  );
+
+  return filteredRows.length > 0 ? filteredRows : rows;
 }
 
 function normalizeError(error: unknown): string {
@@ -278,10 +281,19 @@ async function loadSupportSection(): Promise<FscDashboardSupportSection> {
     };
   }
 
+  const latestConfirmedDate = await loadPublicConfirmedLatestDate(db, {
+    datasetKey: NATIONAL_AVERAGE_DATASET_KEY,
+    observedBeforeOrAt: snapshot.currentTruthCutoffAt,
+  });
+  const displayCurrentRows = selectDisplayCurrentRows(
+    currentRows as DashboardCurrentRow[],
+    latestConfirmedDate,
+  );
+
   const seriesSnapshot = buildSeriesSnapshot({
     datasetKey: NATIONAL_AVERAGE_DATASET_KEY,
     currentTruthCutoffAt: snapshot.currentTruthCutoffAt,
-    dailyTruth: currentRows.map((row) => ({
+    dailyTruth: displayCurrentRows.map((row) => ({
       priceDate: row.priceDate,
       observedPriceKrwPerL: Number(row.currentRevision.observedPriceKrwPerL),
       datasetKey: row.datasetKey,
@@ -290,7 +302,6 @@ async function loadSupportSection(): Promise<FscDashboardSupportSection> {
     })),
   });
 
-  const displayCurrentRows = selectDisplayCurrentRows(currentRows as DashboardCurrentRow[]);
   const latestRow = displayCurrentRows[displayCurrentRows.length - 1];
   const previousRow = displayCurrentRows[displayCurrentRows.length - 2] ?? null;
   const latestPriceKrwPerL = Number(latestRow.currentRevision.observedPriceKrwPerL);

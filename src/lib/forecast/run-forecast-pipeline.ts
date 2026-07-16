@@ -15,6 +15,7 @@ import {
 import { db } from "../db";
 import { externalIndicatorCodes } from "../external-indicators/catalog";
 import { env } from "../env";
+import { loadPublicConfirmedLatestDate } from "../opinet/resolve-public-confirmed-date";
 import { buildBaselineForecast } from "./build-baseline-forecast";
 import { evaluateMapeGate } from "./evaluate-mape-gate";
 import { loadOpinetQ2FallbackSeries } from "./load-opinet-q2-fallback";
@@ -52,16 +53,15 @@ function toDateOnly(value: Date): Date {
   return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
 }
 
-function filterDailyPricesByCutoffDate(
+function filterDailyPricesByConfirmedDate(
   dailyPrices: readonly ForecastDailyPriceRow[],
-  currentTruthCutoffAt: Date | null,
+  latestConfirmedDate: Date | null,
 ): ForecastDailyPriceRow[] {
-  if (currentTruthCutoffAt === null) {
+  if (latestConfirmedDate === null) {
     return [...dailyPrices];
   }
 
-  const cutoffDate = toDateOnly(currentTruthCutoffAt);
-  return dailyPrices.filter((row) => toDateOnly(row.priceDate).getTime() <= cutoffDate.getTime());
+  return dailyPrices.filter((row) => toDateOnly(row.priceDate).getTime() <= latestConfirmedDate.getTime());
 }
 
 
@@ -371,9 +371,12 @@ async function executeForecastPipeline(
       `Forecast pipeline requires a successful recompute snapshot, received '${recomputeSnapshot.status}'.`,
     );
   }
-
   const rawDailyPrices = await loadDailyPrices(tx, recomputeSnapshot.id);
-  const dailyPrices = filterDailyPricesByCutoffDate(rawDailyPrices, recomputeSnapshot.currentTruthCutoffAt);
+  const latestConfirmedDate = await loadPublicConfirmedLatestDate(tx, {
+    datasetKey: env.datasetKey,
+    observedBeforeOrAt: recomputeSnapshot.currentTruthCutoffAt,
+  });
+  const dailyPrices = filterDailyPricesByConfirmedDate(rawDailyPrices, latestConfirmedDate);
 
   if (dailyPrices.length === 0) {
     throw new Error(
