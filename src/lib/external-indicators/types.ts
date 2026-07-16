@@ -25,6 +25,14 @@ export interface ExternalIndicatorHistoryRecord {
   value: number;
   sourcePayload: Prisma.JsonValue | null;
   createdAt: Date;
+  collectedAt: Date;
+}
+
+export interface LatestExternalIndicatorState {
+  indicatorCode: ExternalIndicatorCode;
+  observedAt: Date;
+  value: number;
+  collectedAt: Date;
 }
 
 export interface PersistIndicatorHistoryResult {
@@ -41,4 +49,5 @@ export interface IndicatorSyncResult {
   updatedCount: number;
   acceptedPointCount: number;
   records: ExternalIndicatorHistoryRecord[];
+  latestStates: LatestExternalIndicatorState[];
 }

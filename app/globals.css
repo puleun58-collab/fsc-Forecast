@@ -2068,8 +2068,10 @@ main {
 
 .data-source-card {
   display: grid;
-  gap: 14px;
-  padding: 18px;
+  grid-template-rows: auto 1fr auto;
+  align-content: start;
+  gap: 12px;
+  padding: 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
   background: color-mix(in srgb, var(--surface) 88%, var(--surface-muted));
@@ -2129,14 +2131,14 @@ main {
 
 .data-source-card dl {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   margin: 0;
 }
 
 .data-source-card dl div {
   display: grid;
   gap: 4px;
-  padding-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid var(--border);
 }
 

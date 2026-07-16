@@ -14,8 +14,8 @@ export interface DashboardDataSource {
   collectionFrequencyLabel: string | null;
   purpose: string;
   description: string;
-  latestObservedAt: string | null;
-  latestCollectedAt: string | null;
+  latestObservationDate: string | null;
+  collectedAt: string | null;
   observationGranularity: 'datetime' | 'date' | 'month';
   sourceUrl: string;
   status: DashboardDataSourceStatus;
@@ -64,9 +64,9 @@ export interface FscDashboardTrendSection {
 export interface FscDashboardMarketSignal {
   indicatorCode: 'dubai' | 'usd-krw';
   displayName: string;
-  observedAt: string | null;
+  latestObservationDate: string | null;
   collectedAt: string | null;
-  previousObservedAt: string | null;
+  previousObservationDate: string | null;
   value: number | null;
   previousValue: number | null;
   absoluteChange: number | null;

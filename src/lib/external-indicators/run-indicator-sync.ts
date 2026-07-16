@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 
 import { getExternalIndicatorDefinition } from "./catalog";
+import { selectLatestIndicatorStates } from "./latest-indicator-states";
 import { persistIndicatorHistory } from "./persist-indicator-history";
 import type { ExternalIndicatorProviderResult } from "./provider-contract";
 import type { ExternalIndicatorPoint, IndicatorSyncResult } from "./types";
@@ -71,9 +72,11 @@ export async function runIndicatorSync(
   }
 
   const normalizedPoints = normalizePoints(input.providerResult.points);
+  const collectedAt = new Date();
   const persisted = await persistIndicatorHistory({
     points: normalizedPoints,
     tx: input.tx,
+    collectedAt,
   });
 
   return {
@@ -83,5 +86,6 @@ export async function runIndicatorSync(
     updatedCount: persisted.updatedCount,
     acceptedPointCount: normalizedPoints.length,
     records: persisted.records,
+    latestStates: selectLatestIndicatorStates(persisted.records),
   };
 }

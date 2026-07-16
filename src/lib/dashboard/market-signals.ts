@@ -5,9 +5,9 @@ export type PublicMarketIndicatorCode = 'dubai' | 'usd-krw';
 export type PublicMarketSignal = {
   indicatorCode: PublicMarketIndicatorCode;
   displayName: string;
-  observedAt: string | null;
+  latestObservationDate: string | null;
   collectedAt: string | null;
-  previousObservedAt: string | null;
+  previousObservationDate: string | null;
   value: number | null;
   previousValue: number | null;
   absoluteChange: number | null;
@@ -36,11 +36,10 @@ export type MarketSignalHistoryInput = {
   indicatorCode: string;
   rows: Array<{
     observedAt: Date;
-    createdAt: Date;
+    collectedAt: Date;
     value: number;
   }>;
 };
-
 
 export function calculatePercentChange(
   currentValue: number | null,
@@ -84,9 +83,9 @@ export function buildPublicMarketSignals(
       {
         indicatorCode,
         displayName: PUBLIC_MARKET_SIGNAL_META[indicatorCode].displayName,
-        observedAt: latestRow?.observedAt.toISOString() ?? null,
-        collectedAt: latestRow?.createdAt.toISOString() ?? null,
-        previousObservedAt: previousRow?.observedAt.toISOString() ?? null,
+        latestObservationDate: latestRow?.observedAt.toISOString() ?? null,
+        collectedAt: latestRow?.collectedAt.toISOString() ?? null,
+        previousObservationDate: previousRow?.observedAt.toISOString() ?? null,
         value: currentValue,
         previousValue,
         absoluteChange,

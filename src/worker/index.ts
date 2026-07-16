@@ -1,6 +1,9 @@
 import { pathToFileURL } from "node:url";
 import { db } from "../lib/db";
 import { env } from "../lib/env";
+import { externalIndicatorCodes } from "../lib/external-indicators/catalog";
+import { loadLatestIndicatorStates } from "../lib/external-indicators/latest-indicator-states";
+
 import { runOpinetIngest } from "../lib/ingest/run-opinet-ingest";
 import { syncExternalIndicators } from "../lib/external-indicators/sync-external-indicators";
 import { recordQueuedIngestRun } from "../lib/ingest/record-ingest-run";
@@ -24,6 +27,12 @@ export interface WorkerRunSummary {
     persistedCount: number;
     createdCount: number;
     updatedCount: number;
+    latestStates: Array<{
+      indicatorCode: string;
+      latestObservationDate: string;
+      collectedAt: string;
+      value: number;
+    }>;
   };
   queue: {
     jobKind: "ingest";
@@ -123,8 +132,15 @@ export async function runScheduledWorkerOnce(): Promise<WorkerRunSummary> {
             persistedCount: result.persistedCount,
             createdCount: result.createdCount,
             updatedCount: result.updatedCount,
+            latestStates: result.latestStates.map((state) => ({
+              indicatorCode: state.indicatorCode,
+              latestObservationDate: state.observedAt.toISOString(),
+              collectedAt: state.collectedAt.toISOString(),
+              value: state.value,
+            })),
           };
         } catch (error) {
+          const latestStates = await loadLatestIndicatorStates({ indicatorCodes: externalIndicatorCodes });
           return {
             status: "failed" as const,
             errorSummary: error instanceof Error ? error.message : String(error),
@@ -133,6 +149,12 @@ export async function runScheduledWorkerOnce(): Promise<WorkerRunSummary> {
             persistedCount: 0,
             createdCount: 0,
             updatedCount: 0,
+            latestStates: latestStates.map((state) => ({
+              indicatorCode: state.indicatorCode,
+              latestObservationDate: state.observedAt.toISOString(),
+              collectedAt: state.collectedAt.toISOString(),
+              value: state.value,
+            })),
           };
         }
       })();

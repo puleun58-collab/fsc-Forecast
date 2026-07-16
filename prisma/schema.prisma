@@ -121,8 +121,10 @@ model ExternalIndicatorHistory {
   value         Decimal  @db.Decimal(14, 4)
   sourcePayload Json?
   createdAt     DateTime @default(now())
+  collectedAt   DateTime @default(now())
 
   @@unique([indicatorCode, observedAt])
+  @@index([indicatorCode, observedAt, collectedAt])
   @@map("external_indicator_history")
 }
 

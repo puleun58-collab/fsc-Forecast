@@ -11,6 +11,7 @@ import type {
 interface PersistIndicatorHistoryInput {
   points: readonly ExternalIndicatorPoint[];
   tx?: Prisma.TransactionClient;
+  collectedAt?: Date;
 }
 
 interface ExistingIndicatorRow {
@@ -20,6 +21,7 @@ interface ExistingIndicatorRow {
   value: Prisma.Decimal;
   sourcePayload: Prisma.JsonValue | null;
   createdAt: Date;
+  collectedAt: Date;
 }
 
 function comparePoints(left: ExternalIndicatorPoint, right: ExternalIndicatorPoint): number {
@@ -40,6 +42,7 @@ function toRecord(row: ExistingIndicatorRow): ExternalIndicatorHistoryRecord {
     value: Number(row.value),
     sourcePayload: row.sourcePayload,
     createdAt: row.createdAt,
+    collectedAt: row.collectedAt,
   };
 }
 
@@ -65,9 +68,14 @@ export async function persistIndicatorHistory(
   input: PersistIndicatorHistoryInput,
 ): Promise<PersistIndicatorHistoryResult> {
   const tx = input.tx ?? db;
+  const collectedAt = input.collectedAt ?? new Date();
   const points = [...input.points].sort(comparePoints);
   let createdCount = 0;
   let updatedCount = 0;
+
+  if (Number.isNaN(collectedAt.getTime())) {
+    throw new Error("Indicator history persistence requires a valid collectedAt value.");
+  }
 
   for (const point of points) {
     getExternalIndicatorDefinition(point.indicatorCode);
@@ -124,6 +132,7 @@ export async function persistIndicatorHistory(
         value: true,
         sourcePayload: true,
         createdAt: true,
+        collectedAt: true,
       },
     });
 
@@ -145,6 +154,31 @@ export async function persistIndicatorHistory(
       normalizeSourcePayload(existing.sourcePayload) !== normalizeSourcePayload(point.sourcePayload)
     );
   });
+  const latestExistingTouches: ExternalIndicatorPoint[] = [];
+
+  for (const codePoints of pointsByCode.values()) {
+    const latestPoint = codePoints[codePoints.length - 1];
+
+    if (!latestPoint) {
+      continue;
+    }
+
+    const existing = existingRowsByKey.get(createPointKey(latestPoint));
+
+    if (!existing) {
+      continue;
+    }
+
+    const hasValueOrPayloadUpdate = updates.some(
+      (updatePoint) =>
+        updatePoint.indicatorCode === latestPoint.indicatorCode &&
+        updatePoint.observedAt.getTime() === latestPoint.observedAt.getTime(),
+    );
+
+    if (!hasValueOrPayloadUpdate) {
+      latestExistingTouches.push(latestPoint);
+    }
+  }
 
   for (const chunk of chunkArray(creates, 500)) {
     if (chunk.length === 0) {
@@ -157,6 +191,7 @@ export async function persistIndicatorHistory(
         observedAt: point.observedAt,
         value: new Prisma.Decimal(point.value),
         sourcePayload: point.sourcePayload ?? Prisma.JsonNull,
+        collectedAt,
       })),
       skipDuplicates: true,
     });
@@ -175,10 +210,25 @@ export async function persistIndicatorHistory(
       data: {
         value: new Prisma.Decimal(point.value),
         sourcePayload: point.sourcePayload ?? Prisma.JsonNull,
+        collectedAt,
       },
     });
 
     updatedCount += 1;
+  }
+
+  for (const point of latestExistingTouches) {
+    await tx.externalIndicatorHistory.update({
+      where: {
+        indicatorCode_observedAt: {
+          indicatorCode: point.indicatorCode,
+          observedAt: point.observedAt,
+        },
+      },
+      data: {
+        collectedAt,
+      },
+    });
   }
 
   const persistedRowsByKey = new Map<string, ExistingIndicatorRow>();
@@ -204,6 +254,7 @@ export async function persistIndicatorHistory(
         value: true,
         sourcePayload: true,
         createdAt: true,
+        collectedAt: true,
       },
     });
 

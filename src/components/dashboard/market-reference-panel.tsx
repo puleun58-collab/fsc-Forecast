@@ -120,7 +120,7 @@ function MarketSignalCard({ signal }: { signal: FscDashboardMarketSignal }) {
       <strong>
         {percentText} · {mapDirectionLabel(signal.direction)}
       </strong>
-      <span className="metric-caption">관측 기준 {formatDisplayDate(signal.observedAt)}</span>
+      <span className="metric-caption">관측 기준 {formatDisplayDate(signal.latestObservationDate)}</span>
     </article>
   );
 }

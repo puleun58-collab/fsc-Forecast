@@ -34,23 +34,22 @@ export function formatSourceCollectionDate(value: string | null): string {
   return formatDashboardDateTime(value);
 }
 
-
 export function buildDashboardDataSources(input: {
-  latestOpinetObservedAt: string | null;
+  latestOpinetObservationDate: string | null;
   latestOpinetCollectedAt: string | null;
-  latestDubaiObservedAt: string | null;
+  latestDubaiObservationDate: string | null;
   latestDubaiCollectedAt: string | null;
-  latestUsdKrwObservedAt: string | null;
+  latestUsdKrwObservationDate: string | null;
   latestUsdKrwCollectedAt: string | null;
   opinetFreshnessStatus?: 'fresh' | 'delayed' | 'stale' | 'unavailable';
 }): DashboardDataSource[] {
-  const opinetFreshnessStatus = input.opinetFreshnessStatus ?? calculateDataFreshness(input.latestOpinetObservedAt);
+  const opinetFreshnessStatus = input.opinetFreshnessStatus ?? calculateDataFreshness(input.latestOpinetObservationDate);
 
   return [
     {
       ...DASHBOARD_DATA_SOURCE_CONFIG.opinetDiesel,
-      latestObservedAt: input.latestOpinetObservedAt,
-      latestCollectedAt: input.latestOpinetCollectedAt,
+      latestObservationDate: input.latestOpinetObservationDate,
+      collectedAt: input.latestOpinetCollectedAt,
       observationGranularity: 'date',
       status:
         opinetFreshnessStatus === 'fresh'
@@ -61,17 +60,17 @@ export function buildDashboardDataSources(input: {
     },
     {
       ...DASHBOARD_DATA_SOURCE_CONFIG.dubai,
-      latestObservedAt: input.latestDubaiObservedAt,
-      latestCollectedAt: input.latestDubaiCollectedAt,
+      latestObservationDate: input.latestDubaiObservationDate,
+      collectedAt: input.latestDubaiCollectedAt,
       observationGranularity: 'month',
-      status: input.latestDubaiObservedAt === null ? 'unavailable' : 'available',
+      status: input.latestDubaiObservationDate === null ? 'unavailable' : 'available',
     },
     {
       ...DASHBOARD_DATA_SOURCE_CONFIG.usdKrw,
-      latestObservedAt: input.latestUsdKrwObservedAt,
-      latestCollectedAt: input.latestUsdKrwCollectedAt,
+      latestObservationDate: input.latestUsdKrwObservationDate,
+      collectedAt: input.latestUsdKrwCollectedAt,
       observationGranularity: 'date',
-      status: input.latestUsdKrwObservedAt === null ? 'unavailable' : 'available',
+      status: input.latestUsdKrwObservationDate === null ? 'unavailable' : 'available',
     },
   ];
 }

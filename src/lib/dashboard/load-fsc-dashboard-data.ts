@@ -152,11 +152,11 @@ function toQuarterSummary(value: {
 
 function buildUnavailableDataSources(opinetFreshnessStatus: 'fresh' | 'delayed' | 'stale' | 'unavailable' = 'unavailable') {
   return buildDashboardDataSources({
-    latestOpinetObservedAt: null,
+    latestOpinetObservationDate: null,
     latestOpinetCollectedAt: null,
-    latestDubaiObservedAt: null,
+    latestDubaiObservationDate: null,
     latestDubaiCollectedAt: null,
-    latestUsdKrwObservedAt: null,
+    latestUsdKrwObservationDate: null,
     latestUsdKrwCollectedAt: null,
     opinetFreshnessStatus,
   });
@@ -173,14 +173,14 @@ function unavailableMarketSignals(reason: string): FscDashboardMarketSignalsSect
 
 function buildSupportDataSources(support: FscDashboardSupportSection) {
   return buildDashboardDataSources({
-    latestOpinetObservedAt: support.currentPrice.latestPriceDate,
+    latestOpinetObservationDate: support.currentPrice.latestPriceDate,
     latestOpinetCollectedAt: support.currentPrice.sourceObservedAt,
-    latestDubaiObservedAt:
-      support.marketSignals.signals.find((signal) => signal.indicatorCode === 'dubai')?.observedAt ?? null,
+    latestDubaiObservationDate:
+      support.marketSignals.signals.find((signal) => signal.indicatorCode === 'dubai')?.latestObservationDate ?? null,
     latestDubaiCollectedAt:
       support.marketSignals.signals.find((signal) => signal.indicatorCode === 'dubai')?.collectedAt ?? null,
-    latestUsdKrwObservedAt:
-      support.marketSignals.signals.find((signal) => signal.indicatorCode === 'usd-krw')?.observedAt ?? null,
+    latestUsdKrwObservationDate:
+      support.marketSignals.signals.find((signal) => signal.indicatorCode === 'usd-krw')?.latestObservationDate ?? null,
     latestUsdKrwCollectedAt:
       support.marketSignals.signals.find((signal) => signal.indicatorCode === 'usd-krw')?.collectedAt ?? null,
     opinetFreshnessStatus:
@@ -325,24 +325,23 @@ async function loadSupportSection(): Promise<FscDashboardSupportSection> {
               }
             : undefined,
         },
-        orderBy: [{ observedAt: 'desc' }, { createdAt: 'desc' }],
+        orderBy: [{ observedAt: 'desc' }, { collectedAt: 'desc' }],
         take: 2,
         select: {
           observedAt: true,
-          createdAt: true,
+          collectedAt: true,
           value: true,
         },
       }),
     })),
   );
 
-
   const publicSignals = buildPublicMarketSignals(
     indicatorRows.map((entry) => ({
       indicatorCode: entry.indicatorCode,
       rows: entry.rows.map((row) => ({
         observedAt: row.observedAt,
-        createdAt: row.createdAt,
+        collectedAt: row.collectedAt,
         value: Number(row.value),
       })),
     })),

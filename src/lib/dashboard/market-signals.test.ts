@@ -13,34 +13,30 @@ test('public market signals expose only dubai and usd-krw from broader indicator
     {
       indicatorCode: 'dubai',
       rows: [
-        { observedAt: new Date('2026-07-14T00:00:00.000Z'), createdAt: new Date('2026-07-15T00:00:00.000Z'), value: 95 },
-        { observedAt: new Date('2026-06-14T00:00:00.000Z'), createdAt: new Date('2026-06-15T00:00:00.000Z'), value: 100 },
+        { observedAt: new Date('2026-07-14T00:00:00.000Z'), collectedAt: new Date('2026-07-15T00:00:00.000Z'), value: 95 },
+        { observedAt: new Date('2026-06-14T00:00:00.000Z'), collectedAt: new Date('2026-06-15T00:00:00.000Z'), value: 100 },
       ],
-
     },
     {
       indicatorCode: 'brent',
       rows: [
-        { observedAt: new Date('2026-07-14T00:00:00.000Z'), createdAt: new Date('2026-07-15T00:00:00.000Z'), value: 80 },
-        { observedAt: new Date('2026-07-13T00:00:00.000Z'), createdAt: new Date('2026-07-14T00:00:00.000Z'), value: 79 },
+        { observedAt: new Date('2026-07-14T00:00:00.000Z'), collectedAt: new Date('2026-07-15T00:00:00.000Z'), value: 80 },
+        { observedAt: new Date('2026-07-13T00:00:00.000Z'), collectedAt: new Date('2026-07-14T00:00:00.000Z'), value: 79 },
       ],
-
     },
     {
       indicatorCode: 'wti',
       rows: [
-        { observedAt: new Date('2026-07-14T00:00:00.000Z'), createdAt: new Date('2026-07-15T00:00:00.000Z'), value: 78 },
-        { observedAt: new Date('2026-07-13T00:00:00.000Z'), createdAt: new Date('2026-07-14T00:00:00.000Z'), value: 77 },
+        { observedAt: new Date('2026-07-14T00:00:00.000Z'), collectedAt: new Date('2026-07-15T00:00:00.000Z'), value: 78 },
+        { observedAt: new Date('2026-07-13T00:00:00.000Z'), collectedAt: new Date('2026-07-14T00:00:00.000Z'), value: 77 },
       ],
-
     },
     {
       indicatorCode: 'usd-krw',
       rows: [
-        { observedAt: new Date('2026-07-10T00:00:00.000Z'), createdAt: new Date('2026-07-15T00:00:00.000Z'), value: 1380 },
-        { observedAt: new Date('2026-07-09T00:00:00.000Z'), createdAt: new Date('2026-07-14T00:00:00.000Z'), value: 1390 },
+        { observedAt: new Date('2026-07-10T00:00:00.000Z'), collectedAt: new Date('2026-07-15T00:00:00.000Z'), value: 1380 },
+        { observedAt: new Date('2026-07-09T00:00:00.000Z'), collectedAt: new Date('2026-07-14T00:00:00.000Z'), value: 1390 },
       ],
-
     },
   ]);
 
@@ -49,9 +45,9 @@ test('public market signals expose only dubai and usd-krw from broader indicator
     ['dubai', 'usd-krw'],
   );
   assert.match(buildPublicMarketSummaryText(signals), /하방 요인|상쇄/);
-  assert.equal(signals[0]?.observedAt, '2026-07-14T00:00:00.000Z');
+  assert.equal(signals[0]?.latestObservationDate, '2026-07-14T00:00:00.000Z');
   assert.equal(signals[0]?.collectedAt, '2026-07-15T00:00:00.000Z');
-  assert.equal(signals[1]?.observedAt, '2026-07-10T00:00:00.000Z');
+  assert.equal(signals[1]?.latestObservationDate, '2026-07-10T00:00:00.000Z');
   assert.equal(signals[1]?.collectedAt, '2026-07-15T00:00:00.000Z');
 });
 

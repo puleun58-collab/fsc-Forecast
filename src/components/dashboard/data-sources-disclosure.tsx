@@ -1,22 +1,10 @@
-import { formatSourceCollectionDate, formatSourceObservation } from '@/lib/dashboard/data-sources';
+import { formatSourceObservation } from '@/lib/dashboard/data-sources';
 
 import type { DashboardDataSource } from '@/lib/dashboard/fsc-types';
 
 type DataSourcesDisclosureProps = {
   dataSources: readonly DashboardDataSource[];
 };
-
-function mapStatusLabel(status: DashboardDataSource['status']): string {
-  switch (status) {
-    case 'available':
-      return '사용 중';
-    case 'delayed':
-      return '확인 지연';
-    case 'unavailable':
-    default:
-      return '현재 데이터 확인 불가';
-  }
-}
 
 export function DataSourcesDisclosure({ dataSources }: DataSourcesDisclosureProps) {
   return (
@@ -35,9 +23,7 @@ export function DataSourcesDisclosure({ dataSources }: DataSourcesDisclosureProp
           </div>
           <div className="data-sources__cards" aria-label="출처별 상세 정보">
             {dataSources.map((source) => {
-              const formattedObservedAt = formatSourceObservation(source.latestObservedAt, source.observationGranularity);
-              const formattedCollectedAt = formatSourceCollectionDate(source.latestCollectedAt);
-
+              const formattedObservedAt = formatSourceObservation(source.latestObservationDate, source.observationGranularity);
 
               return (
                 <article className="data-source-card" key={source.sourceCode}>
@@ -46,55 +32,27 @@ export function DataSourcesDisclosure({ dataSources }: DataSourcesDisclosureProp
                       <h3>{source.displayName}</h3>
                       <p>{source.dataName}</p>
                     </div>
-                    <span className={`data-source-card__status data-source-card__status--${source.status}`}>
-                      {mapStatusLabel(source.status)}
-                    </span>
                   </div>
                   <dl>
                     <div>
-                      <dt>데이터 코드</dt>
-                      <dd>{source.dataCode ?? '없음'}</dd>
+                      <dt>간단한 설명</dt>
+                      <dd>{source.description}</dd>
                     </div>
                     <div>
                       <dt>단위</dt>
                       <dd>{source.unitLabel}</dd>
                     </div>
                     <div>
-                      <dt>데이터 제공 주기</dt>
-                      <dd>{source.providerFrequencyLabel}</dd>
-                    </div>
-                    <div>
-                      <dt>앱 확인 주기</dt>
-                      <dd>{source.collectionFrequencyLabel ?? '확인 불가'}</dd>
-                    </div>
-                    <div>
-                      <dt>사용 목적</dt>
-                      <dd>{source.purpose}</dd>
-                    </div>
-                    <div>
                       <dt>최종 관측 기준</dt>
                       <dd>
-                        <time dateTime={source.latestObservedAt ?? undefined}>{formattedObservedAt}</time>
+                        <time dateTime={source.latestObservationDate ?? undefined}>{formattedObservedAt}</time>
                       </dd>
                     </div>
                     <div>
-                      <dt>데이터 수집일</dt>
-                      <dd>
-                        <time dateTime={source.latestCollectedAt ?? undefined}>{formattedCollectedAt}</time>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>제공</dt>
+                      <dt>제공처</dt>
                       <dd>{source.providerName}</dd>
                     </div>
-                    {source.originalProviderName ? (
-                      <div>
-                        <dt>원출처</dt>
-                        <dd>{source.originalProviderName}</dd>
-                      </div>
-                    ) : null}
                   </dl>
-                  <p className="data-source-card__description">{source.description}</p>
                   {source.sourceUrl ? (
                     <a
                       className="button button--secondary data-source-card__link"
@@ -109,10 +67,6 @@ export function DataSourcesDisclosure({ dataSources }: DataSourcesDisclosureProp
                 </article>
               );
             })}
-          </div>
-          <div className="data-sources__group">
-            <h3>데이터 이용 안내</h3>
-            <p>오피넷은 국내 Actual 산정에 사용하고, 두바이유와 USD/KRW는 시장 방향을 해석하기 위한 참고 지표로 사용합니다.</p>
           </div>
           <div className="data-sources__group">
             <h3>유의사항</h3>
