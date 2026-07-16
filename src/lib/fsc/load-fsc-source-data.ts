@@ -58,6 +58,22 @@ function toDailyPriceRow(row: {
   };
 }
 
+function toDateOnly(value: Date): Date {
+  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
+}
+
+function filterDailyPricesByCutoffDate(
+  dailyPrices: readonly FscSourceDailyPriceRow[],
+  currentTruthCutoffAt: Date | null,
+): FscSourceDailyPriceRow[] {
+  if (currentTruthCutoffAt === null) {
+    return [...dailyPrices];
+  }
+
+  const cutoffDate = toDateOnly(currentTruthCutoffAt);
+  return dailyPrices.filter((row) => toDateOnly(row.priceDate).getTime() <= cutoffDate.getTime());
+}
+
 function toOfficialWeeklyPriceRow(row: {
   weekKey: string;
   weekLabel: string;
@@ -165,10 +181,15 @@ export async function loadFscSourceData(
     readMonthlySeries(),
   ]);
 
+  const normalizedDailyPrices = filterDailyPricesByCutoffDate(
+    dailyPrices.map(toDailyPriceRow),
+    recomputeSnapshot.currentTruthCutoffAt,
+  );
+
   return {
     recomputeSnapshot,
     forecastRun: forecastRun === null ? null : toForecastRunRecord(forecastRun),
-    dailyPrices: dailyPrices.map(toDailyPriceRow),
+    dailyPrices: normalizedDailyPrices,
     officialWeeklyPrices: officialWeeklyPrices.map(toOfficialWeeklyPriceRow),
     officialMonthlyPrices: officialMonthlyPrices.map(toOfficialMonthlyPriceRow),
   };

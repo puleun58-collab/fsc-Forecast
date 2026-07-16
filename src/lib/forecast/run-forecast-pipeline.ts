@@ -48,6 +48,22 @@ function roundPrice(value: number): number {
   return Math.round(value * 1000) / 1000;
 }
 
+function toDateOnly(value: Date): Date {
+  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
+}
+
+function filterDailyPricesByCutoffDate(
+  dailyPrices: readonly ForecastDailyPriceRow[],
+  currentTruthCutoffAt: Date | null,
+): ForecastDailyPriceRow[] {
+  if (currentTruthCutoffAt === null) {
+    return [...dailyPrices];
+  }
+
+  const cutoffDate = toDateOnly(currentTruthCutoffAt);
+  return dailyPrices.filter((row) => toDateOnly(row.priceDate).getTime() <= cutoffDate.getTime());
+}
+
 
 function getUtcMonthStart(value: Date): Date {
   return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), 1));
@@ -356,7 +372,8 @@ async function executeForecastPipeline(
     );
   }
 
-  const dailyPrices = await loadDailyPrices(tx, recomputeSnapshot.id);
+  const rawDailyPrices = await loadDailyPrices(tx, recomputeSnapshot.id);
+  const dailyPrices = filterDailyPricesByCutoffDate(rawDailyPrices, recomputeSnapshot.currentTruthCutoffAt);
 
   if (dailyPrices.length === 0) {
     throw new Error(

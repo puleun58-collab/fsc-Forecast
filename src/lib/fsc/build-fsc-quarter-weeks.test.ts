@@ -33,6 +33,27 @@ function createInput(dailyPrices: readonly FscSourceDailyPriceRow[]): BuildFscQu
   };
 }
 
+function createWeeklyForecastRun(targetDate: string, price: string) {
+  return {
+    id: 'forecast-run-1',
+    forecastModelVersion: null,
+    mapePct: null,
+    maeKrwPerL: null,
+    metadata: null,
+    createdAt: new Date('2026-07-15T22:56:16.053Z'),
+    completedAt: new Date('2026-07-15T22:56:16.053Z'),
+    points: [
+      {
+        id: `point-${targetDate}`,
+        horizonKind: 'weekly' as const,
+        horizonIndex: 1,
+        targetDate: new Date(`${targetDate}T00:00:00.000Z`),
+        pointKrwPerL: new Prisma.Decimal(price),
+      },
+    ],
+  };
+}
+
 test('completed 5-day week becomes actual when daily rows exist through week end even if cutoff timestamp is earlier the same day', () => {
   const result = buildFscQuarterWeeks(
     createInput([
@@ -76,4 +97,29 @@ test('incomplete current week still falls back when final collection day row is 
   assert.equal(result.weeks[2]?.priceKind, 'forecast');
   assert.equal(result.weeks[2]?.forecastSourceKind, 'applied_price_fallback');
   assert.equal(result.weeks[2]?.priceKrwPerL.toFixed(3), '1500.000');
+});
+
+test('incomplete current week uses weekly forecast point instead of applied price fallback when 5-day actual is not complete', () => {
+  const input = createInput([
+    createDailyRow('2026-07-01', 1923.52),
+    createDailyRow('2026-07-02', 1910.28),
+    createDailyRow('2026-07-05', 1890.56),
+    createDailyRow('2026-07-06', 1884.59),
+    createDailyRow('2026-07-07', 1879.13),
+    createDailyRow('2026-07-08', 1874.65),
+    createDailyRow('2026-07-09', 1871.75),
+    createDailyRow('2026-07-12', 1865.99),
+    createDailyRow('2026-07-13', 1863.93),
+    createDailyRow('2026-07-14', 1861.97),
+    createDailyRow('2026-07-15', 1860.70),
+  ]);
+
+  input.forecastRun = createWeeklyForecastRun('2026-07-16', '1971.590');
+
+  const result = buildFscQuarterWeeks(input);
+
+  assert.equal(result.weeks[2]?.priceKind, 'forecast');
+  assert.equal(result.weeks[2]?.forecastSourceKind, 'weekly_point');
+  assert.equal(result.weeks[2]?.priceKrwPerL.toFixed(3), '1971.590');
+  assert.equal(result.weeks[2]?.fallbackUsed, false);
 });
