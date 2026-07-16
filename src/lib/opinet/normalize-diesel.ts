@@ -10,7 +10,8 @@ import type {
 
 export const DIESEL_PRODUCT_CODE = "D047";
 export const DIESEL_PRODUCT_NAME = "자동차용경유";
-const OPINET_DAILY_PRICE_SOURCE = "opinet-daily-average-price";
+export const OPINET_DAILY_AVERAGE_PRICE_SOURCE = "opinet-daily-average-price";
+export const OPINET_DAILY_RECENT_PRICE_SOURCE = "opinet-recent-daily-average-price";
 const OPINET_WEEKLY_PRICE_SOURCE = "opinet-weekly-average-price";
 const OPINET_MONTHLY_PRICE_SOURCE = "opinet-monthly-average-price";
 function isCurrentDieselRow(row: OpinetAveragePriceRow): boolean {
@@ -92,7 +93,7 @@ export function normalizeCurrentDieselRows(
     productName: DIESEL_PRODUCT_NAME,
     price: parseRequiredNumber(row.PRICE, "PRICE"),
     diff: parseRequiredNumber(row.DIFF, "DIFF"),
-    source: OPINET_DAILY_PRICE_SOURCE,
+    source: OPINET_DAILY_AVERAGE_PRICE_SOURCE,
     fetchedAt,
   }));
 }
@@ -117,7 +118,7 @@ export function normalizeRecentDieselRows(
     productName: row.productName,
     price: row.price,
     diff: index === 0 ? 0 : Number((row.price - dieselRows[index - 1].price).toFixed(2)),
-    source: OPINET_DAILY_PRICE_SOURCE,
+    source: OPINET_DAILY_RECENT_PRICE_SOURCE,
     fetchedAt,
   }));
 }

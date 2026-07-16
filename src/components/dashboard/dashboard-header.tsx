@@ -34,9 +34,6 @@ export function DashboardHeader({ quarter, fsc }: DashboardHeaderProps) {
           <span>데이터 기준 시각</span>
           <strong>{basisDateTime}</strong>
         </div>
-        <a className="button button--secondary ops-header__refresh" href="/">
-          데이터 갱신
-        </a>
       </div>
     </header>
   );

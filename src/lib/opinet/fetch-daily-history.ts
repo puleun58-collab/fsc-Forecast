@@ -12,11 +12,11 @@ export function mergeOpinetDieselDailyHistory(
 ): NormalizedDieselPriceRow[] {
   const mergedRows = new Map<string, NormalizedDieselPriceRow>();
 
-  for (const row of currentRows) {
+  for (const row of recentRows) {
     mergedRows.set(row.date, row);
   }
 
-  for (const row of recentRows) {
+  for (const row of currentRows) {
     mergedRows.set(row.date, row);
   }
 

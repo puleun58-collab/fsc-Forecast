@@ -2282,8 +2282,7 @@ main {
   }
 
   .ops-header__select-label,
-  .ops-header__basis,
-  .ops-header__refresh {
+  .ops-header__basis {
     flex: 1 1 100%;
   }
 

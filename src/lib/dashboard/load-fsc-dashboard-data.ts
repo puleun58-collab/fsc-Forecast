@@ -6,6 +6,7 @@ import { findLatestBaseFscResultByQuarter } from '@/lib/fsc/load-latest-fsc-resu
 import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
 
+import { OPINET_DAILY_AVERAGE_PRICE_SOURCE } from '@/lib/opinet/normalize-diesel';
 import { externalIndicatorCodes } from '@/lib/external-indicators/catalog';
 
 import { buildDashboardDataSources } from './data-sources';
@@ -46,6 +47,34 @@ function deriveDirection(change: number | null): 'up' | 'down' | 'flat' {
   }
 
   return change > 0 ? 'up' : 'down';
+}
+
+type DashboardCurrentRow = {
+  datasetKey: string;
+  priceDate: Date;
+  currentRevisionId: string;
+  latestRecomputeSnapshotId: string | null;
+  currentRevision: {
+    observedPriceKrwPerL: number | { toString(): string };
+    sourceObservedAt: Date | null;
+    sourcePayload?: unknown;
+  };
+};
+
+function readOpinetRowSource(row: DashboardCurrentRow): string | null {
+  const payload = row.currentRevision.sourcePayload;
+
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  const candidate = (payload as { source?: unknown }).source;
+  return typeof candidate === 'string' ? candidate : null;
+}
+
+function selectDisplayCurrentRows(rows: readonly DashboardCurrentRow[]): readonly DashboardCurrentRow[] {
+  const officialRows = rows.filter((row) => readOpinetRowSource(row) === OPINET_DAILY_AVERAGE_PRICE_SOURCE);
+  return officialRows.length > 0 ? officialRows : rows;
 }
 
 function normalizeError(error: unknown): string {
@@ -216,6 +245,7 @@ async function loadSupportSection(): Promise<FscDashboardSupportSection> {
         select: {
           observedPriceKrwPerL: true,
           sourceObservedAt: true,
+          sourcePayload: true,
         },
       },
     },
@@ -260,8 +290,9 @@ async function loadSupportSection(): Promise<FscDashboardSupportSection> {
     })),
   });
 
-  const latestRow = currentRows[currentRows.length - 1];
-  const previousRow = currentRows[currentRows.length - 2] ?? null;
+  const displayCurrentRows = selectDisplayCurrentRows(currentRows as DashboardCurrentRow[]);
+  const latestRow = displayCurrentRows[displayCurrentRows.length - 1];
+  const previousRow = displayCurrentRows[displayCurrentRows.length - 2] ?? null;
   const latestPriceKrwPerL = Number(latestRow.currentRevision.observedPriceKrwPerL);
   const previousPriceKrwPerL = previousRow ? Number(previousRow.currentRevision.observedPriceKrwPerL) : null;
   const absoluteChangeKrwPerL =
