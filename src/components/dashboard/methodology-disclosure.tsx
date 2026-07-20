@@ -9,8 +9,8 @@ type MethodologyDisclosureProps = {
 };
 
 const POLICY_ITEMS = [
-  'actual 값이 존재하는 완료 주차는 예측값보다 우선합니다.',
-  'forecast 구간은 주간 예측값, 월간 예측값, 보수적 대체값 순서로 표시 출처를 구분합니다.',
+  '실제값이 존재하는 완료 주차는 예측값보다 우선합니다.',
+  '예측 구간은 주간 예측값, 월간 예측값, 보수적 대체값 순서로 표시 출처를 구분합니다.',
   ...RELIABILITY_POLICY_ITEMS,
   '내부 식별자와 revision ID는 의사결정 화면에 노출하지 않습니다.',
 ] as const;
@@ -22,7 +22,7 @@ export function MethodologyDisclosure({ fsc }: MethodologyDisclosureProps) {
         <summary>
           <span>
             <strong id="methodology-title">산출 기준 및 데이터 정책</strong>
-            <small>actual 값이 있는 완료 주차는 forecast로 덮어쓰지 않습니다.</small>
+            <small>실제값이 있는 완료 주차는 예측값으로 덮어쓰지 않습니다.</small>
           </span>
         </summary>
         <div className="methodology__body">

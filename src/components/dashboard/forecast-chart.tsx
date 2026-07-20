@@ -103,7 +103,7 @@ export function ForecastChart({ weeks, basePriceKrwPerL }: ForecastChartProps) {
     return (
       <div className="empty-state" role="status">
         <strong>주간 가격 데이터가 없습니다.</strong>
-        <span>관리자 재계산 후 actual/forecast 경계와 차트가 표시됩니다.</span>
+        <span>관리자 재계산 후 실제/예측 경계와 차트가 표시됩니다.</span>
       </div>
     );
   }
@@ -162,7 +162,7 @@ export function ForecastChart({ weeks, basePriceKrwPerL }: ForecastChartProps) {
         className="forecast-chart__svg"
         viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
         role="img"
-        aria-label="주간 actual 및 forecast 유가 추이"
+        aria-label="주간 실제 및 예측 경유가 추이"
       >
         <rect x="0" y="0" width={VIEW_WIDTH} height={VIEW_HEIGHT} rx="0" fill="transparent" aria-hidden="true" />
         {buildTicks(domain.min, domain.max).map((tick) => {
