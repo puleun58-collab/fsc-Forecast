@@ -87,6 +87,41 @@ export interface FscDashboardMarketSignalsSection {
   unavailableReason?: string;
 }
 
+export type OilPriceHistoryQuarterNumber = 1 | 2 | 3 | 4;
+
+export type OilPriceHistoryMonth = {
+  readonly year: number;
+  readonly month: number;
+  readonly quarter: OilPriceHistoryQuarterNumber;
+  readonly averagePriceKrwPerL: number;
+  readonly dataBasisDate: string;
+};
+
+export type OilPriceHistoryQuarterChange = {
+  readonly amountKrwPerL: number;
+  readonly percent: number;
+};
+
+export type OilPriceHistoryQuarter = {
+  readonly year: number;
+  readonly quarter: OilPriceHistoryQuarterNumber;
+  readonly months: readonly OilPriceHistoryMonth[];
+  readonly averagePriceKrwPerL: number | null;
+  readonly changeFromPreviousQuarter: OilPriceHistoryQuarterChange | null;
+};
+
+export type OilPriceHistoryYear = {
+  readonly year: number;
+  readonly quarters: readonly OilPriceHistoryQuarter[];
+  readonly latestDataBasisDate: string;
+};
+
+export type OilPriceHistorySection = {
+  readonly defaultYear: number;
+  readonly availableYears: readonly number[];
+  readonly years: readonly OilPriceHistoryYear[];
+};
+
 export interface FscDashboardWeekItem {
   sequenceNo: number;
   targetMonth: number;

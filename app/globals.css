@@ -1,3 +1,5 @@
+@import "./oil-price-history.css";
+
 :root {
   color-scheme: light;
   --canvas: #f2f1ec;

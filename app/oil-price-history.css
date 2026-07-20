@@ -1,0 +1,250 @@
+.oil-price-history {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.oil-price-history__bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  align-items: center;
+  min-height: 60px;
+  padding: var(--space-3) var(--space-4);
+}
+
+.oil-price-history__identity,
+.oil-price-history__controls,
+.oil-price-history__controls label,
+.oil-price-history__detail-meta {
+  display: flex;
+  align-items: center;
+}
+
+.oil-price-history__identity {
+  gap: var(--space-3);
+  white-space: nowrap;
+}
+
+.oil-price-history__identity h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.oil-price-history__identity strong {
+  color: var(--accent);
+  font-size: 0.84rem;
+}
+
+.oil-price-history__summary-values {
+  display: flex;
+  min-width: 0;
+  gap: 0;
+  overflow-x: auto;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  scrollbar-width: thin;
+  white-space: nowrap;
+}
+
+.oil-price-history__summary-item {
+  padding: 0 var(--space-3);
+  border-left: 1px solid var(--border);
+}
+
+.oil-price-history__summary-item strong {
+  color: var(--ink);
+}
+
+.oil-price-history__empty {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.oil-price-history__controls {
+  gap: var(--space-2);
+}
+
+.oil-price-history__controls label {
+  gap: var(--space-2);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.oil-price-history__controls select {
+  min-height: 38px;
+  padding: 7px 28px 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.oil-price-history__toggle {
+  min-height: 38px;
+  padding-block: 8px;
+  white-space: nowrap;
+}
+
+.oil-price-history__detail {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--canvas) 48%, var(--surface));
+}
+
+.oil-price-history__detail-meta {
+  justify-content: space-between;
+  gap: var(--space-4);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.oil-price-history__detail-meta p,
+.oil-price-history__notice {
+  margin: 0;
+}
+
+.oil-price-history__quarter-scroll {
+  display: grid;
+  grid-auto-columns: minmax(240px, 1fr);
+  grid-auto-flow: column;
+  gap: var(--space-3);
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+  scrollbar-width: thin;
+}
+
+.oil-price-history__quarter {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+}
+
+.oil-price-history__quarter h3 {
+  margin: 0 0 var(--space-3);
+  color: var(--ink);
+  font-size: 0.96rem;
+}
+
+.oil-price-history__month-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.oil-price-history__month-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+}
+
+.oil-price-history__month-list dd {
+  margin: 0;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.oil-price-history__quarter-average {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-strong);
+}
+
+.oil-price-history__quarter-average span {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.oil-price-history__quarter-average strong {
+  color: var(--ink);
+  font-size: 1.08rem;
+}
+
+.oil-price-history__quarter-average p {
+  margin: var(--space-1) 0 0;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.oil-price-history__notice {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 760px) {
+  .oil-price-history__bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .oil-price-history__summary-values,
+  .oil-price-history__empty {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .oil-price-history__controls {
+    justify-self: end;
+  }
+
+  .oil-price-history__controls label > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .oil-price-history__detail-meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .oil-price-history__quarter-scroll {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 480px) {
+  .oil-price-history__bar,
+  .oil-price-history__detail {
+    padding: var(--space-3);
+  }
+
+  .oil-price-history__identity {
+    gap: var(--space-2);
+  }
+
+  .oil-price-history__controls {
+    gap: var(--space-1);
+  }
+
+  .oil-price-history__controls select {
+    max-width: 88px;
+  }
+
+  .oil-price-history__toggle {
+    padding-inline: 10px;
+  }
+}

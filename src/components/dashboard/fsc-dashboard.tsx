@@ -3,17 +3,19 @@ import { DataSourcesDisclosure } from './data-sources-disclosure';
 import { DecisionSummary } from './decision-summary';
 import { MarketReferencePanel } from './market-reference-panel';
 import { MethodologyDisclosure } from './methodology-disclosure';
+import { OilPriceHistory } from './oil-price-history';
 import { WeeklyDetailTable } from './weekly-detail-table';
 import { WeeklyForecastSection } from './weekly-forecast-section';
 
 import type { FscDashboardData } from '@/lib/dashboard/fsc-types';
 import { formatQuarterLabel } from '@/lib/dashboard/display-format';
+import { loadOilPriceHistory } from '@/lib/dashboard/oil-price-history';
 
 type FscDashboardProps = {
   data: FscDashboardData;
 };
 
-export function FscDashboard({ data }: FscDashboardProps) {
+export async function FscDashboard({ data }: FscDashboardProps) {
   if (data.state === 'unavailable') {
     return (
       <main id="main-content" className="fsc-dashboard fsc-dashboard--state">
@@ -28,6 +30,7 @@ export function FscDashboard({ data }: FscDashboardProps) {
   }
 
   const quarterLabel = formatQuarterLabel(data.quarter.targetYear, data.quarter.targetQuarter);
+  const oilPriceHistory = await loadOilPriceHistory();
 
   if (data.state === 'empty') {
     return (
@@ -39,6 +42,7 @@ export function FscDashboard({ data }: FscDashboardProps) {
           <p>관리자 재계산 후 분기 평균 예상 유가, FSC 파생 결과, actual/forecast 경계가 표시됩니다.</p>
           <span className="metric-caption">대상 분기 {quarterLabel}</span>
         </section>
+        <OilPriceHistory history={oilPriceHistory} />
         <MarketReferencePanel support={data.support} />
         <DataSourcesDisclosure dataSources={data.dataSources} />
       </main>
@@ -50,6 +54,7 @@ export function FscDashboard({ data }: FscDashboardProps) {
       <DashboardHeader quarter={data.quarter} fsc={data.fsc} />
       <StatusRail fsc={data.fsc} />
       <DecisionSummary fsc={data.fsc} />
+      <OilPriceHistory history={oilPriceHistory} />
       <WeeklyForecastSection fsc={data.fsc} />
       <WeeklyDetailTable weeks={data.fsc.weeks} />
       <MarketReferencePanel support={data.support} />
