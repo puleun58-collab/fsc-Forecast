@@ -1,6 +1,5 @@
 import {
   formatRateLabel,
-  formatSequenceWeekLabel,
   formatSignedPriceText,
   formatSignedRatioText,
   formatWeekRange,
@@ -35,7 +34,7 @@ function ForecastHeadline({ fsc }: DecisionSummaryProps) {
             <>
               <div className="section-heading">
                 <p className="decision-summary__metric-context">
-                  {formatSequenceWeekLabel(latestActualWeek.sequenceNo)} · {mapWeekKind(latestActualWeek.priceKind)}
+                  {mapWeekKind(latestActualWeek.priceKind)}
                 </p>
                 <h2>{latestActualWeek.sequenceNo}주차 평균 유가</h2>
               </div>
