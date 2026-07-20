@@ -15,7 +15,8 @@
     "fetch:opinet": "tsx scripts/fetch-opinet.ts",
     "ingest:opinet": "tsx scripts/run-opinet-ingest.ts",
     "sync:indicators": "tsx scripts/sync-external-indicators.ts",
-    "generate:admin-password-hash": "node scripts/generate-admin-password-hash.mjs"
+    "generate:admin-password-hash": "node scripts/generate-admin-password-hash.mjs",
+    "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -34,6 +35,9 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.0",
     "prisma": "^5.22.0",
+    "react-doctor": "^0.8.1",
+    "react-grab": "^0.1.48",
+    "react-scan": "^0.5.7",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
