@@ -33,6 +33,13 @@ export interface WorkerRunSummary {
       collectedAt: string;
       value: number;
     }>;
+    indicatorStatuses: Array<{
+      indicatorCode: string;
+      providerKey: string;
+      status: "succeeded" | "failed";
+      errorSummary: string | null;
+      latestObservedAt: string | null;
+    }>;
   };
   queue: {
     jobKind: "ingest";
@@ -124,9 +131,13 @@ export async function runScheduledWorkerOnce(): Promise<WorkerRunSummary> {
       const indicatorSync = await (async () => {
         try {
           const result = await syncExternalIndicators();
+          const failedStatuses = result.indicatorStatuses.filter((status) => status.status === "failed");
           return {
-            status: "succeeded" as const,
-            errorSummary: null,
+            status: failedStatuses.length === 0 ? "succeeded" as const : "failed" as const,
+            errorSummary:
+              failedStatuses.length === 0
+                ? null
+                : failedStatuses.map((status) => `${status.indicatorCode}: ${status.errorSummary}`).join("; "),
             providerKey: result.providerKey,
             acceptedPointCount: result.acceptedPointCount,
             persistedCount: result.persistedCount,
@@ -137,6 +148,13 @@ export async function runScheduledWorkerOnce(): Promise<WorkerRunSummary> {
               latestObservationDate: state.observedAt.toISOString(),
               collectedAt: state.collectedAt.toISOString(),
               value: state.value,
+            })),
+            indicatorStatuses: result.indicatorStatuses.map((status) => ({
+              indicatorCode: status.indicatorCode,
+              providerKey: status.providerKey,
+              status: status.status,
+              errorSummary: status.errorSummary,
+              latestObservedAt: status.latestObservedAt?.toISOString() ?? null,
             })),
           };
         } catch (error) {
@@ -155,6 +173,7 @@ export async function runScheduledWorkerOnce(): Promise<WorkerRunSummary> {
               collectedAt: state.collectedAt.toISOString(),
               value: state.value,
             })),
+            indicatorStatuses: [],
           };
         }
       })();

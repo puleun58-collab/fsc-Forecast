@@ -1,11 +1,14 @@
 import {
   formatRateLabel,
+  formatSequenceWeekLabel,
   formatSignedPriceText,
   formatSignedRatioText,
+  formatWeekRange,
+  mapWeekKind,
   PriceValue,
 } from './dashboard-format';
 
-import type { FscDashboardResultSection } from '@/lib/dashboard/fsc-types';
+import type { FscDashboardResultSection, FscDashboardWeekItem } from '@/lib/dashboard/fsc-types';
 
 type DecisionSummaryProps = {
   fsc: FscDashboardResultSection;
@@ -21,14 +24,40 @@ export function DecisionSummary({ fsc }: DecisionSummaryProps) {
 }
 
 function ForecastHeadline({ fsc }: DecisionSummaryProps) {
+  const latestActualWeek = findLatestActualWeek(fsc.weeks);
+
   return (
     <div className="decision-summary__primary">
-      <div className="section-heading">
-        <p className="section-heading__label">Decision Summary</p>
-        <h1 id="decision-summary-title">분기 평균 예상 유가</h1>
+      <p className="section-heading__label">Decision Summary</p>
+      <div className="decision-summary__metrics">
+        <div className="decision-summary__metric decision-summary__metric--current">
+          {latestActualWeek ? (
+            <>
+              <div className="section-heading">
+                <p className="decision-summary__metric-context">
+                  {formatSequenceWeekLabel(latestActualWeek.sequenceNo)} · {mapWeekKind(latestActualWeek.priceKind)}
+                </p>
+                <h2>{latestActualWeek.sequenceNo}주차 평균 유가</h2>
+              </div>
+              <PriceValue value={latestActualWeek.priceKrwPerL} size="headline" />
+              <p className="decision-summary__week-range">{formatWeekRange(latestActualWeek)}</p>
+            </>
+          ) : (
+            <div className="section-heading">
+              <p className="decision-summary__metric-context">Actual 데이터 없음</p>
+              <h2>최신 주차 평균 유가</h2>
+            </div>
+          )}
+        </div>
+        <div className="decision-summary__metric decision-summary__metric--quarter">
+          <div className="section-heading">
+            <p className="decision-summary__metric-context">분기 전체 전망</p>
+            <h1 id="decision-summary-title">분기 평균 예상 유가</h1>
+          </div>
+          <PriceValue value={fsc.quarterAverageKrwPerL} size="headline" />
+          <BaselineComparison fsc={fsc} />
+        </div>
       </div>
-      <PriceValue value={fsc.quarterAverageKrwPerL} size="headline" />
-      <BaselineComparison fsc={fsc} />
       <div className="decision-summary__baseline-grid" aria-label="기준 가격">
         <div>
           <span className="metric-label">기준유가</span>
@@ -55,6 +84,16 @@ function ForecastHeadline({ fsc }: DecisionSummaryProps) {
       </div>
     </div>
   );
+}
+
+function findLatestActualWeek(weeks: readonly FscDashboardWeekItem[]): FscDashboardWeekItem | null {
+  return weeks.reduce<FscDashboardWeekItem | null>((latest, week) => {
+    if (week.priceKind !== 'actual') {
+      return latest;
+    }
+
+    return latest === null || week.sequenceNo > latest.sequenceNo ? week : latest;
+  }, null);
 }
 
 function BaselineComparison({ fsc }: DecisionSummaryProps) {

@@ -19,6 +19,10 @@ async function main(): Promise<void> {
         persistedCount: syncResult.persistedCount,
         createdCount: syncResult.createdCount,
         updatedCount: syncResult.updatedCount,
+        indicatorStatuses: syncResult.indicatorStatuses.map((status) => ({
+          ...status,
+          latestObservedAt: status.latestObservedAt?.toISOString() ?? null,
+        })),
         latestStates: syncResult.latestStates.map((state) => ({
           indicatorCode: state.indicatorCode,
           latestObservationDate: state.observedAt.toISOString(),
@@ -30,6 +34,10 @@ async function main(): Promise<void> {
       2,
     ),
   );
+
+  if (syncResult.indicatorStatuses.some((status) => status.status === "failed")) {
+    process.exitCode = 1;
+  }
 }
 
 void main().catch(async (error: unknown) => {

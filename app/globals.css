@@ -1416,6 +1416,48 @@ main {
   gap: 18px;
   padding: 28px;
 }
+.decision-summary__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+
+.decision-summary__metric {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 14px;
+}
+
+.decision-summary__metric--quarter {
+  padding-left: 28px;
+  border-left: 1px solid var(--border);
+}
+
+.decision-summary__metric .section-heading h1,
+.decision-summary__metric .section-heading h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.08rem, 1.6vw, 1.35rem);
+  line-height: 1.25;
+}
+
+.decision-summary__metric .price-value--headline .price-value__number {
+  font-size: clamp(2.25rem, 3.6vw, 3.4rem);
+}
+
+.decision-summary__metric-context,
+.decision-summary__week-range {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.decision-summary__metric-context {
+  color: var(--accent);
+}
+
 
 .decision-summary__scenario {
   grid-column: 8 / -1;
@@ -1885,6 +1927,27 @@ main {
   color: var(--ink);
 }
 
+.market-signal-card__value {
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+  line-height: 1.2;
+}
+
+.market-signal-card__change {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.market-signal-card__checking {
+  width: fit-content;
+  padding: 4px 7px;
+  border: 1px solid var(--warning-border);
+  border-radius: 4px;
+  color: var(--warning);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
 .market-signals > p {
   margin: 0;
   color: var(--text-secondary);
@@ -2305,6 +2368,17 @@ main {
   .decision-summary__primary,
   .decision-summary__scenario {
     grid-column: 1 / -1;
+  }
+  .decision-summary__metrics {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .decision-summary__metric--quarter {
+    padding-top: 22px;
+    padding-left: 0;
+    border-top: 1px solid var(--border);
+    border-left: 0;
   }
 
   .decision-summary__primary,

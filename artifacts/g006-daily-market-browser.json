@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "url": "http://127.0.0.1:3015/",
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 1
+  },
+  "cards": [
+    {
+      "text": "두바이유76.90 USD/BBL전일 대비 +1.11 (+1.46%) · 상승관측 기준 2026.07.17한국석유공사 오피넷 · Dubai 현물가격 추정값 기준",
+      "rect": {
+        "width": 659,
+        "height": 162.25
+      }
+    },
+    {
+      "text": "USD/KRW1,501.06원/USD전일 대비 -7.70원 (-0.51%) · 하락관측 기준 2026.07.10FRED · 뉴욕 정오 매입환율 기준",
+      "rect": {
+        "width": 659,
+        "height": 162.25
+      }
+    }
+  ],
+  "summaryText": "상승·하락 요인이 혼재",
+  "assertions": {
+    "twoCards": true,
+    "dubaiFormat": true,
+    "usdKrwFormat": true,
+    "sourceBasis": true,
+    "summary": true
+  }
+}

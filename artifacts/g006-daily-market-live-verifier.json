@@ -1,0 +1,125 @@
+{
+  "generatedAt": "2026-07-20T00:49:30.058Z",
+  "sourceResponses": {
+    "dubai": [
+      {
+        "observedDate": "2026-07-17",
+        "value": 76.9,
+        "sourcePayload": {
+          "provider": "opinet-dubai-daily",
+          "sourceUrl": "https://www.opinet.co.kr/glopcoilSelect.do",
+          "instrument": "Dubai spot estimate",
+          "frequency": "daily",
+          "unit": "usd_per_barrel",
+          "valueBasis": "dubai_spot_estimate",
+          "date": "26년07월17일",
+          "rawValue": "76.90"
+        }
+      },
+      {
+        "observedDate": "2026-07-16",
+        "value": 75.79,
+        "sourcePayload": {
+          "provider": "opinet-dubai-daily",
+          "sourceUrl": "https://www.opinet.co.kr/glopcoilSelect.do",
+          "instrument": "Dubai spot estimate",
+          "frequency": "daily",
+          "unit": "usd_per_barrel",
+          "valueBasis": "dubai_spot_estimate",
+          "date": "26년07월16일",
+          "rawValue": "75.79"
+        }
+      }
+    ],
+    "usd-krw": [
+      {
+        "observedDate": "2026-07-10",
+        "value": 1501.06,
+        "sourcePayload": {
+          "provider": "fred-public-csv",
+          "seriesId": "DEXKOUS",
+          "date": "2026-07-10",
+          "rawValue": "1501.06",
+          "sourceUrl": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXKOUS",
+          "frequency": "daily",
+          "unit": "krw_per_usd",
+          "valueBasis": "new_york_noon_buying_rate"
+        }
+      },
+      {
+        "observedDate": "2026-07-09",
+        "value": 1508.76,
+        "sourcePayload": {
+          "provider": "fred-public-csv",
+          "seriesId": "DEXKOUS",
+          "date": "2026-07-09",
+          "rawValue": "1508.76",
+          "sourceUrl": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXKOUS",
+          "frequency": "daily",
+          "unit": "krw_per_usd",
+          "valueBasis": "new_york_noon_buying_rate"
+        }
+      }
+    ]
+  },
+  "syncStates": [
+    {
+      "indicatorCode": "dubai",
+      "providerKey": "opinet-dubai-daily",
+      "status": "succeeded",
+      "lastAttemptAt": "2026-07-20T00:43:17.241Z",
+      "lastSuccessAt": "2026-07-20T00:43:17.241Z",
+      "latestObservedAt": "2026-07-17T00:00:00.000Z",
+      "errorSummary": null
+    },
+    {
+      "indicatorCode": "usd-krw",
+      "providerKey": "fred-public-csv",
+      "status": "succeeded",
+      "lastAttemptAt": "2026-07-20T00:43:21.898Z",
+      "lastSuccessAt": "2026-07-20T00:43:21.898Z",
+      "latestObservedAt": "2026-07-10T00:00:00.000Z",
+      "errorSummary": null
+    }
+  ],
+  "calculatedSignals": [
+    {
+      "indicatorCode": "dubai",
+      "displayName": "두바이유",
+      "status": "ready",
+      "latestObservationDate": "2026-07-17T00:00:00.000Z",
+      "collectedAt": "2026-07-20T00:43:20.182Z",
+      "previousObservationDate": "2026-07-16T00:00:00.000Z",
+      "value": 76.9,
+      "previousValue": 75.79,
+      "absoluteChange": 1.11,
+      "percentChange": 1.4645731626863694,
+      "direction": "up",
+      "unitLabel": "USD/BBL",
+      "valueBasisLabel": "Dubai 현물가격 추정값 기준",
+      "providerName": "한국석유공사 오피넷",
+      "sourceUrl": "https://www.opinet.co.kr/glopcoilSelect.do",
+      "explanation": "싱가포르에서 거래된 Dubai 현물가격 추정값을 한국석유공사 오피넷이 일별로 제공합니다."
+    },
+    {
+      "indicatorCode": "usd-krw",
+      "displayName": "USD/KRW",
+      "status": "ready",
+      "latestObservationDate": "2026-07-10T00:00:00.000Z",
+      "collectedAt": "2026-07-20T00:43:34.428Z",
+      "previousObservationDate": "2026-07-09T00:00:00.000Z",
+      "value": 1501.06,
+      "previousValue": 1508.76,
+      "absoluteChange": -7.7,
+      "percentChange": -0.5103528725576,
+      "direction": "down",
+      "unitLabel": "원/USD",
+      "valueBasisLabel": "뉴욕 정오 매입환율 기준",
+      "providerName": "FRED",
+      "sourceUrl": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXKOUS",
+      "explanation": "미 연준 계열 원/달러 환율의 뉴욕 정오 매입환율 일별 관측값입니다."
+    }
+  ],
+  "summaryText": "상승·하락 요인이 혼재",
+  "parity": true
+}

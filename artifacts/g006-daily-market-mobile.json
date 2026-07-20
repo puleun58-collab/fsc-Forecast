@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "url": "http://127.0.0.1:3015/",
+  "viewport": {
+    "width": 390,
+    "height": 844,
+    "deviceScaleFactor": 1
+  },
+  "layout": {
+    "columns": "320px",
+    "width": 320,
+    "cards": [
+      {
+        "width": 320,
+        "top": 153.734375
+      },
+      {
+        "width": 320,
+        "top": 320.296875
+      }
+    ]
+  },
+  "assertions": {
+    "singleColumn": true
+  }
+}

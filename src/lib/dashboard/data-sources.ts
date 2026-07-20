@@ -62,7 +62,7 @@ export function buildDashboardDataSources(input: {
       ...DASHBOARD_DATA_SOURCE_CONFIG.dubai,
       latestObservationDate: input.latestDubaiObservationDate,
       collectedAt: input.latestDubaiCollectedAt,
-      observationGranularity: 'month',
+      observationGranularity: 'date',
       status: input.latestDubaiObservationDate === null ? 'unavailable' : 'available',
     },
     {

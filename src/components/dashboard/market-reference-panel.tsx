@@ -94,7 +94,7 @@ function MarketSignalsSection({ support }: { support: FscDashboardSupportSection
     <div className="market-signals">
       <div className="market-signals__heading">
         <strong>주요 시장 요인</strong>
-        <span>두바이유와 USD/KRW만 공개 표시합니다.</span>
+        <span>두바이유와 USD/KRW의 최신 일별 유효 관측값을 표시합니다.</span>
       </div>
       {marketSignals.signals.length > 0 ? (
         <div className="market-signals__grid" aria-label="공개 시장 요인">
@@ -112,17 +112,64 @@ function MarketSignalsSection({ support }: { support: FscDashboardSupportSection
 }
 
 function MarketSignalCard({ signal }: { signal: FscDashboardMarketSignal }) {
-  const percentText = signal.percentChange === null ? '변화율 산정 불가' : formatPercentText(signal.percentChange);
+  const hasComparison =
+    signal.value !== null &&
+    signal.previousValue !== null &&
+    signal.absoluteChange !== null &&
+    signal.percentChange !== null;
 
   return (
     <article className="market-signal-card" title={signal.explanation}>
       <span className="metric-label">{signal.displayName}</span>
-      <strong>
-        {percentText} · {mapDirectionLabel(signal.direction)}
-      </strong>
-      <span className="metric-caption">관측 기준 {formatDisplayDate(signal.latestObservationDate)}</span>
+      {hasComparison ? (
+        <>
+          <strong className="market-signal-card__value">{formatMarketSignalValue(signal)}</strong>
+          <span className="market-signal-card__change">
+            전일 대비 {formatMarketSignalChange(signal)} ({formatPercentText(signal.percentChange)}) ·{' '}
+            {mapDirectionLabel(signal.direction)}
+          </span>
+          <span className="metric-caption">관측 기준 {formatDisplayDate(signal.latestObservationDate)}</span>
+        </>
+      ) : (
+        <strong>유효한 일별 관측값이 부족합니다.</strong>
+      )}
+      <span className="metric-caption">
+        {signal.providerName} · {signal.valueBasisLabel}
+      </span>
+      {signal.status === 'checking' ? (
+        <span className="market-signal-card__checking" role="status">
+          최신 데이터 확인 중
+        </span>
+      ) : null}
     </article>
   );
+}
+
+function formatMarketSignalValue(signal: FscDashboardMarketSignal): string {
+  if (signal.value === null) {
+    return '기록 없음';
+  }
+
+  const valueText = signal.value.toLocaleString('ko-KR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  return signal.indicatorCode === 'dubai' ? `${valueText} USD/BBL` : `${valueText}원/USD`;
+}
+
+function formatMarketSignalChange(signal: FscDashboardMarketSignal): string {
+  if (signal.absoluteChange === null) {
+    return '산정 불가';
+  }
+
+  const amountText = Math.abs(signal.absoluteChange).toLocaleString('ko-KR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const signedAmount = `${signal.absoluteChange > 0 ? '+' : signal.absoluteChange < 0 ? '-' : ''}${amountText}`;
+
+  return signal.indicatorCode === 'dubai' ? signedAmount : `${signedAmount}원`;
 }
 
 export function MarketSparkline({

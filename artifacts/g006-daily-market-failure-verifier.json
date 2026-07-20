@@ -1,0 +1,34 @@
+{
+  "scenario": "provider fetch failure",
+  "injectedError": "Injected Opinet network failure",
+  "before": [
+    {
+      "id": "cmrshrpf0000efg9kj9ok04sn",
+      "observedAt": "2026-07-17T00:00:00.000Z",
+      "value": 76.9,
+      "collectedAt": "2026-07-20T00:36:40.321Z"
+    },
+    {
+      "id": "cmrshrpf0000dfg9kaldg3uul",
+      "observedAt": "2026-07-16T00:00:00.000Z",
+      "value": 75.79,
+      "collectedAt": "2026-07-20T00:36:40.321Z"
+    }
+  ],
+  "after": [
+    {
+      "id": "cmrshrpf0000efg9kj9ok04sn",
+      "observedAt": "2026-07-17T00:00:00.000Z",
+      "value": 76.9,
+      "collectedAt": "2026-07-20T00:36:40.321Z"
+    },
+    {
+      "id": "cmrshrpf0000dfg9kaldg3uul",
+      "observedAt": "2026-07-16T00:00:00.000Z",
+      "value": 75.79,
+      "collectedAt": "2026-07-20T00:36:40.321Z"
+    }
+  ],
+  "syncStatus": "failed",
+  "lastKnownGoodPreserved": true
+}

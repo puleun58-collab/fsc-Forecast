@@ -1,0 +1,22 @@
+AI SLOP CLEANUP REPORT
+======================
+Scope: G006 changed product, migration, test, and runtime files.
+
+Blocking findings: 0
+
+Checks performed
+- No fabricated current-date or numeric fallback is used for market observations.
+- Monthly FRED Dubai data is excluded by provider, frequency, unit, series, and value-basis metadata.
+- Failed refreshes preserve ExternalIndicatorHistory and use a separate durable sync-state row.
+- Observation dates and collection timestamps remain separate.
+- Duplicate dates, malformed values, non-finite values, zero, and negative values fail closed or are excluded.
+- Shared latest-two calculation is not duplicated in the UI.
+- No dead monthly alias, fixed market date, fixed market value, placeholder, TODO-only path, or no-op implementation remains.
+- Provider/source-basis labels match the official Opinet Dubai spot estimate and FRED DEXKOUS New York noon buying-rate semantics.
+- Desktop and mobile card structures reuse the existing market-signal component and responsive grid.
+
+Advisory findings
+- FRED still downloads the full public CSV series before persistence narrows updates to the latest two rows. This preserves existing history behavior and is not a correctness blocker, but a bounded upstream query could reduce transfer volume if FRED query semantics are later formalized.
+- The Opinet adapter intentionally depends on the official `tbody2` table contract. Missing or changed markup fails closed, preserves last-known-good data, and exposes the checking state.
+
+Verdict: PASSED

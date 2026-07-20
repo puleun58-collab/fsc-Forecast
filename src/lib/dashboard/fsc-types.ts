@@ -3,7 +3,7 @@ export type DashboardTrendDirection = 'up' | 'down' | 'flat';
 export type DashboardDataSourceStatus = 'available' | 'delayed' | 'unavailable';
 
 export interface DashboardDataSource {
-  sourceCode: 'opinet-diesel' | 'fred-dubai' | 'fred-usd-krw';
+  sourceCode: 'opinet-diesel' | 'opinet-dubai-daily' | 'fred-usd-krw';
   displayName: string;
   dataName: string;
   dataCode: string | null;
@@ -64,6 +64,7 @@ export interface FscDashboardTrendSection {
 export interface FscDashboardMarketSignal {
   indicatorCode: 'dubai' | 'usd-krw';
   displayName: string;
+  status: 'ready' | 'checking' | 'unavailable';
   latestObservationDate: string | null;
   collectedAt: string | null;
   previousObservationDate: string | null;
@@ -73,10 +74,14 @@ export interface FscDashboardMarketSignal {
   percentChange: number | null;
   direction: DashboardTrendDirection;
   explanation: string;
+  unitLabel: 'USD/BBL' | '원/USD';
+  valueBasisLabel: string;
+  providerName: string;
+  sourceUrl: string;
 }
 
 export interface FscDashboardMarketSignalsSection {
-  status: 'ready' | 'insufficient_data' | 'unavailable';
+  status: 'ready' | 'checking' | 'insufficient_data' | 'unavailable';
   summaryText: string;
   signals: FscDashboardMarketSignal[];
   unavailableReason?: string;

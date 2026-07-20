@@ -1,0 +1,19 @@
+G006 daily market indicators verification commands
+=================================================
+
+1. npx prisma validate
+2. npx tsx --test src/lib/external-indicators/daily-providers.test.ts src/lib/external-indicators/sync-external-indicators.test.ts src/lib/dashboard/market-signals.test.ts src/lib/dashboard/data-sources.test.ts
+3. npm run lint
+4. npm run build
+5. git diff --check
+6. npx tsx --test "src/**/*.test.ts"
+
+Observed results
+----------------
+- Prisma schema validation passed.
+- Focused daily-provider, sync, market-signal, and data-source tests passed: 14/14.
+- Full repository test suite passed: 37/37.
+- ESLint completed with no warnings or errors.
+- Next.js production build compiled successfully and completed type checking and static generation.
+- `git diff --check` reported no whitespace errors; Git emitted only the repository's existing Windows LF-to-CRLF conversion notices.
+- Live source, persistence, calculated-signal, failure-preservation, desktop, and mobile evidence is stored in the other `artifacts/g006-*` files.

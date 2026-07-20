@@ -7,7 +7,7 @@ test('dashboard data sources include only public sources and keep dynamic observ
   const dataSources = buildDashboardDataSources({
     latestOpinetObservationDate: '2026-07-14',
     latestOpinetCollectedAt: '2026-07-14T01:25:00.000Z',
-    latestDubaiObservationDate: '2026-06-01T00:00:00.000Z',
+    latestDubaiObservationDate: '2026-07-17T00:00:00.000Z',
     latestDubaiCollectedAt: '2026-07-10T00:00:00.000Z',
     latestUsdKrwObservationDate: '2026-07-10T00:00:00.000Z',
     latestUsdKrwCollectedAt: '2026-07-15T00:00:00.000Z',
@@ -16,12 +16,13 @@ test('dashboard data sources include only public sources and keep dynamic observ
 
   assert.deepEqual(
     dataSources.map((source) => source.sourceCode),
-    ['opinet-diesel', 'fred-dubai', 'fred-usd-krw'],
+    ['opinet-diesel', 'opinet-dubai-daily', 'fred-usd-krw'],
   );
   assert.equal(dataSources[0].latestObservationDate, '2026-07-14');
   assert.equal(dataSources[0].collectedAt, '2026-07-14T01:25:00.000Z');
-  assert.equal(dataSources[1].latestObservationDate, '2026-06-01T00:00:00.000Z');
+  assert.equal(dataSources[1].latestObservationDate, '2026-07-17T00:00:00.000Z');
   assert.equal(dataSources[1].collectedAt, '2026-07-10T00:00:00.000Z');
+  assert.equal(dataSources[1].observationGranularity, 'date');
   assert.equal(dataSources[2].latestObservationDate, '2026-07-10T00:00:00.000Z');
   assert.equal(dataSources[2].collectedAt, '2026-07-15T00:00:00.000Z');
 });

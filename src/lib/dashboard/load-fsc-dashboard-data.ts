@@ -7,7 +7,7 @@ import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
 import { loadPublicConfirmedLatestDate } from '@/lib/opinet/resolve-public-confirmed-date';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
 
-import { externalIndicatorCodes } from '@/lib/external-indicators/catalog';
+import { loadIndicatorSyncStates } from '@/lib/external-indicators/indicator-sync-state';
 
 import { buildDashboardDataSources } from './data-sources';
 import {
@@ -313,46 +313,54 @@ async function loadSupportSection(): Promise<FscDashboardSupportSection> {
       ? null
       : roundPrice((absoluteChangeKrwPerL! / previousPriceKrwPerL) * 100);
 
-  const indicatorRows = await Promise.all(
-    externalIndicatorCodes.map(async (indicatorCode) => ({
-      indicatorCode,
-      rows: await db.externalIndicatorHistory.findMany({
-        where: {
-          indicatorCode,
-          observedAt: snapshot.currentTruthCutoffAt
-            ? {
-                lte: snapshot.currentTruthCutoffAt,
-              }
-            : undefined,
-        },
-        orderBy: [{ observedAt: 'desc' }, { collectedAt: 'desc' }],
-        take: 2,
-        select: {
-          observedAt: true,
-          collectedAt: true,
-          value: true,
-        },
-      }),
-    })),
-  );
+  const publicIndicatorCodes = ['dubai', 'usd-krw'] as const;
+  const [indicatorRows, indicatorSyncStates] = await Promise.all([
+    Promise.all(
+      publicIndicatorCodes.map(async (indicatorCode) => ({
+        indicatorCode,
+        rows: await db.externalIndicatorHistory.findMany({
+          where: { indicatorCode },
+          orderBy: [{ observedAt: 'desc' }, { collectedAt: 'desc' }],
+          take: 64,
+          select: {
+            observedAt: true,
+            collectedAt: true,
+            value: true,
+            sourcePayload: true,
+          },
+        }),
+      })),
+    ),
+    loadIndicatorSyncStates(publicIndicatorCodes),
+  ]);
 
   const publicSignals = buildPublicMarketSignals(
     indicatorRows.map((entry) => ({
       indicatorCode: entry.indicatorCode,
+      syncStatus:
+        indicatorSyncStates.find((state) => state.indicatorCode === entry.indicatorCode)?.status ?? null,
       rows: entry.rows.map((row) => ({
         observedAt: row.observedAt,
         collectedAt: row.collectedAt,
         value: Number(row.value),
+        sourcePayload: row.sourcePayload,
       })),
     })),
   );
 
+  const hasCheckingSignal = publicSignals.some((signal) => signal.status === 'checking');
+  const hasUnavailableSignal =
+    publicSignals.length < publicIndicatorCodes.length ||
+    publicSignals.some((signal) => signal.status === 'unavailable');
   const marketSignals: FscDashboardMarketSignalsSection = {
-    status: publicSignals.length === 2 ? 'ready' : 'insufficient_data',
+    status: hasUnavailableSignal ? 'insufficient_data' : hasCheckingSignal ? 'checking' : 'ready',
     summaryText: buildPublicMarketSummaryText(publicSignals),
     signals: publicSignals,
-    unavailableReason:
-      publicSignals.length === 2 ? undefined : '두바이유와 USD/KRW 관측값이 모두 확보되면 핵심 시장 요인을 표시합니다.',
+    unavailableReason: hasUnavailableSignal
+      ? '두바이유와 USD/KRW의 최신 일별 유효 관측값 두 건이 모두 필요합니다.'
+      : hasCheckingSignal
+        ? '최신 데이터 확인 중'
+        : undefined,
   };
 
   return {

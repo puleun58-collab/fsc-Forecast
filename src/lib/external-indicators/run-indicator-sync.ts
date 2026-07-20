@@ -41,8 +41,8 @@ function normalizePoints(points: readonly ExternalIndicatorPoint[]): ExternalInd
       throw new Error(`Indicator observedAt must be a valid Date for '${point.indicatorCode}'.`);
     }
 
-    if (!Number.isFinite(point.value)) {
-      throw new Error(`Indicator value must be finite for '${point.indicatorCode}'.`);
+    if (!Number.isFinite(point.value) || point.value <= 0) {
+      throw new Error(`Indicator value must be a positive finite number for '${point.indicatorCode}'.`);
     }
 
     const key = createPointKey(point);

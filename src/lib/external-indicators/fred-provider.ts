@@ -1,4 +1,3 @@
-import { externalIndicatorCodes } from "./catalog";
 import type {
   ExternalIndicatorProvider,
   ExternalIndicatorProviderRequest,
@@ -9,8 +8,11 @@ import type { ExternalIndicatorCode, ExternalIndicatorPoint } from "./types";
 const FRED_PROVIDER_KEY = "fred-public-csv";
 const FRED_GRAPH_CSV_BASE_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv";
 
-const FRED_SERIES_BY_CODE: Record<ExternalIndicatorCode, string> = {
-  dubai: "POILDUBUSDM",
+type FredIndicatorCode = Exclude<ExternalIndicatorCode, "dubai">;
+
+const FRED_INDICATOR_CODES: readonly FredIndicatorCode[] = ["brent", "wti", "usd-krw"];
+
+const FRED_SERIES_BY_CODE: Record<FredIndicatorCode, string> = {
   brent: "DCOILBRENTEU",
   wti: "DCOILWTICO",
   "usd-krw": "DEXKOUS",
@@ -41,11 +43,7 @@ function parseValue(value: string, seriesId: string): number | null {
 
   const numericValue = Number(trimmed.replace(/,/g, ""));
 
-  if (!Number.isFinite(numericValue)) {
-    throw new Error(`FRED returned a non-numeric VALUE for series '${seriesId}': '${value}'.`);
-  }
-
-  return numericValue;
+  return Number.isFinite(numericValue) && numericValue > 0 ? numericValue : null;
 }
 
 function matchesWindow(
@@ -64,7 +62,7 @@ function matchesWindow(
 }
 
 async function fetchFredSeries(
-  indicatorCode: ExternalIndicatorCode,
+  indicatorCode: FredIndicatorCode,
   request: ExternalIndicatorProviderRequest,
 ): Promise<ExternalIndicatorPoint[]> {
   const seriesId = FRED_SERIES_BY_CODE[indicatorCode];
@@ -118,6 +116,10 @@ async function fetchFredSeries(
         seriesId,
         date: dateValue.trim(),
         rawValue: rawValue.trim(),
+        sourceUrl: buildFredCsvUrl(seriesId),
+        frequency: "daily",
+        unit: indicatorCode === "usd-krw" ? "krw_per_usd" : "usd_per_barrel",
+        valueBasis: indicatorCode === "usd-krw" ? "new_york_noon_buying_rate" : "daily_close",
       },
     });
   }
@@ -127,9 +129,11 @@ async function fetchFredSeries(
 
 export const fredIndicatorProvider: ExternalIndicatorProvider = {
   providerKey: FRED_PROVIDER_KEY,
-  supportedIndicatorCodes: externalIndicatorCodes,
+  supportedIndicatorCodes: FRED_INDICATOR_CODES,
   async fetchHistory(request: ExternalIndicatorProviderRequest): Promise<ExternalIndicatorProviderResult> {
-    const requestedCodes = request.indicatorCodes.length > 0 ? request.indicatorCodes : externalIndicatorCodes;
+    const requestedCodes = request.indicatorCodes.filter(
+      (indicatorCode): indicatorCode is FredIndicatorCode => indicatorCode !== "dubai",
+    );
     const uniqueCodes = [...new Set(requestedCodes)];
     const points = (
       await Promise.all(uniqueCodes.map((indicatorCode) => fetchFredSeries(indicatorCode, request)))

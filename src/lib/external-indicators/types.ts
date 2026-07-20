@@ -51,3 +51,17 @@ export interface IndicatorSyncResult {
   records: ExternalIndicatorHistoryRecord[];
   latestStates: LatestExternalIndicatorState[];
 }
+
+export interface IndicatorSyncStatus {
+  indicatorCode: ExternalIndicatorCode;
+  providerKey: string;
+  status: "succeeded" | "failed";
+  errorSummary: string | null;
+  acceptedPointCount: number;
+  persistedCount: number;
+  latestObservedAt: Date | null;
+}
+
+export interface IndicatorBatchSyncResult extends IndicatorSyncResult {
+  indicatorStatuses: IndicatorSyncStatus[];
+}
