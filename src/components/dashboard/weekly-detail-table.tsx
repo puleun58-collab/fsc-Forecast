@@ -57,9 +57,9 @@ export function WeeklyDetailTable({ weeks }: WeeklyDetailTableProps) {
         </table>
       </div>
       <div className="weekly-mobile-list" aria-label="모바일 주차별 상세 데이터">
-        <WeekMobileGroup title="Actual 구간" weeks={actualWeeks} />
+        <WeekMobileGroup title="실제 구간" weeks={actualWeeks} />
         {forecastWeeks.length > 0 ? <div className="weekly-mobile-list__boundary">예측 시작</div> : null}
-        <WeekMobileGroup title="Forecast 구간" weeks={forecastWeeks} />
+        <WeekMobileGroup title="예측 구간" weeks={forecastWeeks} />
       </div>
     </section>
   );

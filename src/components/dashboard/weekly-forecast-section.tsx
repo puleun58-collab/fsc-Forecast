@@ -31,11 +31,11 @@ export function ForecastLegend({ actualWeekCount, forecastWeekCount }: ForecastL
     <div className="forecast-legend" aria-label="차트 범례">
       <span>
         <span className="forecast-legend__line forecast-legend__line--actual" aria-hidden="true" />
-        Actual {actualWeekCount}주
+        실제 {actualWeekCount}주
       </span>
       <span>
         <span className="forecast-legend__line forecast-legend__line--forecast" aria-hidden="true" />
-        Forecast {forecastWeekCount}주
+        예측 {forecastWeekCount}주
       </span>
       <span>
         <span className="forecast-legend__line forecast-legend__line--reference" aria-hidden="true" />

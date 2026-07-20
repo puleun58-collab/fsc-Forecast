@@ -1,10 +1,8 @@
 import {
   formatRateLabel,
-  formatSequenceWeekLabel,
   formatSignedPriceText,
   formatSignedRatioText,
   formatWeekRange,
-  mapWeekKind,
   PriceValue,
 } from './dashboard-format';
 
@@ -34,18 +32,16 @@ function ForecastHeadline({ fsc }: DecisionSummaryProps) {
           {latestActualWeek ? (
             <>
               <div className="section-heading">
-                <p className="decision-summary__metric-context">
-                  {formatSequenceWeekLabel(latestActualWeek.sequenceNo)} · {mapWeekKind(latestActualWeek.priceKind)}
-                </p>
-                <h2>{latestActualWeek.sequenceNo}주차 평균 유가</h2>
+                <p className="decision-summary__metric-context">실제값 · 집계 완료</p>
+                <h2>{latestActualWeek.sequenceNo}주차 평균 경유가</h2>
               </div>
               <PriceValue value={latestActualWeek.priceKrwPerL} size="headline" />
               <p className="decision-summary__week-range">{formatWeekRange(latestActualWeek)}</p>
             </>
           ) : (
             <div className="section-heading">
-              <p className="decision-summary__metric-context">Actual 데이터 없음</p>
-              <h2>최신 주차 평균 유가</h2>
+              <p className="decision-summary__metric-context">실제값 데이터 없음</p>
+              <h2>최신 주차 평균 경유가</h2>
             </div>
           )}
         </div>
@@ -72,14 +68,14 @@ function ForecastHeadline({ fsc }: DecisionSummaryProps) {
           </strong>
         </div>
       </div>
-      <div className="boundary-key" aria-label={`Actual ${fsc.actualWeekCount}주, Forecast ${fsc.forecastWeekCount}주`}>
+      <div className="boundary-key" aria-label={`실제 ${fsc.actualWeekCount}주, 예측 ${fsc.forecastWeekCount}주`}>
         <span className="boundary-key__item">
           <span className="boundary-key__line boundary-key__line--actual" aria-hidden="true" />
-          Actual {fsc.actualWeekCount}주
+          실제 {fsc.actualWeekCount}주
         </span>
         <span className="boundary-key__item">
           <span className="boundary-key__line boundary-key__line--forecast" aria-hidden="true" />
-          Forecast {fsc.forecastWeekCount}주
+          예측 {fsc.forecastWeekCount}주
         </span>
       </div>
     </div>

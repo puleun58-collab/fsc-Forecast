@@ -19,7 +19,7 @@ export type ReliabilityStatusView = {
 
 export const RELIABILITY_POLICY_ITEMS = [
   '공식 신뢰도 등급은 유효한 주간 백테스트 13개가 확보된 후 산정합니다.',
-  '현재 분기의 Actual·Forecast 주차 수는 신뢰도 표본 수에 포함하지 않습니다.',
+  '현재 분기의 실제·예측 주차 수는 신뢰도 표본 수에 포함하지 않습니다.',
   '등급은 최근 13개 백테스트의 MAPE를 기준으로 산정합니다.',
   'MAE와 Bias는 품질 참고 지표로 사용하며 공식 등급에는 반영하지 않습니다.',
 ] as const;
@@ -245,7 +245,7 @@ export function mapForecastSourceKind(value: FscDashboardWeekItem['forecastSourc
 }
 
 export function mapWeekKind(value: FscDashboardWeekItem['priceKind']): string {
-  return value === 'actual' ? 'Actual' : 'Forecast';
+  return value === 'actual' ? '실제' : '예측';
 }
 
 export function mapDirectionLabel(value: DashboardTrendDirection): string {
