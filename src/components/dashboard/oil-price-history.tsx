@@ -46,7 +46,7 @@ function SummaryValues({ year }: { readonly year: OilPriceHistoryYear }) {
     .find((quarter) => quarter.averagePriceKrwPerL === null);
 
   return (
-    <div className="oil-price-history__summary-values" aria-label={`${year.year}년 유가 이력 요약`}>
+    <div className="oil-price-history__summary-values" aria-label={`${year.year}년 분기별 유가 현황 요약`}>
       {completedQuarters.map((quarter) => (
         <span key={`quarter-${quarter.quarter}`} className="oil-price-history__summary-item">
           <strong>{quarter.quarter}분기</strong> {formatPriceNumber(quarter.averagePriceKrwPerL)}원/L
@@ -101,7 +101,7 @@ export function OilPriceHistory({ history }: OilPriceHistoryProps) {
     <section className="oil-price-history surface-panel" aria-labelledby={`${detailId}-title`}>
       <div className="oil-price-history__bar">
         <div className="oil-price-history__identity">
-          <h2 id={`${detailId}-title`}>유가 이력</h2>
+          <h2 id={`${detailId}-title`}>분기별 유가 현황</h2>
           <strong>{selectedYear}년</strong>
         </div>
         {selectedHistory ? (

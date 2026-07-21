@@ -14,6 +14,7 @@
 - `WeeklyForecastSection`: actual 실선, forecast 점선, 기준유가 reference line, `예측 시작` boundary band
 - `WeeklyDetailTable`: 주차별 가격, 상태, 기준유가 대비 차이, 산출 방식
 - `MarketReferencePanel`: 오피넷 날짜 기준 최종 평균 경유가, 주간/월간 평균, 작은 sparkline, 공개 시장 요인(Dubai·USD/KRW)
+- `OilPriceHistory`: 선택 연도의 월평균 유가와 완료된 분기 평균을 비교하는 `분기별 유가 현황`
 - `MethodologyDisclosure`: actual-first 정책, 데이터 산출 기준, 데이터 처리 시각
 - `DataSourcesDisclosure`: 오피넷·두바이유·USD/KRW 출처 정보, 최종 관측 기준, 유의사항
 
@@ -27,6 +28,7 @@
 - 모든 날짜·시각은 `Asia/Seoul` 기준으로 `YYYY.MM.DD HH:mm KST` 형식으로 표시합니다.
 - 오피넷 시장 참고값 카드는 `YYYY.MM.DD 최종 평균 경유가` 형식으로 표시하고, 값은 같은 날짜의 오피넷 일별 최종 평균과 일치시킵니다.
 - 두바이유와 USD/KRW는 원천 관측일을 상단 시장 요인과 하단 출처 카드에서 같은 필드로 공유하고, `collectedAt`은 별도 저장해 운영 로그/상세 확인용으로만 사용합니다.
+- `분기별 유가 현황`은 완료된 월평균 실제값을 분기별로 누적하고, 완료된 분기는 오피넷 분기 평균과 직전 분기 대비 변동을 함께 표시합니다.
 - 현재 숫자는 UI에 하드코딩하지 않고 `loadFscDashboardData()`가 반환한 계산 결과와 원천 데이터에 바인딩합니다.
 - 공식 신뢰도 등급은 `forecastRun.metadata.qualityGate.backtestPoints`에서 읽은 유효한 주간 백테스트 13개가 확보된 뒤 최근 13개 MAPE 기준으로만 산정합니다.
 
