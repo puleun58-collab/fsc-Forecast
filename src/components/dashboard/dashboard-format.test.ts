@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { mapReliabilityStatus, RELIABILITY_POLICY_ITEMS } from './dashboard-format';
+import {
+  calculateWeekOverWeekChange,
+  formatWeekOverWeekChange,
+  mapReliabilityStatus,
+  RELIABILITY_POLICY_ITEMS,
+} from './dashboard-format';
 
 test('mapReliabilityStatus distinguishes pre-sample, in-progress, and graded states', () => {
   assert.deepEqual(
@@ -90,4 +95,37 @@ test('reliability policy copy explains sample minimum and MAPE-only grading', ()
     '등급은 최근 13개 백테스트의 MAPE를 기준으로 산정합니다.',
     'MAE와 Bias는 품질 참고 지표로 사용하며 공식 등급에는 반영하지 않습니다.',
   ]);
+});
+
+test('week-over-week change formats rising, falling, and flat prices', () => {
+  const rising = calculateWeekOverWeekChange('1880.14', '1862.46');
+  const falling = calculateWeekOverWeekChange('1862.46', '1880.14');
+  const flat = calculateWeekOverWeekChange('1862.46', '1862.46');
+
+  assert.deepEqual(rising, {
+    direction: 'up',
+    amountKrwPerL: 17.68,
+    percent: ((1880.14 - 1862.46) / 1862.46) * 100,
+  });
+  assert.equal(formatWeekOverWeekChange(rising!), '+17.68원 · +0.95% ↑');
+
+  assert.deepEqual(falling, {
+    direction: 'down',
+    amountKrwPerL: -17.68,
+    percent: ((1862.46 - 1880.14) / 1880.14) * 100,
+  });
+  assert.equal(formatWeekOverWeekChange(falling!), '-17.68원 · -0.94% ↓');
+
+  assert.deepEqual(flat, {
+    direction: 'flat',
+    amountKrwPerL: 0,
+    percent: 0,
+  });
+  assert.equal(formatWeekOverWeekChange(flat!), '0.00원 · 0.00% →');
+});
+
+test('week-over-week change is unavailable without a valid previous price', () => {
+  assert.equal(calculateWeekOverWeekChange('1862.46', null), null);
+  assert.equal(calculateWeekOverWeekChange('1862.46', '0'), null);
+  assert.equal(calculateWeekOverWeekChange('invalid', '1880.14'), null);
 });

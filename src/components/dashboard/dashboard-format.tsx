@@ -16,6 +16,11 @@ export type ReliabilityStatusView = {
   detail: string;
   tone: StatusTone;
 };
+export type WeekOverWeekChange = {
+  direction: DashboardTrendDirection;
+  amountKrwPerL: number;
+  percent: number;
+};
 
 export const RELIABILITY_POLICY_ITEMS = [
   '공식 신뢰도 등급은 유효한 주간 백테스트 13개가 확보된 후 산정합니다.',
@@ -51,6 +56,34 @@ export function parseNumeric(value: number | string | null): number | null {
 function formatSignedNumber(value: number): string {
   const sign = value > 0 ? '+' : '';
   return `${sign}${formatPriceNumber(value)}`;
+}
+export function calculateWeekOverWeekChange(
+  currentPrice: number | string | null,
+  previousPrice: number | string | null,
+): WeekOverWeekChange | null {
+  const current = parseNumeric(currentPrice);
+  const previous = parseNumeric(previousPrice);
+
+  if (current === null || previous === null || previous <= 0) {
+    return null;
+  }
+
+  const amountKrwPerL = Math.round((current - previous) * 100) / 100;
+  const direction: DashboardTrendDirection = amountKrwPerL > 0 ? 'up' : amountKrwPerL < 0 ? 'down' : 'flat';
+
+  return {
+    direction,
+    amountKrwPerL,
+    percent: direction === 'flat' ? 0 : ((current - previous) / previous) * 100,
+  };
+}
+
+export function formatWeekOverWeekChange(change: WeekOverWeekChange): string {
+  const amount = formatSignedNumber(change.amountKrwPerL);
+  const percentSign = change.percent > 0 ? '+' : '';
+  const icon = change.direction === 'up' ? '↑' : change.direction === 'down' ? '↓' : '→';
+
+  return `${amount}원 · ${percentSign}${SIGNED_PERCENT_FORMATTER.format(change.percent)}% ${icon}`;
 }
 
 export function PriceValue({ value, fallback = '기록 없음', size = 'regular', unit = '원/L' }: PriceValueProps) {

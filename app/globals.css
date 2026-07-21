@@ -1459,6 +1459,26 @@ main {
 .decision-summary__metric-context {
   color: var(--accent);
 }
+.decision-summary__week-change {
+  margin: -6px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+.decision-summary__week-change--up {
+  color: var(--approved);
+}
+
+.decision-summary__week-change--down {
+  color: var(--danger);
+}
+
+.decision-summary__week-change--flat {
+  color: var(--text-secondary);
+}
 
 
 .decision-summary__scenario {

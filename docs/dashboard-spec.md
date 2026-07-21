@@ -19,6 +19,8 @@ available 상태의 구성 순서는 다음과 같다.
 1. **DashboardHeader:** 서비스명, Active quarter 선택 표시, 데이터 기준 시각을 보여 준다. 현재는 활성 분기 한 개만 가진 enabled select이므로 실질적인 선택 동작은 없다.
 2. **StatusRail:** 데이터 freshness, 승인 상태, 신뢰도를 태그로 표시하고 결과 생성 시각을 덧붙인다.
 3. **DecisionSummary:** 최신 actual 주차 평균 유가, 분기 평균 예상 유가, 기준유가·현재 적용유가, 기준 대비 차이, actual/forecast 주차 수와 FSC 시나리오 결과를 표시한다. 하나 이상의 forecast 주차가 `applied_price_fallback` 또는 `base_price_fallback`이면 이 summary의 결과도 해당 fallback을 입력으로 사용한 것이다. DecisionSummary 자체는 현재 fallback 표기를 추가하지 않으므로, 해당 결과의 `대체값 사용` 및 source kind는 WeeklyDetailTable에서 확인해야 한다. 이 fallback은 현재 승인 상태나 freshness 판정을 변경하지 않는다.
+
+최신 actual 주차 카드의 금액 아래에는 바로 전 sequence의 actual 주차가 있을 때 `전주 대비 {금액 차이}원 · {증감률}% {방향 아이콘}`을 표시한다. 차이와 증감률은 소수점 둘째 자리까지 표시하고 상승·하락·변동 없음은 각각 `+`·`-`·`↑`·`↓`·`→`와 색상을 함께 사용한다. 비교할 전주 actual이 없으면 문구를 표시하지 않는다.
 4. **OilPriceHistory:** 저장된 일별·주별·월별·분기별 오피넷 이력을 표시한다.
 5. **WeeklyForecastSection:** 주차별 actual/forecast 추이와 기준유가 선을 표시한다.
 6. **WeeklyDetailTable:** 주차별 가격·기간·상태·기준 대비 차이·차이율·산출 방식을 표와 모바일 그룹으로 표시한다.

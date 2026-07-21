@@ -1,8 +1,10 @@
 import {
+  calculateWeekOverWeekChange,
   formatRateLabel,
   formatSignedPriceText,
   formatSignedRatioText,
   formatWeekRange,
+  formatWeekOverWeekChange,
   mapWeekKind,
   PriceValue,
 } from './dashboard-format';
@@ -24,6 +26,14 @@ export function DecisionSummary({ fsc }: DecisionSummaryProps) {
 
 function ForecastHeadline({ fsc }: DecisionSummaryProps) {
   const latestActualWeek = findLatestActualWeek(fsc.weeks);
+  const previousActualWeek = latestActualWeek
+    ? fsc.weeks.find(
+        (week) => week.priceKind === 'actual' && week.sequenceNo === latestActualWeek.sequenceNo - 1,
+      ) ?? null
+    : null;
+  const weekOverWeekChange = latestActualWeek
+    ? calculateWeekOverWeekChange(latestActualWeek.priceKrwPerL, previousActualWeek?.priceKrwPerL ?? null)
+    : null;
 
   return (
     <div className="decision-summary__primary">
@@ -39,6 +49,14 @@ function ForecastHeadline({ fsc }: DecisionSummaryProps) {
                 <h2>{latestActualWeek.sequenceNo}주차 평균 유가</h2>
               </div>
               <PriceValue value={latestActualWeek.priceKrwPerL} size="headline" />
+              {weekOverWeekChange ? (
+                <p
+                  className={`decision-summary__week-change decision-summary__week-change--${weekOverWeekChange.direction}`}
+                  aria-label={`전주 대비 ${formatWeekOverWeekChange(weekOverWeekChange)}`}
+                >
+                  전주 대비 {formatWeekOverWeekChange(weekOverWeekChange)}
+                </p>
+              ) : null}
               <p className="decision-summary__week-range">{formatWeekRange(latestActualWeek)}</p>
             </>
           ) : (
