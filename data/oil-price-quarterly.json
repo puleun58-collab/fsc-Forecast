@@ -1,0 +1,112 @@
+[
+  {
+    "quarterKey": "2024Q1",
+    "quarterLabel": "2024년1분기",
+    "quarterStartDate": "2024-01-01",
+    "quarterEndDate": "2024-03-31",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1512.08,
+    "source": "opinet-quarterly-average-price",
+    "fetchedAt": "2026-07-21T00:31:05.716Z"
+  },
+  {
+    "quarterKey": "2024Q2",
+    "quarterLabel": "2024년2분기",
+    "quarterStartDate": "2024-04-01",
+    "quarterEndDate": "2024-06-30",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1528.46,
+    "source": "opinet-quarterly-average-price",
+    "fetchedAt": "2026-07-21T00:31:05.716Z"
+  },
+  {
+    "quarterKey": "2024Q3",
+    "quarterLabel": "2024년3분기",
+    "quarterStartDate": "2024-07-01",
+    "quarterEndDate": "2024-09-30",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1510.43,
+    "source": "opinet-quarterly-average-price",
+    "fetchedAt": "2026-07-21T00:31:05.716Z"
+  },
+  {
+    "quarterKey": "2024Q4",
+    "quarterLabel": "2024년4분기",
+    "quarterStartDate": "2024-10-01",
+    "quarterEndDate": "2024-12-31",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1459.87,
+    "source": "opinet-quarterly-average-price",
+    "fetchedAt": "2026-07-21T00:31:05.716Z"
+  },
+  {
+    "quarterKey": "2025Q1",
+    "quarterLabel": "2025년1분기",
+    "quarterStartDate": "2025-01-01",
+    "quarterEndDate": "2025-03-31",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1570.1,
+    "source": "opinet-quarterly-average-price",
+    "fetchedAt": "2026-07-21T00:31:05.716Z"
+  },
+  {
+    "quarterKey": "2025Q2",
+    "quarterLabel": "2025년2분기",
+    "quarterStartDate": "2025-04-01",
+    "quarterEndDate": "2025-06-30",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1506.88,
+    "source": "opinet-quarterly-average-price",
+    "fetchedAt": "2026-07-21T00:31:05.716Z"
+  },
+  {
+    "quarterKey": "2025Q3",
+    "quarterLabel": "2025년3분기",
+    "quarterStartDate": "2025-07-01",
+    "quarterEndDate": "2025-09-30",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1532.67,
+    "source": "opinet-quarterly-average-price",
+    "fetchedAt": "2026-07-21T00:31:05.716Z"
+  },
+  {
+    "quarterKey": "2025Q4",
+    "quarterLabel": "2025년4분기",
+    "quarterStartDate": "2025-10-01",
+    "quarterEndDate": "2025-12-31",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1602,
+    "source": "opinet-quarterly-average-price",
+    "fetchedAt": "2026-07-21T00:31:05.716Z"
+  },
+  {
+    "quarterKey": "2026Q1",
+    "quarterLabel": "2026년1분기",
+    "quarterStartDate": "2026-01-01",
+    "quarterEndDate": "2026-03-31",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1674.77,
+    "source": "opinet-quarterly-average-price",
+    "fetchedAt": "2026-07-21T00:31:05.716Z"
+  },
+  {
+    "quarterKey": "2026Q2",
+    "quarterLabel": "2026년2분기",
+    "quarterStartDate": "2026-04-01",
+    "quarterEndDate": "2026-06-30",
+    "productCode": "D047",
+    "productName": "자동차용경유",
+    "price": 1994.65,
+    "source": "opinet-quarterly-average-price",
+    "fetchedAt": "2026-07-21T00:31:05.716Z"
+  }
+]

@@ -87,6 +87,10 @@ export interface WorkerRunSummary {
       fetchedCount: number;
       savedCount: number;
     };
+    quarterly: {
+      fetchedCount: number;
+      savedCount: number;
+    };
   };
 
   forecast: {

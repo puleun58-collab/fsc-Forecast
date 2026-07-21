@@ -2,7 +2,7 @@ const DEFAULT_OPINET_STATS_PRICE_URL = "https://www.opinet.co.kr/user/dopospdrg/
 const STATS_CSV_PATH = "/user/dopospdrg/dopOsPdrgCsv.do";
 const EUC_KR_DECODER = new TextDecoder("euc-kr");
 
-export type OpinetStatsTerm = "W" | "M";
+export type OpinetStatsTerm = "W" | "M" | "Q";
 
 interface StatsPageState {
   allChkCount: string;
@@ -33,7 +33,13 @@ export interface MonthlyStatsRange extends BaseStatsRange {
   term: "M";
 }
 
-export type OpinetStatsRange = WeeklyStatsRange | MonthlyStatsRange;
+export interface QuarterlyStatsRange extends BaseStatsRange {
+  term: "Q";
+  startQuarter: number;
+  endQuarter: number;
+}
+
+export type OpinetStatsRange = WeeklyStatsRange | MonthlyStatsRange | QuarterlyStatsRange;
 
 export interface OpinetStatsCsvRow {
   label: string;
@@ -103,6 +109,11 @@ function buildStatsFormData(state: StatsPageState, range: OpinetStatsRange): URL
   if (range.term === "W") {
     formData.set("STA_W", String(range.startWeek));
     formData.set("END_W", String(range.endWeek));
+  }
+
+  if (range.term === "Q") {
+    formData.set("STA_Q", String(range.startQuarter));
+    formData.set("END_Q", String(range.endQuarter));
   }
 
   formData.set("OIL_CD_D047", "Y");

@@ -61,3 +61,15 @@ export interface NormalizedDieselMonthlyPriceRow {
   source: string;
   fetchedAt: string;
 }
+
+export interface NormalizedDieselQuarterlyPriceRow {
+  quarterKey: string;
+  quarterLabel: string;
+  quarterStartDate: string;
+  quarterEndDate: string;
+  productCode: string;
+  productName: string;
+  price: number;
+  source: string;
+  fetchedAt: string;
+}

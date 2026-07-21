@@ -3,7 +3,10 @@ import test from 'node:test';
 
 import { buildOilPriceHistory } from './oil-price-history';
 
-import type { NormalizedDieselMonthlyPriceRow } from '@/lib/opinet/types';
+import type {
+  NormalizedDieselMonthlyPriceRow,
+  NormalizedDieselQuarterlyPriceRow,
+} from '@/lib/opinet/types';
 
 function createMonth(year: number, month: number, price: number): NormalizedDieselMonthlyPriceRow {
   const monthText = String(month).padStart(2, '0');
@@ -22,7 +25,25 @@ function createMonth(year: number, month: number, price: number): NormalizedDies
   };
 }
 
-test('분기 평균은 실제 월평균 세 개가 모두 준비된 경우에만 단순 산술평균으로 만든다', () => {
+function createQuarter(year: number, quarter: number, price: number): NormalizedDieselQuarterlyPriceRow {
+  const startMonth = String((quarter - 1) * 3 + 1).padStart(2, '0');
+  const endMonth = String(quarter * 3).padStart(2, '0');
+  const endDay = new Date(Date.UTC(year, quarter * 3, 0)).getUTCDate();
+
+  return {
+    quarterKey: `${year}Q${quarter}`,
+    quarterLabel: `${year}년${quarter}분기`,
+    quarterStartDate: `${year}-${startMonth}-01`,
+    quarterEndDate: `${year}-${endMonth}-${String(endDay).padStart(2, '0')}`,
+    productCode: 'D047',
+    productName: '자동차용경유',
+    price,
+    source: 'opinet-quarterly-average-price',
+    fetchedAt: '2026-07-21T00:00:00.000Z',
+  };
+}
+
+test('분기 평균은 월 데이터가 모두 준비된 경우 오피넷 분기 평균을 사용한다', () => {
   // Given
   const rows = [
     createMonth(2026, 1, 1_400.111),
@@ -32,11 +53,15 @@ test('분기 평균은 실제 월평균 세 개가 모두 준비된 경우에만
   ];
 
   // When
-  const history = buildOilPriceHistory(rows, new Date('2026-07-21T00:00:00.000Z'));
+  const history = buildOilPriceHistory(
+    rows,
+    new Date('2026-07-21T00:00:00.000Z'),
+    [createQuarter(2026, 1, 1_674.77)],
+  );
 
   // Then
   assert.deepEqual(history.years[0]?.quarters.map((quarter) => quarter.averagePriceKrwPerL), [
-    1_500.222,
+    1_674.77,
     null,
   ]);
 });
@@ -68,7 +93,11 @@ test('직전 분기 평균이 있을 때만 증감액과 증감률을 원본 정
   ];
 
   // When
-  const history = buildOilPriceHistory(rows, new Date('2026-07-21T00:00:00.000Z'));
+  const history = buildOilPriceHistory(
+    rows,
+    new Date('2026-07-21T00:00:00.000Z'),
+    [createQuarter(2025, 1, 200), createQuarter(2025, 2, 220)],
+  );
 
   // Then
   assert.deepEqual(history.years[0]?.quarters.map((quarter) => quarter.changeFromPreviousQuarter), [

@@ -143,7 +143,7 @@ export function OilPriceHistory({ history }: OilPriceHistoryProps) {
             ))}
           </div>
           <p className="oil-price-history__notice">
-            월평균은 실제 데이터가 모두 수집된 월만 표시됩니다. 분기 평균은 월평균 3개의 단순 산술평균입니다.
+            월평균은 실제 데이터가 모두 수집된 월만 표시됩니다. 분기 평균은 오피넷 분기 통계 기준입니다.
           </p>
         </div>
       ) : null}

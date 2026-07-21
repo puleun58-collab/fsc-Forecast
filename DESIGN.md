@@ -50,7 +50,7 @@ Use one light theme. Do not introduce gradients, glass effects, dark sections, n
 - Collapsed: one compact row with the section title, completed-quarter averages, completed months from the latest incomplete quarter, year selector, and disclosure control.
 - Expanded: horizontally scrollable quarter columns on desktop and a vertical quarter list on mobile.
 - Data boundary: only published Opinet monthly actual averages are eligible. Forecast, fallback, mixed, and still-open monthly aggregates never enter this primitive.
-- Quarter average: show only after all three monthly actual averages exist; calculate the simple arithmetic mean from the original-precision month values.
+- Quarter average: show only after all three monthly actual averages exist and use the matching published Opinet quarterly statistic without reconstructing it from monthly values.
 - Visual hierarchy: monthly values use body weight; completed-quarter averages use stronger type and a top rule. No status badges.
 - Empty year: keep the row and controls visible and show `표시할 월평균 유가 데이터가 없습니다.`
 - Accessibility: the disclosure button exposes `aria-expanded` and `aria-controls`; the year selector has a persistent accessible label.

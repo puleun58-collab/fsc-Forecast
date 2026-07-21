@@ -23,6 +23,10 @@ async function main(): Promise<void> {
           ...summary.monthly,
           outputPath: 'data/oil-price-monthly.json',
         },
+        quarterly: {
+          ...summary.quarterly,
+          outputPath: 'data/oil-price-quarterly.json',
+        },
       },
       null,
       2,
@@ -31,7 +35,7 @@ async function main(): Promise<void> {
 }
 
 void main().catch((error: unknown) => {
-  console.error("Failed to fetch and save Opinet diesel daily/weekly/monthly series.");
+  console.error("Failed to fetch and save Opinet diesel daily/weekly/monthly/quarterly series.");
   console.error(error);
   process.exitCode = 1;
 });

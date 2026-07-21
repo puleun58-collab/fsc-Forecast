@@ -116,6 +116,10 @@ export async function runOpinetIngest(
           fetchedCount: 0,
           savedCount: 0,
         },
+        quarterly: {
+          fetchedCount: 0,
+          savedCount: 0,
+        },
       };
     }
 
@@ -162,6 +166,7 @@ export async function runOpinetIngest(
         daily: cacheRefresh.daily,
         weekly: cacheRefresh.weekly,
         monthly: cacheRefresh.monthly,
+        quarterly: cacheRefresh.quarterly,
       }),
       reconcile: {
         processedRowCount: reconcile.processedRowCount,

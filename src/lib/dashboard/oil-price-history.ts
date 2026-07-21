@@ -1,4 +1,5 @@
 import { readMonthlySeries } from '@/lib/opinet/save-monthly-series';
+import { readQuarterlySeries } from '@/lib/opinet/save-quarterly-series';
 
 import type {
   OilPriceHistoryMonth,
@@ -7,9 +8,13 @@ import type {
   OilPriceHistorySection,
   OilPriceHistoryYear,
 } from './fsc-types';
-import type { NormalizedDieselMonthlyPriceRow } from '@/lib/opinet/types';
+import type {
+  NormalizedDieselMonthlyPriceRow,
+  NormalizedDieselQuarterlyPriceRow,
+} from '@/lib/opinet/types';
 
 const ACTUAL_MONTHLY_SOURCE = 'opinet-monthly-average-price';
+const ACTUAL_QUARTERLY_SOURCE = 'opinet-quarterly-average-price';
 const SEOUL_UTC_OFFSET_MS = 9 * 60 * 60 * 1_000;
 
 function getQuarter(month: number): OilPriceHistoryQuarterNumber {
@@ -59,7 +64,11 @@ function toCompletedActualMonth(
   };
 }
 
-function buildYear(year: number, months: readonly OilPriceHistoryMonth[]): OilPriceHistoryYear {
+function buildYear(
+  year: number,
+  months: readonly OilPriceHistoryMonth[],
+  quarterlyRows: readonly NormalizedDieselQuarterlyPriceRow[],
+): OilPriceHistoryYear {
   const quarters: OilPriceHistoryQuarter[] = [];
 
   for (const quarterNumber of [1, 2, 3, 4] as const) {
@@ -68,8 +77,12 @@ function buildYear(year: number, months: readonly OilPriceHistoryMonth[]): OilPr
       continue;
     }
 
-    const averagePriceKrwPerL = quarterMonths.length === 3
-      ? quarterMonths.reduce((sum, month) => sum + month.averagePriceKrwPerL, 0) / 3
+    const officialQuarter = quarterlyRows.find((row) => (
+      row.source === ACTUAL_QUARTERLY_SOURCE
+      && row.quarterKey === `${year}Q${quarterNumber}`
+    ));
+    const averagePriceKrwPerL = quarterMonths.length === 3 && officialQuarter
+      ? officialQuarter.price
       : null;
     const previousQuarter = quarters[quarters.length - 1];
     const previousAverage = previousQuarter?.quarter === quarterNumber - 1
@@ -103,6 +116,7 @@ function buildYear(year: number, months: readonly OilPriceHistoryMonth[]): OilPr
 export function buildOilPriceHistory(
   rows: readonly NormalizedDieselMonthlyPriceRow[],
   now: Date = new Date(),
+  quarterlyRows: readonly NormalizedDieselQuarterlyPriceRow[] = [],
 ): OilPriceHistorySection {
   const today = toSeoulDateOnly(now);
   const months = rows
@@ -116,11 +130,18 @@ export function buildOilPriceHistory(
   return {
     defaultYear: currentYear,
     availableYears,
-    years: dataYears.map((year) => buildYear(year, months.filter((month) => month.year === year))),
+    years: dataYears.map((year) => buildYear(
+      year,
+      months.filter((month) => month.year === year),
+      quarterlyRows,
+    )),
   };
 }
 
 export async function loadOilPriceHistory(now: Date = new Date()): Promise<OilPriceHistorySection> {
-  const rows = await readMonthlySeries();
-  return buildOilPriceHistory(rows, now);
+  const [monthlyRows, quarterlyRows] = await Promise.all([
+    readMonthlySeries(),
+    readQuarterlySeries(),
+  ]);
+  return buildOilPriceHistory(monthlyRows, now, quarterlyRows);
 }

@@ -3,6 +3,7 @@ import { createOpinetWeekStartDate, getOpinetWeekEnd } from "./weekly-period";
 import type {
   NormalizedDieselMonthlyPriceRow,
   NormalizedDieselPriceRow,
+  NormalizedDieselQuarterlyPriceRow,
   NormalizedDieselWeeklyPriceRow,
   OpinetAveragePriceRow,
   OpinetRecentAveragePriceRow,
@@ -14,6 +15,7 @@ export const OPINET_DAILY_AVERAGE_PRICE_SOURCE = "opinet-daily-average-price";
 export const OPINET_DAILY_RECENT_PRICE_SOURCE = "opinet-recent-daily-average-price";
 const OPINET_WEEKLY_PRICE_SOURCE = "opinet-weekly-average-price";
 const OPINET_MONTHLY_PRICE_SOURCE = "opinet-monthly-average-price";
+const OPINET_QUARTERLY_PRICE_SOURCE = "opinet-quarterly-average-price";
 function isCurrentDieselRow(row: OpinetAveragePriceRow): boolean {
   return row.PRODCD === DIESEL_PRODUCT_CODE || row.PRODNM === DIESEL_PRODUCT_NAME;
 }
@@ -56,6 +58,14 @@ function createMonthEndDate(year: number, month: number): Date {
   return new Date(Date.UTC(year, month, 0));
 }
 
+function createQuarterStartDate(year: number, quarter: number): Date {
+  return new Date(Date.UTC(year, (quarter - 1) * 3, 1));
+}
+
+function createQuarterEndDate(year: number, quarter: number): Date {
+  return new Date(Date.UTC(year, quarter * 3, 0));
+}
+
 export function parseWeeklyLabel(label: string): { year: number; month: number; week: number } {
   const match = label.match(/^(\d{4})년(\d{2})월(\d)주$/);
 
@@ -80,6 +90,19 @@ export function parseMonthlyLabel(label: string): { year: number; month: number 
   return {
     year: Number(match[1]),
     month: Number(match[2]),
+  };
+}
+
+export function parseQuarterlyLabel(label: string): { year: number; quarter: number } {
+  const match = label.match(/^(\d{4})(?:년)?(?:Q)?([1-4])(?:분기)?$/);
+
+  if (!match) {
+    throw new Error(`Unexpected Opinet quarterly label: ${label}`);
+  }
+
+  return {
+    year: Number(match[1]),
+    quarter: Number(match[2]),
   };
 }
 
@@ -170,6 +193,31 @@ export function normalizeMonthlyDieselRow(
     productName: DIESEL_PRODUCT_NAME,
     price: input.price,
     source: OPINET_MONTHLY_PRICE_SOURCE,
+    fetchedAt,
+  };
+}
+
+export function normalizeQuarterlyDieselRow(
+  input: {
+    year: number;
+    quarter: number;
+    label: string;
+    price: number;
+  },
+  fetchedAt: string,
+): NormalizedDieselQuarterlyPriceRow {
+  const quarterStartDate = createQuarterStartDate(input.year, input.quarter);
+  const quarterEndDate = createQuarterEndDate(input.year, input.quarter);
+
+  return {
+    quarterKey: `${input.year}Q${input.quarter}`,
+    quarterLabel: input.label,
+    quarterStartDate: formatUtcDate(quarterStartDate),
+    quarterEndDate: formatUtcDate(quarterEndDate),
+    productCode: DIESEL_PRODUCT_CODE,
+    productName: DIESEL_PRODUCT_NAME,
+    price: input.price,
+    source: OPINET_QUARTERLY_PRICE_SOURCE,
     fetchedAt,
   };
 }

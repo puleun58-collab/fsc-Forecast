@@ -74,6 +74,10 @@ export interface IngestCacheRefreshSummary {
     fetchedCount: number;
     savedCount: number;
   };
+  quarterly: {
+    fetchedCount: number;
+    savedCount: number;
+  };
 }
 
 export interface IngestForecastSummary {
