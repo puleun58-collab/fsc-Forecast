@@ -241,7 +241,7 @@
   }
 
   .oil-price-history__controls select {
-    max-width: 88px;
+    min-inline-size: 96px;
   }
 
   .oil-price-history__toggle {
