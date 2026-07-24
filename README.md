@@ -5,10 +5,7 @@
 ## 배포 주소
 
 - Production: https://fsc-forecast.vercel.app
-- 로컬 개발 서버: http://localhost:3000
 - 대시보드는 활성 분기의 최신 base FSC 결과를 표시합니다.
-- 배포 환경과 로컬 환경은 같은 데이터베이스 계약을 확인해야 합니다.
-- 배포 전후 환경 변수와 migration 상태를 함께 점검합니다.
 
 ## 주요 기능
 
