@@ -36,7 +36,7 @@ type ActivePoint = {
 
 const VIEW_WIDTH = 960;
 const VIEW_HEIGHT = 352;
-const MARGIN = { top: 34, right: 28, bottom: 48, left: 104 };
+const MARGIN = { top: 34, right: 28, bottom: 48, left: 64 };
 const PLOT_WIDTH = VIEW_WIDTH - MARGIN.left - MARGIN.right;
 const PLOT_HEIGHT = VIEW_HEIGHT - MARGIN.top - MARGIN.bottom;
 
