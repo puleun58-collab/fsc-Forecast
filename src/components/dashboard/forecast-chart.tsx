@@ -14,6 +14,7 @@ import {
 
 import type { FscDashboardWeekItem } from '@/lib/dashboard/fsc-types';
 import { formatPriceText } from '@/lib/dashboard/display-format';
+import { buildForecastChartScale } from './forecast-chart-scale';
 
 type ForecastChartProps = {
   weeks: readonly FscDashboardWeekItem[];
@@ -38,18 +39,6 @@ const VIEW_HEIGHT = 352;
 const MARGIN = { top: 34, right: 28, bottom: 48, left: 104 };
 const PLOT_WIDTH = VIEW_WIDTH - MARGIN.left - MARGIN.right;
 const PLOT_HEIGHT = VIEW_HEIGHT - MARGIN.top - MARGIN.bottom;
-
-function buildDomain(values: readonly number[]): { min: number; max: number } {
-  const minValue = Math.min(...values);
-  const maxValue = Math.max(...values);
-  const spread = Math.max(maxValue - minValue, 1);
-  const padding = Math.max(spread * 0.18, 24);
-
-  return {
-    min: minValue - padding,
-    max: maxValue + padding,
-  };
-}
 
 function resolveY(value: number, min: number, max: number): number {
   const ratio = (value - min) / (max - min || 1);
@@ -81,11 +70,6 @@ function buildPolyline(points: readonly PlotPoint[]): string {
   return points.map((point) => `${point.x},${point.y}`).join(' ');
 }
 
-function buildTicks(min: number, max: number): number[] {
-  const middle = min + (max - min) / 2;
-  return [max, middle, min];
-}
-
 function getTooltipStyle(point: PlotPoint): CSSProperties {
   return {
     left: `${(point.x / VIEW_WIDTH) * 100}%`,
@@ -108,7 +92,7 @@ export function ForecastChart({ weeks, basePriceKrwPerL }: ForecastChartProps) {
     );
   }
 
-  const domain = buildDomain(basePrice === null ? priceValues : [...priceValues, basePrice]);
+  const domain = buildForecastChartScale(basePrice === null ? priceValues : [...priceValues, basePrice]);
   const points = buildPlotPoints(weeks, domain.min, domain.max);
   const firstForecastIndex = getFirstForecastIndex(weeks);
   const actualPoints = points.filter((point) => point.week.priceKind === 'actual');
@@ -161,17 +145,26 @@ export function ForecastChart({ weeks, basePriceKrwPerL }: ForecastChartProps) {
       <svg
         className="forecast-chart__svg"
         viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
-        role="img"
+        role="group"
         aria-label="주간 actual 및 forecast 유가 추이"
       >
         <rect x="0" y="0" width={VIEW_WIDTH} height={VIEW_HEIGHT} rx="0" fill="transparent" aria-hidden="true" />
-        {buildTicks(domain.min, domain.max).map((tick) => {
+        <text
+          className="forecast-chart__axis-unit"
+          x={MARGIN.left - 12}
+          y={MARGIN.top - 14}
+          textAnchor="end"
+          aria-hidden="true"
+        >
+          원/L
+        </text>
+        {domain.ticks.map((tick) => {
           const y = resolveY(tick, domain.min, domain.max);
           return (
             <g key={tick} className="forecast-chart__grid-line" aria-hidden="true">
               <line x1={MARGIN.left} x2={VIEW_WIDTH - MARGIN.right} y1={y} y2={y} />
               <text x={MARGIN.left - 12} y={y + 4} textAnchor="end">
-                {formatPriceText(tick)}
+                {tick.toLocaleString('ko-KR', { maximumFractionDigits: 0 })}
               </text>
             </g>
           );

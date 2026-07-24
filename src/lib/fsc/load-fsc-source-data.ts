@@ -2,9 +2,9 @@ import { Prisma, RunStatus, type Prisma as PrismaTypes } from '@prisma/client';
 
 import { db } from '@/lib/db';
 import { env } from '@/lib/env';
+import { fetchPublishedOpinetMonthlyDieselPrices } from '@/lib/opinet/fetch-monthly-price';
+import { fetchPublishedOpinetWeeklyDieselPrices } from '@/lib/opinet/fetch-weekly-price';
 import { loadPublicConfirmedLatestDate } from '@/lib/opinet/resolve-public-confirmed-date';
-import { readMonthlySeries } from '@/lib/opinet/save-monthly-series';
-import { readWeeklySeries } from '@/lib/opinet/save-weekly-series';
 
 import type {
   FscSourceDailyPriceRow,
@@ -132,33 +132,32 @@ export async function loadFscSourceData(
     throw new Error('No succeeded recompute snapshot is available for FSC recomputation.');
   }
 
-  const forecastRun = await tx.forecastRun.findFirst({
-    where: {
-      recomputeSnapshotId: recomputeSnapshot.id,
-      status: RunStatus.succeeded,
-    },
-    orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
-    select: {
-      id: true,
-      mapePct: true,
-      maeKrwPerL: true,
-      metadata: true,
-      createdAt: true,
-      completedAt: true,
-      points: {
-        orderBy: [{ targetDate: 'asc' }, { horizonKind: 'asc' }, { horizonIndex: 'asc' }],
-        select: {
-          id: true,
-          horizonKind: true,
-          horizonIndex: true,
-          targetDate: true,
-          pointKrwPerL: true,
+  const [forecastRun, dailyPrices, officialWeeklyPrices, officialMonthlyPrices, latestConfirmedDate] = await Promise.all([
+    tx.forecastRun.findFirst({
+      where: {
+        recomputeSnapshotId: recomputeSnapshot.id,
+        status: RunStatus.succeeded,
+      },
+      orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+      select: {
+        id: true,
+        mapePct: true,
+        maeKrwPerL: true,
+        metadata: true,
+        createdAt: true,
+        completedAt: true,
+        points: {
+          orderBy: [{ targetDate: 'asc' }, { horizonKind: 'asc' }, { horizonIndex: 'asc' }],
+          select: {
+            id: true,
+            horizonKind: true,
+            horizonIndex: true,
+            targetDate: true,
+            pointKrwPerL: true,
+          },
         },
       },
-    },
-  });
-
-  const [dailyPrices, officialWeeklyPrices, officialMonthlyPrices] = await Promise.all([
+    }),
     tx.dailyPriceCurrent.findMany({
       where: {
         datasetKey: env.datasetKey,
@@ -177,13 +176,13 @@ export async function loadFscSourceData(
         },
       },
     }),
-    readWeeklySeries(),
-    readMonthlySeries(),
+    fetchPublishedOpinetWeeklyDieselPrices(),
+    fetchPublishedOpinetMonthlyDieselPrices(),
+    loadPublicConfirmedLatestDate(tx, {
+      datasetKey: env.datasetKey,
+      observedBeforeOrAt: recomputeSnapshot.currentTruthCutoffAt,
+    }),
   ]);
-  const latestConfirmedDate = await loadPublicConfirmedLatestDate(tx, {
-    datasetKey: env.datasetKey,
-    observedBeforeOrAt: recomputeSnapshot.currentTruthCutoffAt,
-  });
   const normalizedDailyPrices = filterDailyPricesByConfirmedDate(
     dailyPrices.map(toDailyPriceRow),
     latestConfirmedDate,

@@ -4,7 +4,7 @@ import test from 'node:test';
 import { Prisma } from '@prisma/client';
 
 import { buildFscQuarterWeeks, type BuildFscQuarterWeeksInput } from './build-fsc-quarter-weeks';
-import type { FscSourceDailyPriceRow } from './types';
+import type { FscSourceDailyPriceRow, FscSourceOfficialWeeklyPriceRow } from './types';
 function createDailyRow(date: string, price: number): FscSourceDailyPriceRow {
   return {
     priceDate: new Date(`${date}T00:00:00.000Z`),
@@ -54,6 +54,22 @@ function createWeeklyForecastRun(targetDate: string, price: string) {
   };
 }
 
+function createOfficialWeeklyRow(
+  weekKey: string,
+  weekStartDate: string,
+  weekEndDate: string,
+  price: string,
+): FscSourceOfficialWeeklyPriceRow {
+  return {
+    weekKey,
+    weekLabel: `${weekKey}주`,
+    weekStartDate: new Date(`${weekStartDate}T00:00:00.000Z`),
+    weekEndDate: new Date(`${weekEndDate}T00:00:00.000Z`),
+    priceKrwPerL: new Prisma.Decimal(price),
+    fetchedAt: new Date('2026-07-24T01:23:22.732Z'),
+  };
+}
+
 test('completed 5-day week becomes actual when daily rows exist through week end even if cutoff timestamp is earlier the same day', () => {
   const result = buildFscQuarterWeeks(
     createInput([
@@ -75,6 +91,30 @@ test('completed 5-day week becomes actual when daily rows exist through week end
   assert.equal(result.weeks[2]?.priceKind, 'actual');
   assert.equal(result.weeks[2]?.forecastSourceKind, null);
   assert.equal(result.weeks[2]?.actualPriceKrwPerL?.toFixed(3), '1862.550');
+});
+
+test('published Opinet weekly value overrides the recomputed daily average exactly', () => {
+  const input = createInput([
+    createDailyRow('2026-07-19', 1862.19),
+    createDailyRow('2026-07-20', 1859.26),
+    createDailyRow('2026-07-21', 1856.76),
+    createDailyRow('2026-07-22', 1854.21),
+    createDailyRow('2026-07-23', 1852.06),
+  ]);
+  input.officialWeeklyPrices = [
+    createOfficialWeeklyRow('2026074', '2026-07-19', '2026-07-23', '1856.89'),
+  ];
+
+  const result = buildFscQuarterWeeks(input);
+  const fourthWeek = result.weeks.find((week) => week.sequenceNo === 4);
+  const payload = result.calculationPayload as {
+    actualSourceBreakdown: { officialWeekly: number; dailyAverage: number };
+  };
+
+  assert.equal(fourthWeek?.priceKind, 'actual');
+  assert.equal(fourthWeek?.actualPriceKrwPerL?.toFixed(3), '1856.890');
+  assert.equal(payload.actualSourceBreakdown.officialWeekly, 1);
+  assert.equal(payload.actualSourceBreakdown.dailyAverage, 0);
 });
 
 test('incomplete current week still falls back when final collection day row is missing', () => {
