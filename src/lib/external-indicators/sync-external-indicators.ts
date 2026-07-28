@@ -1,4 +1,5 @@
 import { externalIndicatorCodes } from './catalog';
+import { ecbExchangeRateProvider } from './ecb-exchange-rate-provider';
 import { fredIndicatorProvider } from './fred-provider';
 import {
   markIndicatorSyncChecking,
@@ -78,7 +79,7 @@ function resolveProviders(input: SyncExternalIndicatorsInput): readonly External
     return [input.deps.provider];
   }
 
-  return [opinetDubaiProvider, fredIndicatorProvider];
+  return [opinetDubaiProvider, ecbExchangeRateProvider, fredIndicatorProvider];
 }
 
 function errorSummary(error: unknown): string {
@@ -153,25 +154,30 @@ export async function syncExternalIndicators(
       const result = await runSync({ providerResult: persistenceResult });
       providerResults.push(result);
 
-      for (const indicatorCode of requestedCodes) {
-        const { codePoints, latestObservedAt } = pointsByCode.get(indicatorCode)!;
+      indicatorStatuses.push(
+        ...await Promise.all(
+          requestedCodes.map(async (indicatorCode) => {
+            const { codePoints, latestObservedAt } = pointsByCode.get(indicatorCode)!;
 
-        await stateWriter.succeeded({
-          indicatorCode,
-          providerKey: provider.providerKey,
-          attemptedAt,
-          latestObservedAt,
-        });
-        indicatorStatuses.push({
-          indicatorCode,
-          providerKey: provider.providerKey,
-          status: 'succeeded',
-          errorSummary: null,
-          acceptedPointCount: codePoints.length,
-          persistedCount: result.records.filter((record) => record.indicatorCode === indicatorCode).length,
-          latestObservedAt,
-        });
-      }
+            await stateWriter.succeeded({
+              indicatorCode,
+              providerKey: provider.providerKey,
+              attemptedAt,
+              latestObservedAt,
+            });
+
+            return {
+              indicatorCode,
+              providerKey: provider.providerKey,
+              status: 'succeeded' as const,
+              errorSummary: null,
+              acceptedPointCount: codePoints.length,
+              persistedCount: result.records.filter((record) => record.indicatorCode === indicatorCode).length,
+              latestObservedAt,
+            };
+          }),
+        ),
+      );
     } catch (error) {
       await Promise.all(
         requestedCodes.map((indicatorCode) =>

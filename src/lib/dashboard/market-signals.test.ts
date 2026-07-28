@@ -21,12 +21,11 @@ function sourcePayload(indicatorCode: 'dubai' | 'usd-krw') {
         sourceUrl: 'https://www.opinet.co.kr/glopcoilSelect.do',
       }
     : {
-        provider: 'fred-public-csv',
-        seriesId: 'DEXKOUS',
+        provider: 'ecb-daily-reference-rates',
         frequency: 'daily',
         unit: 'krw_per_usd',
-        valueBasis: 'new_york_noon_buying_rate',
-        sourceUrl: 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXKOUS',
+        valueBasis: 'ecb_euro_reference_cross_rate',
+        sourceUrl: 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml',
       };
 }
 

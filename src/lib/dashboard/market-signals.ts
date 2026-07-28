@@ -54,9 +54,9 @@ const PUBLIC_MARKET_SIGNAL_META: Record<
   'usd-krw': {
     displayName: 'USD/KRW',
     unitLabel: '원/USD',
-    valueBasisLabel: '뉴욕 정오 매입환율 기준',
-    providerName: 'FRED',
-    explanation: '미 연준 계열 원/달러 환율의 뉴욕 정오 매입환율 일별 관측값입니다.',
+    valueBasisLabel: 'ECB 일별 기준환율',
+    providerName: 'ECB',
+    explanation: 'ECB가 영업일마다 고시하는 EUR 기준 USD·KRW 환율로 계산한 원/달러 교차환율입니다.',
   },
 };
 
@@ -80,11 +80,11 @@ function parseSourcePayload(
   }
 
   const candidate = value as Partial<SourcePayload>;
-  const expectedProvider = indicatorCode === 'dubai' ? 'opinet-dubai-daily' : 'fred-public-csv';
+  const expectedProvider =
+    indicatorCode === 'dubai' ? 'opinet-dubai-daily' : 'ecb-daily-reference-rates';
   const expectedUnit = indicatorCode === 'dubai' ? 'usd_per_barrel' : 'krw_per_usd';
-  const validSeries = indicatorCode === 'dubai' || candidate.seriesId === 'DEXKOUS';
   const expectedBasis =
-    indicatorCode === 'dubai' ? 'dubai_spot_estimate' : 'new_york_noon_buying_rate';
+    indicatorCode === 'dubai' ? 'dubai_spot_estimate' : 'ecb_euro_reference_cross_rate';
 
   if (
     candidate.provider !== expectedProvider ||
@@ -92,8 +92,7 @@ function parseSourcePayload(
     candidate.unit !== expectedUnit ||
     candidate.valueBasis !== expectedBasis ||
     typeof candidate.sourceUrl !== 'string' ||
-    candidate.sourceUrl.trim().length === 0 ||
-    !validSeries
+    candidate.sourceUrl.trim().length === 0
   ) {
     return null;
   }

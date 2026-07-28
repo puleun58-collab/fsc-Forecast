@@ -3,7 +3,7 @@ export type DashboardTrendDirection = 'up' | 'down' | 'flat';
 export type DashboardDataSourceStatus = 'available' | 'delayed' | 'unavailable';
 
 export interface DashboardDataSource {
-  sourceCode: 'opinet-diesel' | 'opinet-dubai-daily' | 'fred-usd-krw';
+  sourceCode: 'opinet-diesel' | 'opinet-dubai-daily' | 'ecb-usd-krw';
   displayName: string;
   dataName: string;
   dataCode: string | null;

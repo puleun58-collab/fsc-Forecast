@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { fredIndicatorProvider } from './fred-provider';
+import {
+  ecbExchangeRateProvider,
+  parseEcbDailyUsdKrwXml,
+} from './ecb-exchange-rate-provider';
 import { parseOpinetDubaiDailyHtml } from './opinet-dubai-provider';
 
 const OPINET_FIXTURE = `
@@ -47,18 +50,69 @@ test('Opinet Dubai parser rejects conflicting duplicate dates', () => {
   assert.throws(() => parseOpinetDubaiDailyHtml(html), /conflicting Dubai values/);
 });
 
-test('FRED daily provider excludes Dubai and skips invalid values', async () => {
+const ECB_FIXTURE = `<?xml version="1.0" encoding="UTF-8"?>
+<gesmes:Envelope>
+  <Cube>
+    <Cube time="2026-07-16">
+      <Cube currency="USD" rate="1.1500"/>
+      <Cube currency="KRW" rate="1713.275"/>
+    </Cube>
+    <Cube time="2026-07-17">
+      <Cube currency="USD" rate="1.1400"/>
+      <Cube currency="KRW" rate="1698.46"/>
+    </Cube>
+    <Cube time="2026-07-18">
+      <Cube currency="USD" rate="invalid"/>
+      <Cube currency="KRW" rate="1700"/>
+    </Cube>
+  </Cube>
+</gesmes:Envelope>`;
+
+test('ECB parser derives valid daily USD/KRW cross-rates and respects the date window', () => {
+  const points = parseEcbDailyUsdKrwXml(ECB_FIXTURE, {
+    indicatorCodes: ['usd-krw'],
+    observedAtOrAfter: new Date('2026-07-17T00:00:00.000Z'),
+  });
+
+  assert.deepEqual(
+    points.map((point) => ({ date: point.observedAt.toISOString(), value: point.value })),
+    [{ date: '2026-07-17T00:00:00.000Z', value: 1489.8772 }],
+  );
+  assert.deepEqual(points[0]?.sourcePayload, {
+    provider: 'ecb-daily-reference-rates',
+    sourceUrl: 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml',
+    seriesIds: {
+      krwPerEur: 'EXR.D.KRW.EUR.SP00.A',
+      usdPerEur: 'EXR.D.USD.EUR.SP00.A',
+    },
+    frequency: 'daily',
+    unit: 'krw_per_usd',
+    valueBasis: 'ecb_euro_reference_cross_rate',
+    date: '2026-07-17',
+    euroReferenceRates: {
+      USD: 1.14,
+      KRW: 1698.46,
+    },
+    calculation: 'KRW_per_EUR / USD_per_EUR',
+  });
+});
+
+test('ECB daily provider fetches exchange rates only for USD/KRW', async () => {
   const requests: string[] = [];
-  const result = await fredIndicatorProvider.fetchHistory({
+  const result = await ecbExchangeRateProvider.fetchHistory({
     indicatorCodes: ['dubai', 'usd-krw'],
     fetchImpl: async (input) => {
       requests.push(String(input));
-      return new Response('DATE,DEXKOUS\n2026-07-16,1488.50\n2026-07-17,.\n2026-07-18,invalid\n2026-07-19,0\n2026-07-20,1490.00\n');
+      return new Response(ECB_FIXTURE);
     },
   });
 
   assert.equal(requests.length, 1);
-  assert.match(requests[0] ?? '', /id=DEXKOUS/);
-  assert.deepEqual(result.points.map((point) => point.value), [1488.5, 1490]);
-  assert.equal(result.points[0]?.sourcePayload && (result.points[0].sourcePayload as { frequency?: string }).frequency, 'daily');
+  assert.match(requests[0] ?? '', /eurofxref-hist-90d\.xml/);
+  assert.deepEqual(result.points.map((point) => point.value), [1489.8043, 1489.8772]);
+  assert.equal(
+    result.points[0]?.sourcePayload &&
+      (result.points[0].sourcePayload as { frequency?: string }).frequency,
+    'daily',
+  );
 });

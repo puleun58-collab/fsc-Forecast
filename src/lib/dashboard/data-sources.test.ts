@@ -16,7 +16,7 @@ test('dashboard data sources include only public sources and keep dynamic observ
 
   assert.deepEqual(
     dataSources.map((source) => source.sourceCode),
-    ['opinet-diesel', 'opinet-dubai-daily', 'fred-usd-krw'],
+    ['opinet-diesel', 'opinet-dubai-daily', 'ecb-usd-krw'],
   );
   assert.equal(dataSources[0].latestObservationDate, '2026-07-14');
   assert.equal(dataSources[0].collectedAt, '2026-07-14T01:25:00.000Z');

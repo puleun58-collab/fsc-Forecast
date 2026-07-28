@@ -8,14 +8,13 @@ import type { ExternalIndicatorCode, ExternalIndicatorPoint } from "./types";
 const FRED_PROVIDER_KEY = "fred-public-csv";
 const FRED_GRAPH_CSV_BASE_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv";
 
-type FredIndicatorCode = Exclude<ExternalIndicatorCode, "dubai">;
+type FredIndicatorCode = Extract<ExternalIndicatorCode, "brent" | "wti">;
 
-const FRED_INDICATOR_CODES: readonly FredIndicatorCode[] = ["brent", "wti", "usd-krw"];
+const FRED_INDICATOR_CODES: readonly FredIndicatorCode[] = ["brent", "wti"];
 
 const FRED_SERIES_BY_CODE: Record<FredIndicatorCode, string> = {
   brent: "DCOILBRENTEU",
   wti: "DCOILWTICO",
-  "usd-krw": "DEXKOUS",
 };
 
 function buildFredCsvUrl(seriesId: string): string {
@@ -118,8 +117,8 @@ async function fetchFredSeries(
         rawValue: rawValue.trim(),
         sourceUrl: buildFredCsvUrl(seriesId),
         frequency: "daily",
-        unit: indicatorCode === "usd-krw" ? "krw_per_usd" : "usd_per_barrel",
-        valueBasis: indicatorCode === "usd-krw" ? "new_york_noon_buying_rate" : "daily_close",
+        unit: "usd_per_barrel",
+        valueBasis: "daily_close",
       },
     });
   }
@@ -132,7 +131,8 @@ export const fredIndicatorProvider: ExternalIndicatorProvider = {
   supportedIndicatorCodes: FRED_INDICATOR_CODES,
   async fetchHistory(request: ExternalIndicatorProviderRequest): Promise<ExternalIndicatorProviderResult> {
     const requestedCodes = request.indicatorCodes.filter(
-      (indicatorCode): indicatorCode is FredIndicatorCode => indicatorCode !== "dubai",
+      (indicatorCode): indicatorCode is FredIndicatorCode =>
+        FRED_INDICATOR_CODES.includes(indicatorCode as FredIndicatorCode),
     );
     const uniqueCodes = [...new Set(requestedCodes)];
     const points = (
