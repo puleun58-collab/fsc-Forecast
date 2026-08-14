@@ -10,14 +10,22 @@ function toUtcDateOnly(value: Date): Date {
   return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
 }
 
-export function createOpinetWeekStartDate(year: number, month: number, week: number): Date {
-  const firstDayOfMonth = new Date(Date.UTC(year, month - 1, 1));
-  const firstWeekStart = new Date(firstDayOfMonth);
-  firstWeekStart.setUTCDate(firstDayOfMonth.getUTCDate() - firstDayOfMonth.getUTCDay());
-  firstWeekStart.setUTCHours(0, 0, 0, 0);
+function getFirstOpinetReferenceWednesday(year: number, monthIndex: number): Date {
+  const monthStart = new Date(Date.UTC(year, monthIndex, 1));
+  const firstReferenceWednesday = getOpinetWeekStart(monthStart);
+  firstReferenceWednesday.setUTCDate(firstReferenceWednesday.getUTCDate() + 3);
 
-  const weekStart = new Date(firstWeekStart);
-  weekStart.setUTCDate(firstWeekStart.getUTCDate() + (week - 1) * 7);
+  if (firstReferenceWednesday.getUTCMonth() !== monthIndex) {
+    firstReferenceWednesday.setUTCDate(firstReferenceWednesday.getUTCDate() + 7);
+  }
+
+  return firstReferenceWednesday;
+}
+
+export function createOpinetWeekStartDate(year: number, month: number, week: number): Date {
+  const firstReferenceWednesday = getFirstOpinetReferenceWednesday(year, month - 1);
+  const weekStart = new Date(firstReferenceWednesday);
+  weekStart.setUTCDate(firstReferenceWednesday.getUTCDate() - 3 + (week - 1) * 7);
   return weekStart;
 }
 
@@ -59,13 +67,7 @@ export function getOpinetDisplayWeek(
 
   const year = referenceWednesday.getUTCFullYear();
   const monthIndex = referenceWednesday.getUTCMonth();
-  const monthStart = new Date(Date.UTC(year, monthIndex, 1));
-  const firstReferenceWednesday = getOpinetWeekStart(monthStart);
-  firstReferenceWednesday.setUTCDate(firstReferenceWednesday.getUTCDate() + 3);
-
-  if (firstReferenceWednesday.getUTCMonth() !== monthIndex) {
-    firstReferenceWednesday.setUTCDate(firstReferenceWednesday.getUTCDate() + 7);
-  }
+  const firstReferenceWednesday = getFirstOpinetReferenceWednesday(year, monthIndex);
 
   const weekOfMonth =
     Math.floor((referenceWednesday.getTime() - firstReferenceWednesday.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
