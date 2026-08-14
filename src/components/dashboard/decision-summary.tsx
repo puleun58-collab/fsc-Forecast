@@ -10,6 +10,7 @@ import {
 } from './dashboard-format';
 
 import type { FscDashboardResultSection, FscDashboardWeekItem } from '@/lib/dashboard/fsc-types';
+import { getOpinetDisplayWeek } from '@/lib/opinet/weekly-period';
 
 type DecisionSummaryProps = {
   fsc: FscDashboardResultSection;
@@ -34,6 +35,15 @@ function ForecastHeadline({ fsc }: DecisionSummaryProps) {
   const weekOverWeekChange = latestActualWeek
     ? calculateWeekOverWeekChange(latestActualWeek.priceKrwPerL, previousActualWeek?.priceKrwPerL ?? null)
     : null;
+  const displayWeekTitle = latestActualWeek
+    ? (() => {
+        const { month, weekOfMonth } = getOpinetDisplayWeek(
+          latestActualWeek.weekStartDate,
+          latestActualWeek.weekEndDate,
+        );
+        return `${month}월 ${weekOfMonth}주차 평균 유가`;
+      })()
+    : null;
 
   return (
     <div className="decision-summary__primary">
@@ -46,7 +56,7 @@ function ForecastHeadline({ fsc }: DecisionSummaryProps) {
                 <p className="decision-summary__metric-context">
                   {mapWeekKind(latestActualWeek.priceKind)}
                 </p>
-                <h2>{latestActualWeek.sequenceNo}주차 평균 유가</h2>
+                <h2>{displayWeekTitle}</h2>
               </div>
               <PriceValue value={latestActualWeek.priceKrwPerL} size="headline" />
               {weekOverWeekChange ? (
