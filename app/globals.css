@@ -1772,6 +1772,19 @@ main {
   font-weight: 520;
 }
 
+.weekly-table__period {
+  white-space: nowrap;
+}
+
+.weekly-table__period strong {
+  font-weight: 700;
+}
+
+.weekly-table__period > span:first-of-type {
+  margin-inline: 6px;
+  color: var(--text-secondary);
+}
+
 .weekly-table__row th span {
   display: block;
   margin-top: 3px;

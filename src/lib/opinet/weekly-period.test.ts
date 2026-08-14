@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { createOpinetWeekStartDate, getOpinetDisplayWeek, getOpinetWeekEnd } from './weekly-period';
 
 const DISPLAY_WEEK_CASES = [
+  ['2026-06-28', '2026-07-02', { year: 2026, month: 7, weekOfMonth: 1 }],
   ['2026-07-05', '2026-07-09', { year: 2026, month: 7, weekOfMonth: 2 }],
   ['2026-07-12', '2026-07-16', { year: 2026, month: 7, weekOfMonth: 3 }],
   ['2026-07-19', '2026-07-23', { year: 2026, month: 7, weekOfMonth: 4 }],
@@ -57,6 +58,14 @@ test('getOpinetDisplayWeek accepts serialized UTC dates used by the dashboard DT
     getOpinetDisplayWeek('2026-08-30T00:00:00.000Z', '2026-09-03T00:00:00.000Z'),
     { year: 2026, month: 9, weekOfMonth: 1 },
   );
+});
+
+test('getOpinetDisplayWeek labels a quarter-clipped first period as July week 1', () => {
+  assert.deepEqual(getOpinetDisplayWeek('2026-07-01', '2026-07-02'), {
+    year: 2026,
+    month: 7,
+    weekOfMonth: 1,
+  });
 });
 
 test('getOpinetDisplayWeek rejects dates from different Opinet weeks', () => {

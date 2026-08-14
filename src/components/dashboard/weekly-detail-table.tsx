@@ -13,10 +13,20 @@ import {
 } from './dashboard-format';
 
 import type { FscDashboardWeekItem } from '@/lib/dashboard/fsc-types';
+import { getOpinetDisplayWeek } from '@/lib/opinet/weekly-period';
 
 type WeeklyDetailTableProps = {
   weeks: readonly FscDashboardWeekItem[];
 };
+
+function formatOpinetWeekLabel(week: FscDashboardWeekItem): string {
+  try {
+    const displayWeek = getOpinetDisplayWeek(week.weekStartDate, week.weekEndDate);
+    return `${displayWeek.month}월 ${displayWeek.weekOfMonth}주차`;
+  } catch {
+    return `${week.targetMonth}월`;
+  }
+}
 
 export function WeeklyDetailTable({ weeks }: WeeklyDetailTableProps) {
   const firstForecastIndex = getFirstForecastIndex(weeks);
@@ -74,7 +84,11 @@ function WeekTableRow({ week }: { week: FscDashboardWeekItem }) {
         <strong>{formatSequenceWeekLabel(week.sequenceNo)}</strong>
         <span>ISO {week.weekNo} · {week.targetMonth}월</span>
       </th>
-      <td>{formatWeekRange(week)}</td>
+      <td className="weekly-table__period">
+        <strong>{formatOpinetWeekLabel(week)}</strong>
+        <span aria-hidden="true">·</span>
+        <span>{formatWeekRange(week)}</span>
+      </td>
       <td>
         <span className={`kind-label kind-label--${week.priceKind}`}>
           <span aria-hidden="true" />

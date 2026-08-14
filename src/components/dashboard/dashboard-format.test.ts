@@ -3,10 +3,34 @@ import test from 'node:test';
 
 import {
   calculateWeekOverWeekChange,
+  formatWeekRange,
   formatWeekOverWeekChange,
   mapReliabilityStatus,
   RELIABILITY_POLICY_ITEMS,
 } from './dashboard-format';
+
+import type { FscDashboardWeekItem } from '@/lib/dashboard/fsc-types';
+
+const JULY_FIRST_WEEK: FscDashboardWeekItem = {
+  sequenceNo: 1,
+  targetMonth: 7,
+  weekNo: 27,
+  weekStartDate: '2026-07-01T00:00:00.000Z',
+  weekEndDate: '2026-07-02T00:00:00.000Z',
+  priceKind: 'actual',
+  priceKrwPerL: '0',
+  actualPriceKrwPerL: '0',
+  forecastPriceKrwPerL: null,
+  forecastSourceKind: null,
+  fallbackUsed: false,
+  priceDiffKrwPerL: '0',
+  diffRatio: '0',
+};
+
+test('week display restores the full Opinet period at a quarter boundary', () => {
+  assert.equal(formatWeekRange(JULY_FIRST_WEEK), '2026.06.28–2026.07.02');
+  assert.equal(formatWeekRange(JULY_FIRST_WEEK, true), '6.28–7.2');
+});
 
 test('mapReliabilityStatus distinguishes pre-sample, in-progress, and graded states', () => {
   assert.deepEqual(

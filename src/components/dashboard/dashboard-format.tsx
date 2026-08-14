@@ -1,4 +1,5 @@
 import { formatDotDate, formatDotDateTime, formatPriceNumber } from '@/lib/dashboard/display-format';
+import { getOpinetWeekEnd, getOpinetWeekStart } from '@/lib/opinet/weekly-period';
 
 import type { DashboardTrendDirection, FscDashboardWeekItem } from '@/lib/dashboard/fsc-types';
 
@@ -160,8 +161,16 @@ export function formatDisplayDateTime(value: string | null, fallback = '갱신 �
 }
 
 export function formatWeekRange(week: FscDashboardWeekItem, compact = false): string {
-  const startText = formatDotDate(week.weekStartDate);
-  const endText = formatDotDate(week.weekEndDate);
+  const storedStartDate = new Date(week.weekStartDate);
+
+  if (Number.isNaN(storedStartDate.getTime())) {
+    return '기간 없음';
+  }
+
+  const fullWeekStart = getOpinetWeekStart(storedStartDate);
+  const fullWeekEnd = getOpinetWeekEnd(fullWeekStart);
+  const startText = formatDotDate(fullWeekStart.toISOString());
+  const endText = formatDotDate(fullWeekEnd.toISOString());
 
   if (startText === null || endText === null) {
     return '기간 없음';
