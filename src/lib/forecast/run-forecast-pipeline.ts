@@ -16,7 +16,10 @@ import { db } from "../db";
 import { externalIndicatorCodes } from "../external-indicators/catalog";
 import { env } from "../env";
 import { loadPublicConfirmedLatestDate } from "../opinet/resolve-public-confirmed-date";
-import { buildBaselineForecast } from "./build-baseline-forecast";
+import {
+  buildBaselineForecast,
+  getForecastHorizonResponseMultiplier,
+} from "./build-baseline-forecast";
 import { evaluateMapeGate } from "./evaluate-mape-gate";
 import { loadOpinetQ2FallbackSeries } from "./load-opinet-q2-fallback";
 import {
@@ -213,9 +216,9 @@ async function loadIndicatorSnapshots(
     return [];
   }
 
-  const snapshots: ForecastIndicatorSnapshot[] = [];
-
-  for (const indicatorCode of externalIndicatorCodes) {
+  const snapshots = await Promise.all(externalIndicatorCodes.map(async (
+    indicatorCode,
+  ): Promise<ForecastIndicatorSnapshot | null> => {
     const records = await tx.externalIndicatorHistory.findMany({
       where: {
         indicatorCode,
@@ -230,7 +233,7 @@ async function loadIndicatorSnapshots(
     });
 
     if (records.length === 0) {
-      continue;
+      return null;
     }
 
     const latest = records[0];
@@ -241,17 +244,17 @@ async function loadIndicatorSnapshots(
         ? null
         : ((Number(latest.value) - previousValue) / previousValue) * 100;
 
-    snapshots.push({
+    return {
       indicatorCode,
       observedAt: latest.observedAt,
       value: Number(latest.value),
       previousObservedAt: previous?.observedAt ?? null,
       previousValue,
       percentChange,
-    });
-  }
+    };
+  }));
 
-  return snapshots;
+  return snapshots.filter((snapshot): snapshot is ForecastIndicatorSnapshot => snapshot !== null);
 }
 
 function clampNumber(value: number, min: number, max: number): number {
@@ -275,7 +278,11 @@ function applyIndicatorAdjustment(
   const adjustmentRatio = clampNumber((averagePercentChange / 100) * 0.15, -0.04, 0.04);
 
   return points.map((point) => {
-    const adjustment = baselineLevelKrwPerL * adjustmentRatio * point.horizonIndex;
+    const responseMultiplier = getForecastHorizonResponseMultiplier(
+      point.horizonKind,
+      point.horizonIndex,
+    );
+    const adjustment = baselineLevelKrwPerL * adjustmentRatio * responseMultiplier;
     const adjustedPoint = Math.max(0, point.pointKrwPerL + adjustment);
     const lowerAdjustment = point.lowerBoundKrwPerL === null ? null : Math.max(0, point.lowerBoundKrwPerL + adjustment);
     const upperAdjustment = point.upperBoundKrwPerL === null ? null : Math.max(0, point.upperBoundKrwPerL + adjustment);
@@ -371,11 +378,13 @@ async function executeForecastPipeline(
       `Forecast pipeline requires a successful recompute snapshot, received '${recomputeSnapshot.status}'.`,
     );
   }
-  const rawDailyPrices = await loadDailyPrices(tx, recomputeSnapshot.id);
-  const latestConfirmedDate = await loadPublicConfirmedLatestDate(tx, {
-    datasetKey: env.datasetKey,
-    observedBeforeOrAt: recomputeSnapshot.currentTruthCutoffAt,
-  });
+  const [rawDailyPrices, latestConfirmedDate] = await Promise.all([
+    loadDailyPrices(tx, recomputeSnapshot.id),
+    loadPublicConfirmedLatestDate(tx, {
+      datasetKey: env.datasetKey,
+      observedBeforeOrAt: recomputeSnapshot.currentTruthCutoffAt,
+    }),
+  ]);
   const dailyPrices = filterDailyPricesByConfirmedDate(rawDailyPrices, latestConfirmedDate);
 
   if (dailyPrices.length === 0) {

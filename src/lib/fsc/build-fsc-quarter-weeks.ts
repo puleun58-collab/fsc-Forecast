@@ -16,6 +16,7 @@ import type {
 
 const ROUND_HALF_UP = Prisma.Decimal.ROUND_HALF_UP;
 const ZERO = new Prisma.Decimal(0);
+const FSC_DIRECT_WEEKLY_FORECAST_HORIZON_COUNT = 4;
 
 type QuarterSettingInput = Pick<
   QuarterSetting,
@@ -124,19 +125,30 @@ function averageDecimals(values: readonly Prisma.Decimal[]): Prisma.Decimal {
 }
 
 function buildWeeklyForecastIndex(points: readonly FscSourceForecastPointRow[]): Map<string, FscSourceForecastPointRow> {
-  return new Map(
-    points
-      .filter((point) => point.horizonKind === 'weekly')
-      .map((point) => [formatDateKey(toDateOnly(point.targetDate)), point]),
-  );
+  const index = new Map<string, FscSourceForecastPointRow>();
+
+  for (const point of points) {
+    if (
+      point.horizonKind === 'weekly' &&
+      point.horizonIndex <= FSC_DIRECT_WEEKLY_FORECAST_HORIZON_COUNT
+    ) {
+      index.set(formatDateKey(toDateOnly(point.targetDate)), point);
+    }
+  }
+
+  return index;
 }
 
 function buildMonthlyForecastIndex(points: readonly FscSourceForecastPointRow[]): Map<string, FscSourceForecastPointRow> {
-  return new Map(
-    points
-      .filter((point) => point.horizonKind === 'monthly')
-      .map((point) => [formatMonthKey(toDateOnly(point.targetDate)), point]),
-  );
+  const index = new Map<string, FscSourceForecastPointRow>();
+
+  for (const point of points) {
+    if (point.horizonKind === 'monthly') {
+      index.set(formatMonthKey(toDateOnly(point.targetDate)), point);
+    }
+  }
+
+  return index;
 }
 
 function findCarryForwardForecastPoint(
@@ -309,8 +321,9 @@ function createForecastWeekDraft(
 }
 
 export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFscQuarterWeeksResult {
-  const quarterStartDate = toDateOnly(input.quarterSetting.quarterStartDate);
-  const quarterEndDate = toDateOnly(input.quarterSetting.quarterEndDate);
+  const quarterSetting = input.quarterSetting;
+  const quarterStartDate = toDateOnly(quarterSetting.quarterStartDate);
+  const quarterEndDate = toDateOnly(quarterSetting.quarterEndDate);
   const latestDailyPriceDate = resolveLatestDailyPriceDate(input.dailyPrices);
   const dailyPriceMap = new Map(input.dailyPrices.map((row) => [formatDateKey(toDateOnly(row.priceDate)), row]));
 
@@ -358,12 +371,12 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
       const actualPriceKrwPerL = officialWeeklyMatch
         ? roundPrice(officialWeeklyMatch.priceKrwPerL)
         : averageDecimals(slotRows.map((row) => row.observedPriceKrwPerL));
-      const priceDiffKrwPerL = roundPrice(actualPriceKrwPerL.minus(input.quarterSetting.basePriceKrwPerL));
-      const diffRatio = roundRatio(priceDiffKrwPerL.dividedBy(input.quarterSetting.basePriceKrwPerL));
+      const priceDiffKrwPerL = roundPrice(actualPriceKrwPerL.minus(quarterSetting.basePriceKrwPerL));
+      const diffRatio = roundRatio(priceDiffKrwPerL.dividedBy(quarterSetting.basePriceKrwPerL));
 
       weeks.push({
-        targetYear: input.quarterSetting.targetYear,
-        targetQuarter: input.quarterSetting.targetQuarter,
+        targetYear: quarterSetting.targetYear,
+        targetQuarter: quarterSetting.targetQuarter,
         targetMonth: effectiveEnd.getUTCMonth() + 1,
         weekNo,
         sequenceNo,
@@ -378,7 +391,7 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
         forecastPointId: null,
         forecastSourceKind: null,
         fallbackUsed: false,
-        basePriceKrwPerL: input.quarterSetting.basePriceKrwPerL,
+        basePriceKrwPerL: quarterSetting.basePriceKrwPerL,
         priceDiffKrwPerL,
         diffRatio,
       });
@@ -390,7 +403,7 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
       }
     } else {
       const forecastWeek = createForecastWeekDraft(
-        input.quarterSetting,
+        quarterSetting,
         effectiveStart,
         effectiveEnd,
         fullWeekEnd,
@@ -417,7 +430,7 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
   const quarterAverageKrwPerL = averageDecimals(weeks.map((week) => week.priceKrwPerL));
   const fallbackWeekCount =
     sourceBreakdown.carry_forward + sourceBreakdown.applied_price_fallback + sourceBreakdown.base_price_fallback;
-  const monthlyBasis = buildMonthlyBasisSummary(input.quarterSetting, input.officialMonthlyPrices);
+  const monthlyBasis = buildMonthlyBasisSummary(quarterSetting, input.officialMonthlyPrices);
 
   return {
     weeks,

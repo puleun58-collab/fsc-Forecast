@@ -59,17 +59,17 @@ export function WeeklyOutlookTable({ outlook }: { readonly outlook: FscDashboard
   const [showAllMobile, setShowAllMobile] = useState(false);
   const actualWeeks = outlook.weeks.filter((week) => week.priceKind === 'actual');
   const forecastWeeks = outlook.weeks.filter((week) => week.priceKind === 'forecast');
+  const tableWeeks = [...actualWeeks.slice(-1), ...forecastWeeks];
   const mobileWeeks = showAllMobile
-    ? outlook.weeks
-    : [...actualWeeks.slice(-2), ...forecastWeeks.slice(0, 4)];
-  const mobileActualWeekCount = showAllMobile ? actualWeeks.length : Math.min(2, actualWeeks.length);
+    ? tableWeeks
+    : [...actualWeeks.slice(-1), ...forecastWeeks.slice(0, 4)];
   const firstForecastSequenceNo = forecastWeeks[0]?.sequenceNo ?? null;
 
   return (
     <section className="weekly-detail surface-panel" aria-labelledby="weekly-outlook-detail-title">
       <div className="panel-header">
         <h2 id="weekly-outlook-detail-title">향후 13주 주차별 전망</h2>
-        <p>최근 Actual과 주차별 예측값, 전주·기준유가 대비 차이, 예측 범위를 확인합니다.</p>
+        <p>최신 Actual과 주차별 예측값, 전주·기준유가 대비 차이, 예측 범위를 확인합니다.</p>
       </div>
       <div className="weekly-table-wrap">
         <table className="weekly-table weekly-outlook-table">
@@ -85,7 +85,7 @@ export function WeeklyOutlookTable({ outlook }: { readonly outlook: FscDashboard
             </tr>
           </thead>
           <tbody>
-            {outlook.weeks.map((week, index) => (
+            {tableWeeks.map((week, index) => (
               <Fragment key={`${week.priceKind}-${week.sequenceNo}`}>
                 {week.sequenceNo === firstForecastSequenceNo ? (
                   <tr className="weekly-table__boundary">
@@ -94,7 +94,7 @@ export function WeeklyOutlookTable({ outlook }: { readonly outlook: FscDashboard
                 ) : null}
                 <tr className={`weekly-table__row weekly-table__row--${week.priceKind}`}>
                   <th scope="row">
-                    <strong>{formatOutlookWeekTitle(week, index, outlook.actualWeekCount)}</strong>
+                    <strong>{formatOutlookWeekTitle(week, index, Math.min(1, actualWeeks.length))}</strong>
                     <span>ISO {week.weekNo} · {week.targetMonth}월</span>
                   </th>
                   <td className="weekly-table__period">
@@ -123,7 +123,7 @@ export function WeeklyOutlookTable({ outlook }: { readonly outlook: FscDashboard
         {mobileWeeks.map((week, index) => (
           <div key={`${week.priceKind}-${week.sequenceNo}`} className={`weekly-mobile-item weekly-mobile-item--${week.priceKind}`}>
             <div className="weekly-mobile-item__top">
-              <strong>{formatOutlookWeekTitle(week, index, mobileActualWeekCount)}</strong>
+              <strong>{formatOutlookWeekTitle(week, index, Math.min(1, actualWeeks.length))}</strong>
               <span>{CONFIDENCE_LABEL[week.confidence]}</span>
             </div>
             <span className="weekly-mobile-item__period">{formatOpinetWeekLabel(week)} · {formatWeekRange(week, true)}</span>
@@ -132,7 +132,7 @@ export function WeeklyOutlookTable({ outlook }: { readonly outlook: FscDashboard
             {week.priceKind === 'forecast' ? <p>예측 범위 {formatConfidenceRange(week)}</p> : null}
           </div>
         ))}
-        {outlook.weeks.length > mobileWeeks.length ? (
+        {tableWeeks.length > mobileWeeks.length ? (
           <button
             type="button"
             className="button button--secondary outlook-mobile-toggle"
