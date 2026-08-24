@@ -21,7 +21,6 @@
 }
 
 .oil-price-history__identity {
-  gap: var(--space-3);
   white-space: nowrap;
 }
 
@@ -29,11 +28,6 @@
   margin: 0;
   color: var(--ink);
   font-size: 1rem;
-}
-
-.oil-price-history__identity strong {
-  color: var(--accent);
-  font-size: 0.84rem;
 }
 
 .oil-price-history__summary-values {
@@ -230,10 +224,6 @@
   .oil-price-history__bar,
   .oil-price-history__detail {
     padding: var(--space-3);
-  }
-
-  .oil-price-history__identity {
-    gap: var(--space-2);
   }
 
   .oil-price-history__controls {
