@@ -1,4 +1,5 @@
 import type {
+  ForecastPoint,
   ForecastRun,
   FscDataFreshnessStatus,
   FscForecastSourceKind,
@@ -79,7 +80,19 @@ export type FscResultRecord = FscResult & {
   quarterSetting: QuarterSetting;
   weeks: FscQuarterWeek[];
   sourceRecomputeSnapshot: Pick<RecomputeSnapshot, 'currentTruthCutoffAt'>;
-  forecastRun: Pick<ForecastRun, 'completedAt'> | null;
+  forecastRun: (Pick<ForecastRun, 'completedAt'> & {
+    points?: Array<
+      Pick<
+        ForecastPoint,
+        | 'horizonKind'
+        | 'horizonIndex'
+        | 'targetDate'
+        | 'pointKrwPerL'
+        | 'lowerBoundKrwPerL'
+        | 'upperBoundKrwPerL'
+      >
+    >;
+  }) | null;
 };
 
 const PRICE_SCALE = 2;

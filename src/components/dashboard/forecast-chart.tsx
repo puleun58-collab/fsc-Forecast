@@ -12,13 +12,17 @@ import {
   parseNumeric,
 } from './dashboard-format';
 
-import type { FscDashboardWeekItem } from '@/lib/dashboard/fsc-types';
+import type {
+  FscDashboardOutlookWeekItem,
+  FscDashboardWeekItem,
+} from '@/lib/dashboard/fsc-types';
 import { formatPriceText } from '@/lib/dashboard/display-format';
 import { buildForecastChartScale } from './forecast-chart-scale';
 
 type ForecastChartProps = {
   weeks: readonly FscDashboardWeekItem[];
   basePriceKrwPerL: string;
+  view?: 'quarter' | 'outlook';
 };
 
 type PlotPoint = {
@@ -77,11 +81,35 @@ function getTooltipStyle(point: PlotPoint): CSSProperties {
   };
 }
 
-export function ForecastChart({ weeks, basePriceKrwPerL }: ForecastChartProps) {
+function isOutlookWeek(week: FscDashboardWeekItem): week is FscDashboardOutlookWeekItem {
+  return 'horizonIndex' in week;
+}
+
+function getPointTitle(week: FscDashboardWeekItem, view: 'quarter' | 'outlook'): string {
+  if (view === 'outlook' && isOutlookWeek(week) && week.horizonIndex !== null) {
+    return `Forecast ${week.horizonIndex}주`;
+  }
+
+  if (view === 'outlook') {
+    return `Actual · ${formatWeekRange(week, true)}`;
+  }
+
+  return `${formatSequenceWeekLabel(week.sequenceNo)} · ${formatWeekRange(week, true)}`;
+}
+
+export function ForecastChart({ weeks, basePriceKrwPerL, view = 'quarter' }: ForecastChartProps) {
   const tooltipId = useId();
   const [activePoint, setActivePoint] = useState<ActivePoint | null>(null);
   const basePrice = parseNumeric(basePriceKrwPerL);
-  const priceValues = weeks.map((week) => parseNumeric(week.priceKrwPerL)).filter((value): value is number => value !== null);
+  const priceValues = weeks.flatMap((week) => {
+    const values = [parseNumeric(week.priceKrwPerL)];
+
+    if (isOutlookWeek(week)) {
+      values.push(parseNumeric(week.lowerBoundKrwPerL), parseNumeric(week.upperBoundKrwPerL));
+    }
+
+    return values.filter((value): value is number => value !== null);
+  });
 
   if (priceValues.length === 0 || weeks.length === 0) {
     return (
@@ -116,6 +144,22 @@ export function ForecastChart({ weeks, basePriceKrwPerL }: ForecastChartProps) {
       ? 18
       : Math.max(Math.abs(boundaryPoint.x - previousBoundaryPoint.x) * 0.45, 18);
   const activePlotPoint = activePoint === null ? null : points.find((point) => point.index === activePoint.index) ?? null;
+  const confidencePoints = points.flatMap((point) => {
+    if (!isOutlookWeek(point.week) || point.week.priceKind !== 'forecast') {
+      return [];
+    }
+
+    const lower = parseNumeric(point.week.lowerBoundKrwPerL);
+    const upper = parseNumeric(point.week.upperBoundKrwPerL);
+
+    return lower === null || upper === null
+      ? []
+      : [{ x: point.x, lowerY: resolveY(lower, domain.min, domain.max), upperY: resolveY(upper, domain.min, domain.max) }];
+  });
+  const confidencePolygon = [
+    ...confidencePoints.map((point) => `${point.x},${point.upperY}`),
+    ...[...confidencePoints].reverse().map((point) => `${point.x},${point.lowerY}`),
+  ].join(' ');
 
   function activate(index: number, locked: boolean) {
     setActivePoint({ index, locked });
@@ -146,7 +190,7 @@ export function ForecastChart({ weeks, basePriceKrwPerL }: ForecastChartProps) {
         className="forecast-chart__svg"
         viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
         role="group"
-        aria-label="주간 actual 및 forecast 유가 추이"
+        aria-label={view === 'outlook' ? '최근 actual 4주 및 향후 forecast 13주 유가 전망' : '주간 actual 및 forecast 유가 추이'}
       >
         <rect x="0" y="0" width={VIEW_WIDTH} height={VIEW_HEIGHT} rx="0" fill="transparent" aria-hidden="true" />
         <text
@@ -201,6 +245,9 @@ export function ForecastChart({ weeks, basePriceKrwPerL }: ForecastChartProps) {
             </text>
           </g>
         ) : null}
+        {confidencePoints.length > 1 ? (
+          <polygon className="forecast-chart__confidence-band" points={confidencePolygon} aria-hidden="true" />
+        ) : null}
         {actualPoints.length > 1 ? <polyline className="forecast-chart__line forecast-chart__line--actual" points={buildPolyline(actualPoints)} /> : null}
         {forecastPoints.length > 1 ? (
           <polyline className="forecast-chart__line forecast-chart__line--forecast" points={buildPolyline(forecastPoints)} />
@@ -215,7 +262,7 @@ export function ForecastChart({ weeks, basePriceKrwPerL }: ForecastChartProps) {
             role="button"
             tabIndex={0}
             aria-describedby={activePlotPoint?.index === point.index ? tooltipId : undefined}
-            aria-label={`${formatSequenceWeekLabel(point.week.sequenceNo)}, ${formatWeekRange(point.week, true)}, ${mapWeekKind(point.week.priceKind)}, ${formatPriceText(point.price)}`}
+            aria-label={`${getPointTitle(point.week, view)}, ${mapWeekKind(point.week.priceKind)}, ${formatPriceText(point.price)}`}
             onFocus={() => activate(point.index, false)}
             onBlur={clearTransientPoint}
             onPointerEnter={() => activate(point.index, false)}
@@ -227,9 +274,14 @@ export function ForecastChart({ weeks, basePriceKrwPerL }: ForecastChartProps) {
       {activePlotPoint !== null ? (
         <div id={tooltipId} className="forecast-chart__tooltip" role="tooltip" style={getTooltipStyle(activePlotPoint)}>
           <strong>
-            {formatSequenceWeekLabel(activePlotPoint.week.sequenceNo)} · {formatWeekRange(activePlotPoint.week, true)}
+            {getPointTitle(activePlotPoint.week, view)}
           </strong>
           <span>{mapWeekKind(activePlotPoint.week.priceKind)} · {formatPriceText(activePlotPoint.price)}</span>
+          {isOutlookWeek(activePlotPoint.week) && activePlotPoint.week.lowerBoundKrwPerL !== null && activePlotPoint.week.upperBoundKrwPerL !== null ? (
+            <span>
+              예측 범위 {formatPriceText(activePlotPoint.week.lowerBoundKrwPerL)}–{formatPriceText(activePlotPoint.week.upperBoundKrwPerL)}
+            </span>
+          ) : null}
           <span>
             기준 대비 {formatSignedPriceText(activePlotPoint.week.priceDiffKrwPerL)} · {formatSignedRatioText(activePlotPoint.week.diffRatio)}
           </span>

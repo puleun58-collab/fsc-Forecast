@@ -18,6 +18,7 @@ import {
   buildPublicMarketSignals,
   buildPublicMarketSummaryText,
 } from './market-signals';
+import { buildWeeklyOutlook } from './build-weekly-outlook';
 import type {
   FscDashboardCurrentPriceSection,
   FscDashboardData,
@@ -112,11 +113,11 @@ function readMonthlyBasis(
 
   const monthRows = Array.isArray((candidate as { monthRows?: unknown }).monthRows)
     ? (candidate as { monthRows: Array<{ monthLabel?: unknown; priceKrwPerL?: unknown }> }).monthRows
-        .filter((row) => typeof row.monthLabel === 'string' && typeof row.priceKrwPerL === 'string')
-        .map((row) => ({
-          monthLabel: row.monthLabel as string,
-          priceKrwPerL: row.priceKrwPerL as string,
-        }))
+        .flatMap((row) =>
+          typeof row.monthLabel === 'string' && typeof row.priceKrwPerL === 'string'
+            ? [{ monthLabel: row.monthLabel, priceKrwPerL: row.priceKrwPerL }]
+            : [],
+        )
     : [];
 
   return {
@@ -411,6 +412,20 @@ export async function loadFscDashboardData(): Promise<FscDashboardData> {
     const fsc = serializeFscResultDto(result);
     const monthlyBasis = readMonthlyBasis(result.calculationPayload);
     const dataBasisAt = fsc.dataBasisAt;
+    const weeklyOutlook = buildWeeklyOutlook({
+      actualWeeks: fsc.weeks,
+      forecastPoints: (result.forecastRun?.points ?? []).map((point) => ({
+        horizonKind: point.horizonKind,
+        horizonIndex: point.horizonIndex,
+        targetDate: point.targetDate,
+        pointKrwPerL: Number(point.pointKrwPerL),
+        lowerBoundKrwPerL:
+          point.lowerBoundKrwPerL === null ? null : Number(point.lowerBoundKrwPerL),
+        upperBoundKrwPerL:
+          point.upperBoundKrwPerL === null ? null : Number(point.upperBoundKrwPerL),
+      })),
+      basePriceKrwPerL: fsc.basePriceKrwPerL,
+    });
 
     return {
       state: 'available',
@@ -445,6 +460,7 @@ export async function loadFscDashboardData(): Promise<FscDashboardData> {
         recent26wWeeklyPriceMae: fsc.qualityMetrics.recent26wWeeklyPriceMae,
         recent4wErrorTrend: fsc.qualityMetrics.recent4wErrorTrend,
         weeks: fsc.weeks,
+        weeklyOutlook,
         referenceQuarterAverageKrwPerL: monthlyBasis?.quarterAverageKrwPerL ?? null,
         referenceMonthlyBasis: monthlyBasis?.monthRows ?? [],
       },

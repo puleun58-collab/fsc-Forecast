@@ -4,8 +4,7 @@ import { DecisionSummary } from './decision-summary';
 import { MarketReferencePanel } from './market-reference-panel';
 import { MethodologyDisclosure } from './methodology-disclosure';
 import { OilPriceHistory } from './oil-price-history';
-import { WeeklyDetailTable } from './weekly-detail-table';
-import { WeeklyForecastSection } from './weekly-forecast-section';
+import { WeeklyAnalysis } from './weekly-analysis';
 
 import type { FscDashboardData } from '@/lib/dashboard/fsc-types';
 import { formatQuarterLabel } from '@/lib/dashboard/display-format';
@@ -55,8 +54,7 @@ export async function FscDashboard({ data }: FscDashboardProps) {
       <StatusRail fsc={data.fsc} />
       <DecisionSummary fsc={data.fsc} />
       <OilPriceHistory history={oilPriceHistory} />
-      <WeeklyForecastSection fsc={data.fsc} />
-      <WeeklyDetailTable weeks={data.fsc.weeks} />
+      <WeeklyAnalysis fsc={data.fsc} />
       <MarketReferencePanel support={data.support} />
       <MethodologyDisclosure fsc={data.fsc} />
       <DataSourcesDisclosure dataSources={data.dataSources} />

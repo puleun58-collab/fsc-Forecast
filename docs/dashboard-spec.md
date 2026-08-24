@@ -22,8 +22,8 @@ available 상태의 구성 순서는 다음과 같다.
 
 최신 actual 주차 카드의 금액 아래에는 바로 전 sequence의 actual 주차가 있을 때 `전주 대비 {금액 차이}원 · {증감률}% {방향 아이콘}`을 표시한다. 차이와 증감률은 소수점 둘째 자리까지 표시하고 상승·하락·변동 없음은 각각 `+`·`-`·`↑`·`↓`·`→`와 색상을 함께 사용한다. 비교할 전주 actual이 없으면 문구를 표시하지 않는다.
 4. **OilPriceHistory:** 저장된 일별·주별·월별·분기별 오피넷 이력을 표시한다.
-5. **WeeklyForecastSection:** 주차별 actual/forecast 추이와 기준유가 선을 표시한다.
-6. **WeeklyDetailTable:** 주차별 가격·기간·상태·기준 대비 차이·차이율·산출 방식을 표와 모바일 그룹으로 표시한다.
+5. **WeeklyAnalysis:** `현재 분기`와 `향후 13주 전망`을 전환한다. 현재 분기에서는 FSC 산출에 사용된 actual/forecast 추이와 기준유가 선을 표시하고, 향후 13주에서는 최근 완료 actual 4주와 weekly forecast 13주, 예측 평균·범위·방향을 표시한다.
+6. **WeeklyDetailTable / WeeklyOutlookTable:** 현재 분기에서는 주차별 가격·기간·상태·기준 대비 차이·차이율·산출 방식을 표시한다. 향후 전망에서는 Actual 4주와 Forecast 13주의 전주 대비 변화, 기준유가 대비 차이, 단기·중기·장기 구간과 신뢰 범위를 표시한다.
 7. **MarketReferencePanel:** 오피넷 현재 참고값, 최근 추이, 주요 시장 요인을 보조 정보로 표시한다.
 8. **MethodologyDisclosure, DataSourcesDisclosure:** 산출 방법과 데이터 출처·기준 시각을 공개한다.
 
@@ -31,6 +31,8 @@ available 상태의 구성 순서는 다음과 같다.
 ## actual/forecast 차트와 표 규칙
 
 주간 차트에서 완료된 actual 주차는 실선, 이후 forecast 주차는 점선으로 표시한다. 범례는 Actual 주차 수, Forecast 주차 수, 기준유가를 명시한다.
+
+향후 13주 전망은 활성 분기의 FSC 주차를 연장하지 않는다. 최신 완료 actual 주차를 기준으로 최근 actual 최대 4주와 forecast run의 weekly point 최대 13주를 별도 rolling view로 구성한다. 1~4주는 단기, 5~8주는 중기, 9~13주는 장기 전망으로 구분하며 forecast point에 하단·상단 범위가 있을 때만 차트 음영과 범위 값을 표시한다.
 
 상세 표는 actual과 forecast의 첫 경계 앞에 `예측 시작` 행을 넣는다. 각 행은 순번, ISO 주 번호와 월, 기간, 상태, 가격, 기준유가 대비 차이·차이율·산출 방식을 표시한다. forecast 산출 방식은 주간 예측값, 월간 예측값, 직전 예측값 유지, 현재 적용유가 대체, 기준유가 대체로 구분한다. 데스크톱 표는 fallback 행에 `대체값 사용`과 source kind를 표시하지만, 현재 모바일 그룹에는 이 provenance가 표시되지 않는다. 모바일에서는 Actual 구간과 Forecast 구간만 별도 그룹으로 표시한다.
 

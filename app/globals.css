@@ -1601,6 +1601,114 @@ main {
   padding: 22px;
 }
 
+.weekly-analysis__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: start;
+}
+
+.weekly-analysis__toolbar {
+  display: grid;
+  justify-items: end;
+  gap: 12px;
+}
+
+.weekly-analysis__tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-muted);
+}
+
+.weekly-analysis__tabs button {
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: calc(var(--radius-control) - 2px);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.weekly-analysis__tabs button[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+.weekly-analysis__tabs button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.weekly-outlook-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.weekly-outlook-summary > div {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  padding: 16px 18px;
+  border-left: 1px solid var(--border);
+}
+
+.weekly-outlook-summary > div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.weekly-outlook-summary span,
+.weekly-outlook-summary small {
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.weekly-outlook-summary span {
+  font-weight: 800;
+}
+
+.weekly-outlook-summary strong {
+  color: var(--ink);
+  font-size: clamp(1rem, 1.5vw, 1.22rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.weekly-outlook-summary__direction--up {
+  color: var(--approved) !important;
+}
+
+.weekly-outlook-summary__direction--down {
+  color: var(--danger) !important;
+}
+
+.weekly-outlook-summary__direction--flat {
+  color: var(--text-secondary) !important;
+}
+
+.weekly-outlook-summary > p {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  color: var(--warning);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 .forecast-chart {
   position: relative;
   min-height: 360px;
@@ -1660,6 +1768,11 @@ main {
   fill: var(--text-secondary);
   font-size: 12px;
   font-weight: 700;
+}
+
+.forecast-chart__confidence-band {
+  fill: var(--forecast-tint);
+  opacity: 0.72;
 }
 
 .forecast-chart__line {
@@ -1722,6 +1835,14 @@ main {
 
 .forecast-chart__tooltip span {
   color: var(--text-secondary);
+}
+
+.forecast-legend__band {
+  display: inline-block;
+  width: 28px;
+  height: 10px;
+  border: 1px solid color-mix(in srgb, var(--forecast-line) 32%, var(--border));
+  background: var(--forecast-tint);
 }
 
 .weekly-table-wrap {
@@ -1807,6 +1928,35 @@ main {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
   white-space: nowrap;
+}
+
+.outlook-confidence {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.outlook-confidence--short {
+  color: var(--accent);
+}
+
+.outlook-confidence--long {
+  color: var(--warning);
+}
+
+.weekly-outlook-table__range {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.weekly-mobile-item__period {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.outlook-mobile-toggle {
+  display: none;
 }
 
 .kind-label {
@@ -2362,6 +2512,14 @@ main {
   .data-sources__cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .weekly-analysis__header {
+    grid-template-columns: 1fr;
+  }
+
+  .weekly-analysis__toolbar {
+    justify-items: start;
+  }
 }
 
 @media (max-width: 760px) {
@@ -2447,6 +2605,38 @@ main {
     grid-template-columns: 1fr;
   }
 
+  .weekly-analysis__toolbar,
+  .weekly-analysis__tabs {
+    width: 100%;
+  }
+
+  .weekly-analysis__toolbar {
+    justify-items: stretch;
+  }
+
+  .weekly-outlook-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .weekly-outlook-summary > div,
+  .weekly-outlook-summary > div:first-child {
+    padding: 13px 12px;
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+
+  .weekly-outlook-summary > div:nth-child(odd) {
+    padding-left: 0;
+  }
+
+  .weekly-outlook-summary > div:nth-child(even) {
+    border-left: 1px solid var(--border);
+  }
+
+  .weekly-outlook-summary > div:nth-child(-n + 2) {
+    border-top: 0;
+  }
+
   .forecast-chart {
     min-height: 260px;
   }
@@ -2502,6 +2692,13 @@ main {
     margin: 0;
     color: var(--text-secondary);
     line-height: 1.5;
+  }
+
+  .outlook-mobile-toggle {
+    display: inline-flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: 8px;
   }
 
   .market-reference__grid {

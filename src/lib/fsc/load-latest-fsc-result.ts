@@ -16,6 +16,19 @@ const FSC_RESULT_INCLUDE = {
   forecastRun: {
     select: {
       completedAt: true,
+      points: {
+        orderBy: {
+          horizonIndex: 'asc' as const,
+        },
+        select: {
+          horizonKind: true,
+          horizonIndex: true,
+          targetDate: true,
+          pointKrwPerL: true,
+          lowerBoundKrwPerL: true,
+          upperBoundKrwPerL: true,
+        },
+      },
     },
   },
   weeks: {

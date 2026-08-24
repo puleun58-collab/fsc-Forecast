@@ -138,6 +138,29 @@ export interface FscDashboardWeekItem {
   diffRatio: string;
 }
 
+export type WeeklyOutlookConfidence = 'actual' | 'short' | 'medium' | 'long';
+
+export interface FscDashboardOutlookWeekItem extends FscDashboardWeekItem {
+  horizonIndex: number | null;
+  confidence: WeeklyOutlookConfidence;
+  lowerBoundKrwPerL: string | null;
+  upperBoundKrwPerL: string | null;
+  weekOverWeekChangeKrwPerL: string | null;
+}
+
+export interface FscDashboardWeeklyOutlook {
+  basisDate: string | null;
+  actualWeekCount: number;
+  forecastWeekCount: number;
+  latestActualPriceKrwPerL: string | null;
+  forecastAverageKrwPerL: string | null;
+  forecastMinKrwPerL: string | null;
+  forecastMaxKrwPerL: string | null;
+  hasConfidenceBounds: boolean;
+  direction: DashboardTrendDirection;
+  weeks: FscDashboardOutlookWeekItem[];
+}
+
 export interface FscDashboardResultSection {
   resultId: string;
   createdAt: string;
@@ -166,6 +189,7 @@ export interface FscDashboardResultSection {
   recent26wWeeklyPriceMae: string | null;
   recent4wErrorTrend: string | null;
   weeks: FscDashboardWeekItem[];
+  weeklyOutlook: FscDashboardWeeklyOutlook;
   referenceQuarterAverageKrwPerL: string | null;
   referenceMonthlyBasis: Array<{
     monthLabel: string;
