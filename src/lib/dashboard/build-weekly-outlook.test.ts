@@ -41,20 +41,23 @@ function forecastPoint(horizonIndex: number): WeeklyOutlookForecastPoint {
   };
 }
 
-test('최근 actual 4주와 forecast 13주로 주간 전망을 구성한다', () => {
+test('최신 actual 1주와 forecast 13주로 주간 전망을 구성한다', () => {
   const result = buildWeeklyOutlook({
     actualWeeks: Array.from({ length: 6 }, (_, index) => actualWeek(index + 1, 1_850 + index)),
     forecastPoints: Array.from({ length: 13 }, (_, index) => forecastPoint(index + 1)),
     basePriceKrwPerL: '1500.00',
   });
 
-  assert.equal(result.actualWeekCount, 4);
+  assert.equal(result.actualWeekCount, 1);
   assert.equal(result.forecastWeekCount, 13);
-  assert.equal(result.weeks.length, 17);
-  assert.equal(result.weeks[0]?.priceKrwPerL, '1852.00');
-  assert.equal(result.weeks[4]?.horizonIndex, 1);
-  assert.equal(result.weeks[8]?.confidence, 'medium');
-  assert.equal(result.weeks[16]?.confidence, 'long');
+  assert.equal(result.weeks.length, 14);
+  assert.equal(result.weeks[0]?.priceKrwPerL, '1855.00');
+  assert.equal(result.weeks[0]?.previousPriceKrwPerL, '1854.00');
+  assert.equal(result.weeks[0]?.weekOverWeekChangeKrwPerL, '1.00');
+  assert.equal(result.weeks[1]?.horizonIndex, 1);
+  assert.equal(result.weeks[1]?.previousPriceKrwPerL, '1855.00');
+  assert.equal(result.weeks[5]?.confidence, 'medium');
+  assert.equal(result.weeks[13]?.confidence, 'long');
   assert.equal(result.forecastAverageKrwPerL, '1867.00');
   assert.equal(result.forecastMinKrwPerL, '1860.00');
   assert.equal(result.forecastMaxKrwPerL, '1886.00');

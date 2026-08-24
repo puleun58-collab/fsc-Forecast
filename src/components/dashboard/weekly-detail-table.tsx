@@ -19,6 +19,7 @@ import { getOpinetDisplayWeek } from '@/lib/opinet/weekly-period';
 
 type WeeklyDetailTableProps = {
   weeks: readonly FscDashboardWeekItem[];
+  previousWeekPriceKrwPerL: string | null;
 };
 
 function formatOpinetWeekLabel(week: FscDashboardWeekItem): string {
@@ -30,12 +31,15 @@ function formatOpinetWeekLabel(week: FscDashboardWeekItem): string {
   }
 }
 
-export function WeeklyDetailTable({ weeks }: WeeklyDetailTableProps) {
+export function WeeklyDetailTable({ weeks, previousWeekPriceKrwPerL }: WeeklyDetailTableProps) {
   const firstForecastIndex = getFirstForecastIndex(weeks);
   const firstForecastSequenceNo = firstForecastIndex >= 0 ? weeks[firstForecastIndex]?.sequenceNo ?? null : null;
   const { actualWeeks, forecastWeeks } = splitWeekKinds(weeks);
   const previousWeekBySequenceNo = new Map(
-    weeks.map((week, index) => [week.sequenceNo, index > 0 ? weeks[index - 1] : null]),
+    weeks.map((week, index) => [
+      week.sequenceNo,
+      index > 0 ? weeks[index - 1]?.priceKrwPerL ?? null : previousWeekPriceKrwPerL,
+    ]),
   );
 
   return (
@@ -65,7 +69,7 @@ export function WeeklyDetailTable({ weeks }: WeeklyDetailTableProps) {
                     <td colSpan={7}>예측 시작</td>
                   </tr>
                 ) : null}
-                <WeekTableRow week={week} previousWeek={previousWeekBySequenceNo.get(week.sequenceNo) ?? null} />
+                <WeekTableRow week={week} previousPriceKrwPerL={previousWeekBySequenceNo.get(week.sequenceNo) ?? null} />
               </Fragment>
             ))}
           </tbody>
@@ -80,17 +84,17 @@ export function WeeklyDetailTable({ weeks }: WeeklyDetailTableProps) {
   );
 }
 
-function formatWeekChange(currentWeek: FscDashboardWeekItem, previousWeek: FscDashboardWeekItem | null): string {
-  const change = calculateWeekOverWeekChange(currentWeek.priceKrwPerL, previousWeek?.priceKrwPerL ?? null);
+function formatWeekChange(currentWeek: FscDashboardWeekItem, previousPriceKrwPerL: string | null): string {
+  const change = calculateWeekOverWeekChange(currentWeek.priceKrwPerL, previousPriceKrwPerL);
   return change === null ? '비교 기준 없음' : formatWeekOverWeekChange(change);
 }
 
 function WeekTableRow({
   week,
-  previousWeek,
+  previousPriceKrwPerL,
 }: {
   week: FscDashboardWeekItem;
-  previousWeek: FscDashboardWeekItem | null;
+  previousPriceKrwPerL: string | null;
 }) {
   const sourceText = `${mapForecastSourceKind(week.forecastSourceKind)}${week.fallbackUsed ? ' · 대체값 사용' : ''}`;
 
@@ -114,7 +118,7 @@ function WeekTableRow({
       <td className="numeric-cell">
         <PriceValue value={week.priceKrwPerL} size="compact" />
       </td>
-      <td className="numeric-cell">{formatWeekChange(week, previousWeek)}</td>
+      <td className="numeric-cell">{formatWeekChange(week, previousPriceKrwPerL)}</td>
       <td className="numeric-cell">
         {formatSignedPriceText(week.priceDiffKrwPerL)} · {formatSignedRatioText(week.diffRatio)}
       </td>
@@ -130,7 +134,7 @@ function WeekMobileGroup({
 }: {
   title: string;
   weeks: readonly FscDashboardWeekItem[];
-  previousWeekBySequenceNo: ReadonlyMap<number, FscDashboardWeekItem | null>;
+  previousWeekBySequenceNo: ReadonlyMap<number, string | null>;
 }) {
   if (weeks.length === 0) {
     return null;

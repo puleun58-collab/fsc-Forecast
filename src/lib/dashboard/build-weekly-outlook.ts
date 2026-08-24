@@ -8,7 +8,7 @@ import type {
   WeeklyOutlookConfidence,
 } from './fsc-types';
 
-const ACTUAL_CONTEXT_WEEK_COUNT = 4;
+const ACTUAL_CONTEXT_WEEK_COUNT = 1;
 const FORECAST_HORIZON_WEEK_COUNT = 13;
 
 export interface WeeklyOutlookForecastPoint {
@@ -72,6 +72,7 @@ function mapActualWeek(week: FscDashboardWeekItem, sequenceNo: number): FscDashb
     confidence: 'actual',
     lowerBoundKrwPerL: null,
     upperBoundKrwPerL: null,
+    previousPriceKrwPerL: null,
     weekOverWeekChangeKrwPerL: null,
   };
 }
@@ -108,34 +109,40 @@ function mapForecastWeek(
       point.lowerBoundKrwPerL === null ? null : formatPrice(point.lowerBoundKrwPerL),
     upperBoundKrwPerL:
       point.upperBoundKrwPerL === null ? null : formatPrice(point.upperBoundKrwPerL),
+    previousPriceKrwPerL: null,
     weekOverWeekChangeKrwPerL: null,
   };
 }
 
 function addWeekOverWeekChanges(
   weeks: readonly FscDashboardOutlookWeekItem[],
+  initialPreviousPriceKrwPerL: string | null,
 ): FscDashboardOutlookWeekItem[] {
   return weeks.map((week, index) => {
-    const previous = weeks[index - 1];
+    const previousPriceKrwPerL = index === 0
+      ? initialPreviousPriceKrwPerL
+      : weeks[index - 1]?.priceKrwPerL ?? null;
 
-    if (!previous) {
+    if (previousPriceKrwPerL === null) {
       return week;
     }
 
     return {
       ...week,
+      previousPriceKrwPerL,
       weekOverWeekChangeKrwPerL: formatPrice(
-        Number(week.priceKrwPerL) - Number(previous.priceKrwPerL),
+        Number(week.priceKrwPerL) - Number(previousPriceKrwPerL),
       ),
     };
   });
 }
 
 export function buildWeeklyOutlook(input: BuildWeeklyOutlookInput): FscDashboardWeeklyOutlook {
-  const actualWeeks = input.actualWeeks
-    .filter((week) => week.priceKind === 'actual')
+  const completedActualWeeks = input.actualWeeks.filter((week) => week.priceKind === 'actual');
+  const actualWeeks = completedActualWeeks
     .slice(-ACTUAL_CONTEXT_WEEK_COUNT)
     .map(mapActualWeek);
+  const previousActualPriceKrwPerL = completedActualWeeks.at(-2)?.priceKrwPerL ?? null;
   const basePriceKrwPerL = Number(input.basePriceKrwPerL);
   const weeklyForecastPoints = input.forecastPoints
     .filter((point) => point.horizonKind === 'weekly')
@@ -144,7 +151,10 @@ export function buildWeeklyOutlook(input: BuildWeeklyOutlookInput): FscDashboard
   const forecastWeeks = weeklyForecastPoints.map((point, index) =>
     mapForecastWeek(point, actualWeeks.length + index + 1, basePriceKrwPerL),
   );
-  const weeks = addWeekOverWeekChanges([...actualWeeks, ...forecastWeeks]);
+  const weeks = addWeekOverWeekChanges(
+    [...actualWeeks, ...forecastWeeks],
+    previousActualPriceKrwPerL,
+  );
   const latestActual = actualWeeks[actualWeeks.length - 1] ?? null;
   const forecastPrices = weeklyForecastPoints.map((point) => point.pointKrwPerL);
   const forecastMinimums = weeklyForecastPoints.map(

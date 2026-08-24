@@ -190,7 +190,7 @@ export function ForecastChart({ weeks, basePriceKrwPerL, view = 'quarter' }: For
         className="forecast-chart__svg"
         viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
         role="group"
-        aria-label={view === 'outlook' ? '최근 actual 4주 및 향후 forecast 13주 유가 전망' : '주간 actual 및 forecast 유가 추이'}
+        aria-label={view === 'outlook' ? '최신 actual 1주 및 향후 forecast 13주 유가 전망' : '주간 actual 및 forecast 유가 추이'}
       >
         <rect x="0" y="0" width={VIEW_WIDTH} height={VIEW_HEIGHT} rx="0" fill="transparent" aria-hidden="true" />
         <text

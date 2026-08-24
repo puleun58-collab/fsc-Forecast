@@ -17,7 +17,10 @@ export function WeeklyAnalysis({ fsc }: { readonly fsc: FscDashboardResultSectio
     <>
       <WeeklyForecastSection fsc={fsc} view={view} onViewChange={setView} />
       {view === 'quarter' ? (
-        <WeeklyDetailTable weeks={fsc.weeks} />
+        <WeeklyDetailTable
+          weeks={fsc.weeks}
+          previousWeekPriceKrwPerL={fsc.previousWeekPriceKrwPerL}
+        />
       ) : (
         <WeeklyOutlookTable outlook={fsc.weeklyOutlook} />
       )}

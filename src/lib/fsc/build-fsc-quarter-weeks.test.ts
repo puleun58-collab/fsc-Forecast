@@ -197,3 +197,27 @@ test('current quarter uses monthly projection after the fourth direct weekly hor
   assert.equal(result.weeks[0]?.forecastSourceKind, 'monthly_point');
   assert.equal(result.weeks[0]?.priceKrwPerL.toFixed(3), '1600.000');
 });
+
+test('quarter calculation keeps the previous completed weekly value for the first row comparison', () => {
+  const input = createInput([]);
+  input.officialWeeklyPrices = [
+    createOfficialWeeklyRow('2026064', '2026-06-21', '2026-06-25', '2001.30'),
+  ];
+
+  const result = buildFscQuarterWeeks(input);
+  const payload = result.calculationPayload as {
+    previousWeekBasis: {
+      weekStartDate: string;
+      weekEndDate: string;
+      priceKrwPerL: string;
+      sourceKind: string;
+    } | null;
+  };
+
+  assert.deepEqual(payload.previousWeekBasis, {
+    weekStartDate: '2026-06-21',
+    weekEndDate: '2026-06-25',
+    priceKrwPerL: '2001.300',
+    sourceKind: 'official_weekly',
+  });
+});

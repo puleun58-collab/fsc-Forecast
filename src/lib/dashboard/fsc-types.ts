@@ -145,6 +145,7 @@ export interface FscDashboardOutlookWeekItem extends FscDashboardWeekItem {
   confidence: WeeklyOutlookConfidence;
   lowerBoundKrwPerL: string | null;
   upperBoundKrwPerL: string | null;
+  previousPriceKrwPerL: string | null;
   weekOverWeekChangeKrwPerL: string | null;
 }
 
@@ -188,6 +189,7 @@ export interface FscDashboardResultSection {
   recent13wWeeklyPriceMape: string | null;
   recent26wWeeklyPriceMae: string | null;
   recent4wErrorTrend: string | null;
+  previousWeekPriceKrwPerL: string | null;
   weeks: FscDashboardWeekItem[];
   weeklyOutlook: FscDashboardWeeklyOutlook;
   referenceQuarterAverageKrwPerL: string | null;

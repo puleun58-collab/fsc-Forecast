@@ -28,10 +28,10 @@ export function WeeklyForecastSection({ fsc, view, onViewChange }: WeeklyForecas
     <section className="weekly-forecast surface-panel" aria-labelledby="weekly-forecast-title">
       <div className="weekly-analysis__header">
         <div className="panel-header">
-          <h2 id="weekly-forecast-title">{isOutlook ? '향후 13주 유가 전망' : '주간 유가 추이'}</h2>
+          <h2 id="weekly-forecast-title">{isOutlook ? '13주 유가 전망' : '주간 유가 추이'}</h2>
           <p>
             {isOutlook
-              ? '마감 완료된 최근 Actual 4주와 이후 13주 Forecast를 연속해서 표시합니다.'
+              ? '최근 실제 유가와 향후 13주 예상 유가를 연속해서 확인합니다.'
               : '현재 분기의 완료 주차는 Actual 선으로, 이후 주차는 Forecast 점선으로 표시합니다.'}
           </p>
         </div>
@@ -53,7 +53,7 @@ export function WeeklyForecastSection({ fsc, view, onViewChange }: WeeklyForecas
               aria-controls="weekly-analysis-chart"
               onClick={() => onViewChange('outlook')}
             >
-              향후 13주 전망
+              13주 전망
             </button>
           </div>
           <ForecastLegend
@@ -83,7 +83,7 @@ function OutlookSummary({ fsc }: { readonly fsc: FscDashboardResultSection }) {
       : `${formatPriceNumber(outlook.forecastMinKrwPerL)}–${formatPriceNumber(outlook.forecastMaxKrwPerL)}원/L`;
 
   return (
-    <div className="weekly-outlook-summary" aria-label="향후 13주 전망 요약">
+    <div className="weekly-outlook-summary" aria-label="13주 전망 요약">
       <div>
         <span>최신 Actual</span>
         <strong>{formatPriceText(outlook.latestActualPriceKrwPerL)}</strong>

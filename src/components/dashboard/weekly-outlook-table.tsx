@@ -3,6 +3,8 @@
 import { Fragment, useState } from 'react';
 
 import {
+  calculateWeekOverWeekChange,
+  formatWeekOverWeekChange,
   formatSignedPriceText,
   formatSignedRatioText,
   formatWeekRange,
@@ -55,6 +57,14 @@ function formatConfidenceRange(week: FscDashboardOutlookWeekItem): string {
   return `${formatPriceText(week.lowerBoundKrwPerL)}–${formatPriceText(week.upperBoundKrwPerL)}`;
 }
 
+function formatOutlookWeekChange(
+  week: FscDashboardOutlookWeekItem,
+  previousPriceKrwPerL: string | null,
+): string {
+  const change = calculateWeekOverWeekChange(week.priceKrwPerL, previousPriceKrwPerL);
+  return change === null ? '비교 기준 없음' : formatWeekOverWeekChange(change);
+}
+
 export function WeeklyOutlookTable({ outlook }: { readonly outlook: FscDashboardWeeklyOutlook }) {
   const [showAllMobile, setShowAllMobile] = useState(false);
   const actualWeeks = outlook.weeks.filter((week) => week.priceKind === 'actual');
@@ -68,7 +78,7 @@ export function WeeklyOutlookTable({ outlook }: { readonly outlook: FscDashboard
   return (
     <section className="weekly-detail surface-panel" aria-labelledby="weekly-outlook-detail-title">
       <div className="panel-header">
-        <h2 id="weekly-outlook-detail-title">향후 13주 주차별 전망</h2>
+        <h2 id="weekly-outlook-detail-title">주차별 전망</h2>
         <p>최신 Actual과 주차별 예측값, 전주·기준유가 대비 차이, 예측 범위를 확인합니다.</p>
       </div>
       <div className="weekly-table-wrap">
@@ -89,7 +99,7 @@ export function WeeklyOutlookTable({ outlook }: { readonly outlook: FscDashboard
               <Fragment key={`${week.priceKind}-${week.sequenceNo}`}>
                 {week.sequenceNo === firstForecastSequenceNo ? (
                   <tr className="weekly-table__boundary">
-                    <td colSpan={7}>향후 13주 예측 시작</td>
+                    <td colSpan={7}>예측 시작</td>
                   </tr>
                 ) : null}
                 <tr className={`weekly-table__row weekly-table__row--${week.priceKind}`}>
@@ -108,7 +118,12 @@ export function WeeklyOutlookTable({ outlook }: { readonly outlook: FscDashboard
                     </span>
                   </td>
                   <td className="numeric-cell"><PriceValue value={week.priceKrwPerL} size="compact" /></td>
-                  <td className="numeric-cell">{formatSignedPriceText(week.weekOverWeekChangeKrwPerL)}</td>
+                  <td className="numeric-cell">
+                    {formatOutlookWeekChange(
+                      week,
+                      week.previousPriceKrwPerL,
+                    )}
+                  </td>
                   <td className="numeric-cell">
                     {formatSignedPriceText(week.priceDiffKrwPerL)} · {formatSignedRatioText(week.diffRatio)}
                   </td>
@@ -119,7 +134,7 @@ export function WeeklyOutlookTable({ outlook }: { readonly outlook: FscDashboard
           </tbody>
         </table>
       </div>
-      <div className="weekly-mobile-list" aria-label="모바일 향후 13주 주차별 전망">
+      <div className="weekly-mobile-list" aria-label="모바일 주차별 전망">
         {mobileWeeks.map((week, index) => (
           <div key={`${week.priceKind}-${week.sequenceNo}`} className={`weekly-mobile-item weekly-mobile-item--${week.priceKind}`}>
             <div className="weekly-mobile-item__top">
@@ -128,7 +143,15 @@ export function WeeklyOutlookTable({ outlook }: { readonly outlook: FscDashboard
             </div>
             <span className="weekly-mobile-item__period">{formatOpinetWeekLabel(week)} · {formatWeekRange(week, true)}</span>
             <PriceValue value={week.priceKrwPerL} size="scenario" />
-            <p>전주 대비 {formatSignedPriceText(week.weekOverWeekChangeKrwPerL)} · 기준 대비 {formatSignedPriceText(week.priceDiffKrwPerL)}</p>
+            <p>
+              전주 대비 {formatOutlookWeekChange(
+                week,
+                week.previousPriceKrwPerL,
+              )}
+            </p>
+            <p>
+              기준 대비 {formatSignedPriceText(week.priceDiffKrwPerL)} · {formatSignedRatioText(week.diffRatio)}
+            </p>
             {week.priceKind === 'forecast' ? <p>예측 범위 {formatConfidenceRange(week)}</p> : null}
           </div>
         ))}
