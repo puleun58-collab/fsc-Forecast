@@ -18,7 +18,6 @@ import {
   buildPublicMarketSignals,
   buildPublicMarketSummaryText,
 } from './market-signals';
-import { buildWeeklyOutlook } from './build-weekly-outlook';
 import type {
   FscDashboardCurrentPriceSection,
   FscDashboardData,
@@ -113,11 +112,11 @@ function readMonthlyBasis(
 
   const monthRows = Array.isArray((candidate as { monthRows?: unknown }).monthRows)
     ? (candidate as { monthRows: Array<{ monthLabel?: unknown; priceKrwPerL?: unknown }> }).monthRows
-        .flatMap((row) =>
-          typeof row.monthLabel === 'string' && typeof row.priceKrwPerL === 'string'
-            ? [{ monthLabel: row.monthLabel, priceKrwPerL: row.priceKrwPerL }]
-            : [],
-        )
+        .filter((row) => typeof row.monthLabel === 'string' && typeof row.priceKrwPerL === 'string')
+        .map((row) => ({
+          monthLabel: row.monthLabel as string,
+          priceKrwPerL: row.priceKrwPerL as string,
+        }))
     : [];
 
   return {
@@ -127,21 +126,6 @@ function readMonthlyBasis(
         : null,
     monthRows,
   };
-}
-
-function readPreviousWeekPrice(payload: unknown): string | null {
-  if (!payload || typeof payload !== 'object') {
-    return null;
-  }
-
-  const candidate = (payload as { previousWeekBasis?: unknown }).previousWeekBasis;
-
-  if (!candidate || typeof candidate !== 'object') {
-    return null;
-  }
-
-  const priceKrwPerL = (candidate as { priceKrwPerL?: unknown }).priceKrwPerL;
-  return typeof priceKrwPerL === 'string' ? priceKrwPerL : null;
 }
 
 function toQuarterSummary(value: {
@@ -427,20 +411,6 @@ export async function loadFscDashboardData(): Promise<FscDashboardData> {
     const fsc = serializeFscResultDto(result);
     const monthlyBasis = readMonthlyBasis(result.calculationPayload);
     const dataBasisAt = fsc.dataBasisAt;
-    const weeklyOutlook = buildWeeklyOutlook({
-      actualWeeks: fsc.weeks,
-      forecastPoints: (result.forecastRun?.points ?? []).map((point) => ({
-        horizonKind: point.horizonKind,
-        horizonIndex: point.horizonIndex,
-        targetDate: point.targetDate,
-        pointKrwPerL: Number(point.pointKrwPerL),
-        lowerBoundKrwPerL:
-          point.lowerBoundKrwPerL === null ? null : Number(point.lowerBoundKrwPerL),
-        upperBoundKrwPerL:
-          point.upperBoundKrwPerL === null ? null : Number(point.upperBoundKrwPerL),
-      })),
-      basePriceKrwPerL: fsc.basePriceKrwPerL,
-    });
 
     return {
       state: 'available',
@@ -474,9 +444,7 @@ export async function loadFscDashboardData(): Promise<FscDashboardData> {
         recent13wWeeklyPriceMape: fsc.qualityMetrics.recent13wWeeklyPriceMape,
         recent26wWeeklyPriceMae: fsc.qualityMetrics.recent26wWeeklyPriceMae,
         recent4wErrorTrend: fsc.qualityMetrics.recent4wErrorTrend,
-        previousWeekPriceKrwPerL: readPreviousWeekPrice(result.calculationPayload),
         weeks: fsc.weeks,
-        weeklyOutlook,
         referenceQuarterAverageKrwPerL: monthlyBasis?.quarterAverageKrwPerL ?? null,
         referenceMonthlyBasis: monthlyBasis?.monthRows ?? [],
       },

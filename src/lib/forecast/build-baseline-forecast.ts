@@ -12,8 +12,6 @@ const DEFAULT_LOOKBACK_COUNT: Record<ForecastHorizonKind, number> = {
   monthly: 3,
 };
 
-const WEEKLY_TREND_DAMPING_FACTOR = 0.78;
-
 function clampNonNegative(value: number): number {
   return Math.max(0, value);
 }
@@ -84,21 +82,6 @@ function calculateResidualMeanAbsoluteError(
   return absoluteErrorTotal / points.length;
 }
 
-export function getForecastHorizonResponseMultiplier(
-  horizonKind: ForecastHorizonKind,
-  horizonIndex: number,
-): number {
-  if (horizonKind === "monthly") {
-    return horizonIndex;
-  }
-
-  if (horizonIndex <= 0) {
-    return 0;
-  }
-
-  return (1 - WEEKLY_TREND_DAMPING_FACTOR ** horizonIndex) / (1 - WEEKLY_TREND_DAMPING_FACTOR);
-}
-
 function buildProjection(
   horizonKind: ForecastHorizonKind,
   lastTargetDate: Date,
@@ -107,9 +90,8 @@ function buildProjection(
   residualMeanAbsoluteErrorKrwPerL: number,
   horizonIndex: number,
 ): ForecastProjectionPoint {
-  const responseMultiplier = getForecastHorizonResponseMultiplier(horizonKind, horizonIndex);
   const pointKrwPerL = roundPrice(
-    clampNonNegative(baselineLevelKrwPerL + meanDeltaKrwPerL * responseMultiplier),
+    clampNonNegative(baselineLevelKrwPerL + meanDeltaKrwPerL * horizonIndex),
   );
   const confidenceWidth = roundPrice(
     residualMeanAbsoluteErrorKrwPerL * Math.sqrt(horizonIndex || 1),
@@ -142,11 +124,8 @@ export function buildBaselineForecast(
     input.lookbackCount,
   );
   const lookbackPoints = input.historicalPoints.slice(-lookbackCount);
-  const lookbackMeanKrwPerL =
+  const baselineLevelKrwPerL =
     lookbackPoints.reduce((sum, point) => sum + point.pointKrwPerL, 0) / lookbackPoints.length;
-  const baselineLevelKrwPerL = input.horizonKind === "weekly"
-    ? lookbackPoints[lookbackPoints.length - 1].pointKrwPerL
-    : lookbackMeanKrwPerL;
   const meanDeltaKrwPerL = calculateMeanDelta(lookbackPoints);
   const residualMeanAbsoluteErrorKrwPerL = calculateResidualMeanAbsoluteError(
     lookbackPoints,
