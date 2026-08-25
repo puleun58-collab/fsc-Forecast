@@ -16,16 +16,45 @@ type DecisionSummaryProps = {
   fsc: FscDashboardResultSection;
 };
 
-export function DecisionSummary({ fsc }: DecisionSummaryProps) {
+type DecisionSummaryInteractiveProps = DecisionSummaryProps & {
+  priceInput: string;
+  inputError: string | null;
+  isPriceModified: boolean;
+  onPriceChange: (value: string) => void;
+  onPriceReset: () => void;
+};
+
+export function DecisionSummary({
+  fsc,
+  priceInput,
+  inputError,
+  isPriceModified,
+  onPriceChange,
+  onPriceReset,
+}: DecisionSummaryInteractiveProps) {
   return (
     <section className="decision-summary surface-panel" aria-labelledby="decision-summary-title">
-      <ForecastHeadline fsc={fsc} />
+      <ForecastHeadline
+        fsc={fsc}
+        priceInput={priceInput}
+        inputError={inputError}
+        isPriceModified={isPriceModified}
+        onPriceChange={onPriceChange}
+        onPriceReset={onPriceReset}
+      />
       <FscScenarioMatrix fsc={fsc} />
     </section>
   );
 }
 
-function ForecastHeadline({ fsc }: DecisionSummaryProps) {
+function ForecastHeadline({
+  fsc,
+  priceInput,
+  inputError,
+  isPriceModified,
+  onPriceChange,
+  onPriceReset,
+}: DecisionSummaryInteractiveProps) {
   const latestActualWeek = findLatestActualWeek(fsc.weeks);
   const previousActualWeek = latestActualWeek
     ? fsc.weeks.find(
@@ -85,19 +114,30 @@ function ForecastHeadline({ fsc }: DecisionSummaryProps) {
           <BaselineComparison fsc={fsc} />
         </div>
       </div>
-      <div className="decision-summary__baseline-grid" aria-label="기준 가격">
-        <div>
-          <span className="metric-label">기준유가</span>
-          <strong>
-            <PriceValue value={fsc.basePriceKrwPerL} size="compact" />
-          </strong>
-        </div>
-        <div>
-          <span className="metric-label">현재 적용유가</span>
-          <strong>
-            <PriceValue value={fsc.appliedPriceKrwPerL} size="compact" />
-          </strong>
-        </div>
+      <div className="decision-summary__price-control">
+        <label htmlFor="scenario-price-input">
+          <span className="metric-label">기준·적용 유가</span>
+          <span className={`price-input${inputError ? ' price-input--error' : ''}`}>
+            <input
+              id="scenario-price-input"
+              type="number"
+              inputMode="decimal"
+              min="0.01"
+              step="0.01"
+              value={priceInput}
+              aria-describedby="scenario-price-help"
+              aria-invalid={inputError !== null}
+              onChange={(event) => onPriceChange(event.target.value)}
+            />
+            <span>원/L</span>
+          </span>
+        </label>
+        <button type="button" onClick={onPriceReset} disabled={!isPriceModified && inputError === null}>
+          초기화
+        </button>
+        <p id="scenario-price-help" className={inputError ? 'price-input__help price-input__help--error' : 'price-input__help'}>
+          {inputError ?? (isPriceModified ? '입력한 가격으로 화면의 파생값을 계산했습니다.' : '값을 바꾸면 관련 결과가 즉시 갱신됩니다.')}
+        </p>
       </div>
       <div className="boundary-key" aria-label={`Actual ${fsc.actualWeekCount}주, Forecast ${fsc.forecastWeekCount}주`}>
         <span className="boundary-key__item">

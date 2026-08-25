@@ -1509,6 +1509,91 @@ main {
   padding-top: 4px;
 }
 
+.decision-summary__price-control {
+  display: grid;
+  grid-template-columns: minmax(0, 280px) auto;
+  gap: 8px 10px;
+  align-items: end;
+  max-width: 440px;
+  padding-top: 4px;
+}
+
+.decision-summary__price-control label {
+  display: grid;
+  gap: 7px;
+}
+
+.price-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 44px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.price-input:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.price-input--error {
+  border-color: var(--danger);
+}
+
+.price-input input {
+  min-width: 0;
+  height: 42px;
+  padding: 0 12px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-input > span {
+  padding-right: 12px;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.decision-summary__price-control button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.decision-summary__price-control button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.price-input__help {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.price-input__help--error {
+  color: var(--danger);
+}
+
 .boundary-key,
 .forecast-legend {
   display: flex;
@@ -2441,6 +2526,10 @@ main {
   .decision-summary__baseline-grid,
   .skeleton-grid--tight {
     grid-template-columns: 1fr;
+  }
+
+  .decision-summary__price-control {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .panel-header--inline {

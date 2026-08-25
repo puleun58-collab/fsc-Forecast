@@ -1,11 +1,9 @@
 import { DashboardHeader, StatusRail } from './dashboard-header';
 import { DataSourcesDisclosure } from './data-sources-disclosure';
-import { DecisionSummary } from './decision-summary';
 import { MarketReferencePanel } from './market-reference-panel';
 import { MethodologyDisclosure } from './methodology-disclosure';
 import { OilPriceHistory } from './oil-price-history';
-import { WeeklyDetailTable } from './weekly-detail-table';
-import { WeeklyForecastSection } from './weekly-forecast-section';
+import { PriceScenarioSections } from './price-scenario-sections';
 
 import type { FscDashboardData } from '@/lib/dashboard/fsc-types';
 import { formatQuarterLabel } from '@/lib/dashboard/display-format';
@@ -53,12 +51,10 @@ export async function FscDashboard({ data }: FscDashboardProps) {
     <main id="main-content" className="fsc-dashboard">
       <DashboardHeader quarter={data.quarter} fsc={data.fsc} />
       <StatusRail fsc={data.fsc} />
-      <DecisionSummary fsc={data.fsc} />
-      <OilPriceHistory history={oilPriceHistory} />
-      <WeeklyForecastSection fsc={data.fsc} />
-      <WeeklyDetailTable
-        weeks={data.fsc.weeks}
-        previousWeekPriceKrwPerL={data.fsc.previousWeekPriceKrwPerL}
+      <PriceScenarioSections
+        key={data.fsc.resultId}
+        fsc={data.fsc}
+        oilPriceHistory={oilPriceHistory}
       />
       <MarketReferencePanel support={data.support} />
       <MethodologyDisclosure fsc={data.fsc} />
