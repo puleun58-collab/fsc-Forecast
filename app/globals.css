@@ -1518,6 +1518,19 @@ main {
   padding-top: 6px;
 }
 
+.decision-summary__footer-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+  align-items: center;
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.decision-summary__footer-row .price-input__help {
+  padding-left: 28px;
+}
+
 .decision-summary__price-control label {
   display: grid;
   gap: 7px;
@@ -1598,7 +1611,6 @@ main {
 }
 
 .price-input__help {
-  grid-column: 1 / -1;
   margin: 0;
   color: var(--text-secondary);
   font-size: 0.78rem;
@@ -2545,6 +2557,20 @@ main {
 
   .decision-summary__price-control {
     grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .decision-summary__footer-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .decision-summary__footer-row .price-input__help {
+    grid-row: 1;
+    padding-left: 0;
+  }
+
+  .decision-summary__footer-row .boundary-key {
+    grid-row: 2;
   }
 
   .panel-header--inline {

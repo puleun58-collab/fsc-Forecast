@@ -52,7 +52,7 @@
     "productName": "자동차용경유",
     "price": 1570.1,
     "source": "opinet-quarterly-average-price",
-    "fetchedAt": "2026-07-21T00:31:05.716Z"
+    "fetchedAt": "2026-08-25T02:30:45.206Z"
   },
   {
     "quarterKey": "2025Q2",
@@ -63,7 +63,7 @@
     "productName": "자동차용경유",
     "price": 1506.88,
     "source": "opinet-quarterly-average-price",
-    "fetchedAt": "2026-07-21T00:31:05.716Z"
+    "fetchedAt": "2026-08-25T02:30:45.206Z"
   },
   {
     "quarterKey": "2025Q3",
@@ -74,7 +74,7 @@
     "productName": "자동차용경유",
     "price": 1532.67,
     "source": "opinet-quarterly-average-price",
-    "fetchedAt": "2026-07-21T00:31:05.716Z"
+    "fetchedAt": "2026-08-25T02:30:45.206Z"
   },
   {
     "quarterKey": "2025Q4",
@@ -85,7 +85,7 @@
     "productName": "자동차용경유",
     "price": 1602,
     "source": "opinet-quarterly-average-price",
-    "fetchedAt": "2026-07-21T00:31:05.716Z"
+    "fetchedAt": "2026-08-25T02:30:45.206Z"
   },
   {
     "quarterKey": "2026Q1",
@@ -96,7 +96,7 @@
     "productName": "자동차용경유",
     "price": 1674.77,
     "source": "opinet-quarterly-average-price",
-    "fetchedAt": "2026-07-21T00:31:05.716Z"
+    "fetchedAt": "2026-08-25T02:30:45.206Z"
   },
   {
     "quarterKey": "2026Q2",
@@ -107,6 +107,6 @@
     "productName": "자동차용경유",
     "price": 1994.65,
     "source": "opinet-quarterly-average-price",
-    "fetchedAt": "2026-07-21T00:31:05.716Z"
+    "fetchedAt": "2026-08-25T02:30:45.206Z"
   }
 ]

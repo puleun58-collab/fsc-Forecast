@@ -129,17 +129,38 @@ model ExternalIndicatorHistory {
 }
 
 model ExternalIndicatorSyncState {
-  indicatorCode     String   @id
-  providerKey       String
-  status            String
-  lastAttemptAt     DateTime
-  lastSuccessAt     DateTime?
-  latestObservedAt  DateTime?
-  errorSummary      String?
-  updatedAt         DateTime @updatedAt
+  indicatorCode    String    @id
+  providerKey      String
+  status           String
+  lastAttemptAt    DateTime
+  lastSuccessAt    DateTime?
+  latestObservedAt DateTime?
+  errorSummary     String?
+  updatedAt        DateTime  @updatedAt
 
   @@index([status, lastAttemptAt])
   @@map("external_indicator_sync_states")
+}
+
+model OpinetPublishedPrice {
+  id              String   @id @default(cuid())
+  datasetKey      String   @default("national-average-opinet-diesel")
+  periodKind      String
+  periodKey       String
+  periodLabel     String
+  periodStartDate DateTime
+  periodEndDate   DateTime
+  productCode     String
+  productName     String
+  priceKrwPerL    Decimal  @db.Decimal(10, 3)
+  source          String
+  sourceFetchedAt DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([datasetKey, periodKind, periodKey])
+  @@index([datasetKey, periodKind, periodEndDate])
+  @@map("opinet_published_prices")
 }
 
 model RecomputeSnapshot {

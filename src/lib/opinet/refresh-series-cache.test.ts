@@ -68,9 +68,15 @@ test('refreshOpinetSeriesCache reuses provided daily rows and refreshes weekly/m
   let weeklyFetchCalled = 0;
   let monthlyFetchCalled = 0;
   let quarterlyFetchCalled = 0;
+  let persistedMonthlyCount = 0;
+  let persistedQuarterlyCount = 0;
 
   const summary = await refreshOpinetSeriesCache({
     dailyEntries,
+    persistPublished: async ({ monthlyEntries: monthly, quarterlyEntries: quarterly }) => {
+      persistedMonthlyCount = monthly.length;
+      persistedQuarterlyCount = quarterly.length;
+    },
     deps: {
       fetchDaily: async () => {
         dailyFetchCalled += 1;
@@ -99,6 +105,8 @@ test('refreshOpinetSeriesCache reuses provided daily rows and refreshes weekly/m
   assert.equal(weeklyFetchCalled, 1);
   assert.equal(monthlyFetchCalled, 1);
   assert.equal(quarterlyFetchCalled, 1);
+  assert.equal(persistedMonthlyCount, 1);
+  assert.equal(persistedQuarterlyCount, 1);
   assert.deepEqual(summary, {
     daily: { fetchedCount: 1, savedCount: 1 },
     weekly: { fetchedCount: 1, savedCount: 1 },

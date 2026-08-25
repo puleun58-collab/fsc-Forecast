@@ -1,5 +1,9 @@
 import { readMonthlySeries } from '@/lib/opinet/save-monthly-series';
 import { readQuarterlySeries } from '@/lib/opinet/save-quarterly-series';
+import {
+  readPersistedMonthlySeries,
+  readPersistedQuarterlySeries,
+} from '@/lib/opinet/published-price-store';
 
 import type {
   OilPriceHistoryMonth,
@@ -139,9 +143,18 @@ export function buildOilPriceHistory(
 }
 
 export async function loadOilPriceHistory(now: Date = new Date()): Promise<OilPriceHistorySection> {
-  const [monthlyRows, quarterlyRows] = await Promise.all([
+  const [fileMonthlyRows, fileQuarterlyRows, persistedMonthlyRows, persistedQuarterlyRows] = await Promise.all([
     readMonthlySeries(),
     readQuarterlySeries(),
+    readPersistedMonthlySeries(),
+    readPersistedQuarterlySeries(),
   ]);
+  const monthlyRows = Array.from(new Map(
+    [...fileMonthlyRows, ...persistedMonthlyRows].map((row) => [row.monthKey, row]),
+  ).values());
+  const quarterlyRows = Array.from(new Map(
+    [...fileQuarterlyRows, ...persistedQuarterlyRows].map((row) => [row.quarterKey, row]),
+  ).values());
+
   return buildOilPriceHistory(monthlyRows, now, quarterlyRows);
 }

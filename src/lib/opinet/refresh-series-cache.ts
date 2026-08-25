@@ -47,6 +47,10 @@ export interface RefreshOpinetSeriesCacheInput {
   fetchImpl?: typeof fetch;
   dailyEntries?: NormalizedDieselPriceRow[];
   deps?: RefreshOpinetSeriesCacheDeps;
+  persistPublished?: (input: {
+    monthlyEntries: readonly NormalizedDieselMonthlyPriceRow[];
+    quarterlyEntries: readonly NormalizedDieselQuarterlyPriceRow[];
+  }) => Promise<void>;
 }
 
 const defaultDeps: Required<RefreshOpinetSeriesCacheDeps> = {
@@ -80,6 +84,13 @@ export async function refreshOpinetSeriesCache(
     deps.saveMonthly(monthlyEntries),
     deps.saveQuarterly(quarterlyEntries),
   ]);
+
+  if (input.persistPublished) {
+    await input.persistPublished({
+      monthlyEntries: savedMonthlyEntries,
+      quarterlyEntries: savedQuarterlyEntries,
+    });
+  }
 
   return {
     daily: {

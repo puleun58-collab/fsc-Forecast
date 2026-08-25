@@ -3,6 +3,7 @@ import type { Prisma, RunStatus } from "@prisma/client";
 import { db } from "../db";
 import { runForecastPipeline } from "../forecast/run-forecast-pipeline";
 import { refreshOpinetSeriesCache } from "../opinet/refresh-series-cache";
+import { persistOpinetPublishedPrices } from "../opinet/published-price-store";
 
 import { fetchOpinetDieselDailyHistory } from "../opinet/fetch-daily-history";
 import { createRecomputeSnapshot } from "./create-recompute-snapshot";
@@ -94,6 +95,7 @@ export async function runOpinetIngest(
       const summary = await refreshOpinetSeriesCache({
         fetchImpl: request.fetchImpl,
         dailyEntries: fetchedRows,
+        persistPublished: persistOpinetPublishedPrices,
       });
       cacheRefresh = {
         status: 'succeeded',

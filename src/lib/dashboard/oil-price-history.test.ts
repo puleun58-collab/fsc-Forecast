@@ -81,6 +81,17 @@ test('예측 또는 대체 출처와 아직 마감되지 않은 월은 이력에
   assert.deepEqual(history.years[0]?.quarters.flatMap((quarter) => quarter.months.map((month) => month.month)), [6]);
 });
 
+test('마감된 7월은 진행 중인 3분기 월 데이터로 포함한다', () => {
+  const history = buildOilPriceHistory(
+    [createMonth(2026, 7, 1_850.05)],
+    new Date('2026-08-25T00:00:00.000Z'),
+  );
+
+  assert.equal(history.years[0]?.quarters[0]?.quarter, 3);
+  assert.equal(history.years[0]?.quarters[0]?.averagePriceKrwPerL, null);
+  assert.deepEqual(history.years[0]?.quarters[0]?.months.map((month) => month.month), [7]);
+});
+
 test('직전 분기 평균이 있을 때만 증감액과 증감률을 원본 정밀값으로 계산한다', () => {
   // Given
   const rows = [
