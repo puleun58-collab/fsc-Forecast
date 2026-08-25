@@ -1511,11 +1511,11 @@ main {
 
 .decision-summary__price-control {
   display: grid;
-  grid-template-columns: minmax(0, 280px) auto;
-  gap: 8px 10px;
+  grid-template-columns: minmax(0, 1fr) 80px;
+  gap: 7px 8px;
   align-items: end;
-  max-width: 440px;
-  padding-top: 4px;
+  width: min(100%, 340px);
+  padding-top: 6px;
 }
 
 .decision-summary__price-control label {
@@ -1527,7 +1527,7 @@ main {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  min-height: 44px;
+  min-height: 40px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-control);
   background: var(--surface);
@@ -1545,7 +1545,7 @@ main {
 
 .price-input input {
   min-width: 0;
-  height: 42px;
+  height: 38px;
   padding: 0 12px;
   border: 0;
   outline: 0;
@@ -1565,16 +1565,31 @@ main {
 }
 
 .decision-summary__price-control button {
-  min-height: 44px;
-  padding: 0 14px;
+  min-height: 40px;
+  padding: 0 10px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--text-primary);
   font: inherit;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 750;
   cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.decision-summary__price-control button:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+
+.decision-summary__price-control button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.decision-summary__price-control button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  outline-offset: 2px;
 }
 
 .decision-summary__price-control button:disabled {
