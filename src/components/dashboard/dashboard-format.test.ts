@@ -153,3 +153,10 @@ test('week-over-week change is unavailable without a valid previous price', () =
   assert.equal(calculateWeekOverWeekChange('1862.46', '0'), null);
   assert.equal(calculateWeekOverWeekChange('invalid', '1880.14'), null);
 });
+
+test('first July week compares against the provided previous-week Opinet price', () => {
+  const change = calculateWeekOverWeekChange('1942.39', '2001.30');
+
+  assert.ok(change);
+  assert.equal(formatWeekOverWeekChange(change), '-58.91원 · -2.94% ↓');
+});

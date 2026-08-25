@@ -165,6 +165,7 @@ export interface FscDashboardResultSection {
   recent13wWeeklyPriceMape: string | null;
   recent26wWeeklyPriceMae: string | null;
   recent4wErrorTrend: string | null;
+  previousWeekPriceKrwPerL: string | null;
   weeks: FscDashboardWeekItem[];
   referenceQuarterAverageKrwPerL: string | null;
   referenceMonthlyBasis: Array<{

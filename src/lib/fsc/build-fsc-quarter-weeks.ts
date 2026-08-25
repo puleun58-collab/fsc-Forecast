@@ -192,6 +192,59 @@ function findOfficialWeeklyMatch(
   return bestMatch;
 }
 
+function resolvePreviousWeekBasis(
+  quarterStartDate: Date,
+  dailyPriceMap: ReadonlyMap<string, FscSourceDailyPriceRow>,
+  officialWeeklyPrices: readonly FscSourceOfficialWeeklyPriceRow[],
+): {
+  weekStartDate: Date;
+  weekEndDate: Date;
+  priceKrwPerL: Prisma.Decimal;
+  sourceKind: 'official_weekly' | 'daily_average';
+} | null {
+  const firstFullWeekStart = getOpinetWeekStart(quarterStartDate);
+  const previousWeekStart = addDays(firstFullWeekStart, -7);
+  const previousWeekEnd = getOpinetWeekEnd(previousWeekStart);
+  const officialWeeklyMatch = findOfficialWeeklyMatch(
+    officialWeeklyPrices,
+    previousWeekStart,
+    previousWeekEnd,
+  );
+
+  if (officialWeeklyMatch) {
+    return {
+      weekStartDate: previousWeekStart,
+      weekEndDate: previousWeekEnd,
+      priceKrwPerL: roundPrice(officialWeeklyMatch.priceKrwPerL),
+      sourceKind: 'official_weekly',
+    };
+  }
+
+  const dailyPrices: Prisma.Decimal[] = [];
+
+  for (
+    let day = new Date(previousWeekStart);
+    day.getTime() <= previousWeekEnd.getTime();
+    day = addDays(day, 1)
+  ) {
+    const row = dailyPriceMap.get(formatDateKey(day));
+    if (row) {
+      dailyPrices.push(row.observedPriceKrwPerL);
+    }
+  }
+
+  if (dailyPrices.length !== daysInclusive(previousWeekStart, previousWeekEnd)) {
+    return null;
+  }
+
+  return {
+    weekStartDate: previousWeekStart,
+    weekEndDate: previousWeekEnd,
+    priceKrwPerL: averageDecimals(dailyPrices),
+    sourceKind: 'daily_average',
+  };
+}
+
 function getQuarterMonths(quarter: number): [number, number, number] {
   if (quarter === 1) return [1, 2, 3];
   if (quarter === 2) return [4, 5, 6];
@@ -313,6 +366,11 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
   const quarterEndDate = toDateOnly(input.quarterSetting.quarterEndDate);
   const latestDailyPriceDate = resolveLatestDailyPriceDate(input.dailyPrices);
   const dailyPriceMap = new Map(input.dailyPrices.map((row) => [formatDateKey(toDateOnly(row.priceDate)), row]));
+  const previousWeekBasis = resolvePreviousWeekBasis(
+    quarterStartDate,
+    dailyPriceMap,
+    input.officialWeeklyPrices,
+  );
 
   const weeks: FscQuarterWeekDraft[] = [];
   const sourceBreakdown = {
@@ -449,6 +507,15 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
                 monthLabel: row.monthLabel,
                 priceKrwPerL: row.priceKrwPerL.toFixed(3),
               })),
+            },
+      previousWeekBasis:
+        previousWeekBasis === null
+          ? null
+          : {
+              weekStartDate: formatDateKey(previousWeekBasis.weekStartDate),
+              weekEndDate: formatDateKey(previousWeekBasis.weekEndDate),
+              priceKrwPerL: previousWeekBasis.priceKrwPerL.toFixed(3),
+              sourceKind: previousWeekBasis.sourceKind,
             },
     } as Prisma.InputJsonValue,
   };

@@ -2498,6 +2498,31 @@ main {
     font-size: 0.86rem;
   }
 
+  .weekly-mobile-item__metrics {
+    display: grid;
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+    gap: 16px;
+    align-items: end;
+  }
+
+  .weekly-mobile-item__metric {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .weekly-mobile-item__metric > span:first-child {
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    font-weight: 800;
+  }
+
+  .weekly-mobile-item__metric > strong {
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
   .weekly-mobile-item p {
     margin: 0;
     color: var(--text-secondary);

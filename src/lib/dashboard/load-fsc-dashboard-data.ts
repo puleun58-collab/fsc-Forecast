@@ -128,6 +128,21 @@ function readMonthlyBasis(
   };
 }
 
+function readPreviousWeekPrice(payload: unknown): string | null {
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  const candidate = (payload as { previousWeekBasis?: unknown }).previousWeekBasis;
+
+  if (!candidate || typeof candidate !== 'object') {
+    return null;
+  }
+
+  const priceKrwPerL = (candidate as { priceKrwPerL?: unknown }).priceKrwPerL;
+  return typeof priceKrwPerL === 'string' ? priceKrwPerL : null;
+}
+
 function toQuarterSummary(value: {
   targetYear: number;
   targetQuarter: number;
@@ -444,6 +459,7 @@ export async function loadFscDashboardData(): Promise<FscDashboardData> {
         recent13wWeeklyPriceMape: fsc.qualityMetrics.recent13wWeeklyPriceMape,
         recent26wWeeklyPriceMae: fsc.qualityMetrics.recent26wWeeklyPriceMae,
         recent4wErrorTrend: fsc.qualityMetrics.recent4wErrorTrend,
+        previousWeekPriceKrwPerL: readPreviousWeekPrice(result.calculationPayload),
         weeks: fsc.weeks,
         referenceQuarterAverageKrwPerL: monthlyBasis?.quarterAverageKrwPerL ?? null,
         referenceMonthlyBasis: monthlyBasis?.monthRows ?? [],

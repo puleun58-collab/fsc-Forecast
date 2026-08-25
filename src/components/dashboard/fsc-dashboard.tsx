@@ -56,7 +56,10 @@ export async function FscDashboard({ data }: FscDashboardProps) {
       <DecisionSummary fsc={data.fsc} />
       <OilPriceHistory history={oilPriceHistory} />
       <WeeklyForecastSection fsc={data.fsc} />
-      <WeeklyDetailTable weeks={data.fsc.weeks} />
+      <WeeklyDetailTable
+        weeks={data.fsc.weeks}
+        previousWeekPriceKrwPerL={data.fsc.previousWeekPriceKrwPerL}
+      />
       <MarketReferencePanel support={data.support} />
       <MethodologyDisclosure fsc={data.fsc} />
       <DataSourcesDisclosure dataSources={data.dataSources} />

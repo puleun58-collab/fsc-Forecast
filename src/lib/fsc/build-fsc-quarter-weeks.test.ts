@@ -163,3 +163,27 @@ test('incomplete current week uses weekly forecast point instead of applied pric
   assert.equal(result.weeks[2]?.priceKrwPerL.toFixed(3), '1971.590');
   assert.equal(result.weeks[2]?.fallbackUsed, false);
 });
+
+test('quarter calculation keeps the previous completed weekly value for the first row comparison', () => {
+  const input = createInput([]);
+  input.officialWeeklyPrices = [
+    createOfficialWeeklyRow('2026064', '2026-06-21', '2026-06-25', '2001.30'),
+  ];
+
+  const result = buildFscQuarterWeeks(input);
+  const payload = result.calculationPayload as {
+    previousWeekBasis: {
+      weekStartDate: string;
+      weekEndDate: string;
+      priceKrwPerL: string;
+      sourceKind: string;
+    } | null;
+  };
+
+  assert.deepEqual(payload.previousWeekBasis, {
+    weekStartDate: '2026-06-21',
+    weekEndDate: '2026-06-25',
+    priceKrwPerL: '2001.300',
+    sourceKind: 'official_weekly',
+  });
+});
