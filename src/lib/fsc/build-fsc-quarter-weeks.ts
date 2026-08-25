@@ -320,18 +320,10 @@ function createForecastWeekDraft(
     priceKrwPerL = carryForward.pointKrwPerL;
     sourcePriceDate = carryForward.targetDate;
     fallbackUsed = true;
-  } else if (quarterSetting.appliedPriceKrwPerL.gt(ZERO)) {
-    sourceKind = 'applied_price_fallback';
-    sourcePoint = null;
-    priceKrwPerL = quarterSetting.appliedPriceKrwPerL;
-    sourcePriceDate = null;
-    fallbackUsed = true;
   } else {
-    sourceKind = 'base_price_fallback';
-    sourcePoint = null;
-    priceKrwPerL = quarterSetting.basePriceKrwPerL;
-    sourcePriceDate = null;
-    fallbackUsed = true;
+    throw new Error(
+      `Forecast coverage is missing for FSC week ${formatDateKey(effectiveStart)}..${formatDateKey(effectiveEnd)}.`,
+    );
   }
 
   const roundedPrice = roundPrice(priceKrwPerL);

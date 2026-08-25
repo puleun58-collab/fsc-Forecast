@@ -58,9 +58,9 @@ export async function runFscResultRecompute(now = new Date()): Promise<FscResult
           targetQuarter: quarterSetting.targetQuarter,
           scenarioName: 'base',
           sourceRecomputeSnapshotId: sourceData.recomputeSnapshot.id,
-          forecastRunId: sourceData.forecastRun?.id ?? null,
+          forecastRunId: sourceData.forecastRun.id,
           calculationFormulaVersion: calculation.calculationFormulaVersion,
-          forecastModelVersion: sourceData.forecastRun?.forecastModelVersion ?? null,
+          forecastModelVersion: sourceData.forecastRun.forecastModelVersion,
           basePriceKrwPerL: calculation.basePriceKrwPerL,
           appliedPriceKrwPerL: calculation.appliedPriceKrwPerL,
           quarterAverageKrwPerL: calculation.quarterAverageKrwPerL,
@@ -88,7 +88,7 @@ export async function runFscResultRecompute(now = new Date()): Promise<FscResult
           calculationPayload: {
             source: {
               sourceRecomputeSnapshotId: sourceData.recomputeSnapshot.id,
-              forecastRunId: sourceData.forecastRun?.id ?? null,
+              forecastRunId: sourceData.forecastRun.id,
               currentTruthCutoffAt: sourceData.recomputeSnapshot.currentTruthCutoffAt?.toISOString() ?? null,
               dailyPriceCount: sourceData.dailyPrices.length,
               officialWeeklyPriceCount: sourceData.officialWeeklyPrices.length,

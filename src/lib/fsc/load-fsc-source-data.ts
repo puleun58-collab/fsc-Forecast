@@ -117,6 +117,17 @@ export async function loadFscSourceData(
     where: {
       datasetKey: env.datasetKey,
       status: RunStatus.succeeded,
+      forecastRuns: {
+        some: {
+          status: RunStatus.succeeded,
+          completedAt: {
+            not: null,
+          },
+          points: {
+            some: {},
+          },
+        },
+      },
     },
     orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
     select: {
@@ -129,7 +140,7 @@ export async function loadFscSourceData(
   });
 
   if (recomputeSnapshot === null) {
-    throw new Error('No succeeded recompute snapshot is available for FSC recomputation.');
+    throw new Error('No forecast-ready recompute snapshot is available for FSC recomputation.');
   }
 
   const [forecastRun, dailyPrices, officialWeeklyPrices, officialMonthlyPrices, latestConfirmedDate] = await Promise.all([
@@ -137,6 +148,12 @@ export async function loadFscSourceData(
       where: {
         recomputeSnapshotId: recomputeSnapshot.id,
         status: RunStatus.succeeded,
+        completedAt: {
+          not: null,
+        },
+        points: {
+          some: {},
+        },
       },
       orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
       select: {
@@ -188,9 +205,15 @@ export async function loadFscSourceData(
     latestConfirmedDate,
   );
 
+  if (forecastRun === null) {
+    throw new Error(
+      `Forecast-ready snapshot '${recomputeSnapshot.id}' no longer has a completed forecast run.`,
+    );
+  }
+
   return {
     recomputeSnapshot,
-    forecastRun: forecastRun === null ? null : toForecastRunRecord(forecastRun),
+    forecastRun: toForecastRunRecord(forecastRun),
     dailyPrices: normalizedDailyPrices,
     officialWeeklyPrices: officialWeeklyPrices.map(toOfficialWeeklyPriceRow),
     officialMonthlyPrices: officialMonthlyPrices.map(toOfficialMonthlyPriceRow),

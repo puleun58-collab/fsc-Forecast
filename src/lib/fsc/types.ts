@@ -84,7 +84,7 @@ export interface FscSourceForecastRunRecord {
 
 export interface LoadFscSourceDataResult {
   recomputeSnapshot: FscSourceSnapshotRecord;
-  forecastRun: FscSourceForecastRunRecord | null;
+  forecastRun: FscSourceForecastRunRecord;
   dailyPrices: FscSourceDailyPriceRow[];
   officialWeeklyPrices: FscSourceOfficialWeeklyPriceRow[];
   officialMonthlyPrices: FscSourceOfficialMonthlyPriceRow[];

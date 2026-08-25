@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { env } from '@/lib/env';
 
 import { runFscResultRecompute } from './run-fsc-result-recompute';
+import { isFscResultStaleForForecast } from './forecast-readiness';
 import type { FscResultRecord } from './serialize-fsc-dto';
 
 const FSC_RESULT_INCLUDE = {
@@ -34,6 +35,16 @@ async function readLatestBaseFscResult(
       targetYear,
       targetQuarter,
       scenarioName: 'base',
+      forecastRunId: {
+        not: null,
+      },
+      weeks: {
+        none: {
+          forecastSourceKind: {
+            in: ['applied_price_fallback', 'base_price_fallback'],
+          },
+        },
+      },
     },
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     include: FSC_RESULT_INCLUDE,
@@ -64,10 +75,37 @@ async function shouldRefreshActiveQuarterResult(
     where: {
       datasetKey: env.datasetKey,
       status: RunStatus.succeeded,
+      forecastRuns: {
+        some: {
+          status: RunStatus.succeeded,
+          completedAt: {
+            not: null,
+          },
+          points: {
+            some: {},
+          },
+        },
+      },
     },
     orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
     select: {
       id: true,
+      forecastRuns: {
+        where: {
+          status: RunStatus.succeeded,
+          completedAt: {
+            not: null,
+          },
+          points: {
+            some: {},
+          },
+        },
+        orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+        take: 1,
+        select: {
+          id: true,
+        },
+      },
     },
   });
 
@@ -79,7 +117,16 @@ async function shouldRefreshActiveQuarterResult(
     return true;
   }
 
-  return latestResult.sourceRecomputeSnapshotId !== latestSnapshot.id;
+  const latestForecastRunId = latestSnapshot.forecastRuns[0]?.id;
+
+  if (!latestForecastRunId) {
+    return false;
+  }
+
+  return isFscResultStaleForForecast(latestResult, {
+    recomputeSnapshotId: latestSnapshot.id,
+    forecastRunId: latestForecastRunId,
+  });
 }
 
 export async function findLatestBaseFscResultByQuarter(

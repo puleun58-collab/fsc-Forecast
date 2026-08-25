@@ -5,6 +5,30 @@ import { Prisma } from '@prisma/client';
 
 import { buildFscQuarterWeeks, type BuildFscQuarterWeeksInput } from './build-fsc-quarter-weeks';
 import type { FscSourceDailyPriceRow, FscSourceOfficialWeeklyPriceRow } from './types';
+
+function createMonthlyForecastRun() {
+  return {
+    id: 'forecast-run-monthly',
+    forecastModelVersion: null,
+    mapePct: null,
+    maeKrwPerL: null,
+    metadata: null,
+    createdAt: new Date('2026-07-15T22:56:16.053Z'),
+    completedAt: new Date('2026-07-15T22:56:16.053Z'),
+    points: [
+      ['2026-07-31', '1971.590'],
+      ['2026-08-31', '1968.420'],
+      ['2026-09-30', '1965.310'],
+    ].map(([targetDate, price], index) => ({
+      id: `monthly-point-${targetDate}`,
+      horizonKind: 'monthly' as const,
+      horizonIndex: index + 1,
+      targetDate: new Date(`${targetDate}T00:00:00.000Z`),
+      pointKrwPerL: new Prisma.Decimal(price),
+    })),
+  };
+}
+
 function createDailyRow(date: string, price: number): FscSourceDailyPriceRow {
   return {
     priceDate: new Date(`${date}T00:00:00.000Z`),
@@ -29,7 +53,7 @@ function createInput(dailyPrices: readonly FscSourceDailyPriceRow[]): BuildFscQu
     dailyPrices,
     officialWeeklyPrices: [],
     officialMonthlyPrices: [],
-    forecastRun: null,
+    forecastRun: createMonthlyForecastRun(),
   };
 }
 
@@ -117,9 +141,8 @@ test('published Opinet weekly value overrides the recomputed daily average exact
   assert.equal(payload.actualSourceBreakdown.dailyAverage, 0);
 });
 
-test('incomplete current week still falls back when final collection day row is missing', () => {
-  const result = buildFscQuarterWeeks(
-    createInput([
+test('missing forecast coverage fails closed instead of substituting the configured 1,500 won price', () => {
+  const input = createInput([
       createDailyRow('2026-07-01', 1923.52),
       createDailyRow('2026-07-02', 1910.28),
       createDailyRow('2026-07-05', 1890.56),
@@ -131,12 +154,13 @@ test('incomplete current week still falls back when final collection day row is 
       createDailyRow('2026-07-13', 1863.93),
       createDailyRow('2026-07-14', 1861.97),
       createDailyRow('2026-07-15', 1860.70),
-    ]),
-  );
+    ]);
+  input.forecastRun = null;
 
-  assert.equal(result.weeks[2]?.priceKind, 'forecast');
-  assert.equal(result.weeks[2]?.forecastSourceKind, 'applied_price_fallback');
-  assert.equal(result.weeks[2]?.priceKrwPerL.toFixed(3), '1500.000');
+  assert.throws(
+    () => buildFscQuarterWeeks(input),
+    /Forecast coverage is missing for FSC week 2026-07-12\.\.2026-07-16/,
+  );
 });
 
 test('incomplete current week uses weekly forecast point instead of applied price fallback when 5-day actual is not complete', () => {
