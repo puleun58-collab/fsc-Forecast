@@ -1515,7 +1515,7 @@ main {
   gap: 7px 8px;
   align-items: end;
   width: min(100%, 340px);
-  margin-top: 12px;
+  margin-top: 18px;
 }
 
 .decision-summary__footer-row {
@@ -1524,7 +1524,7 @@ main {
   gap: 28px;
   align-items: center;
   min-width: 0;
-  padding-top: 4px;
+  margin-top: -8px;
 }
 
 .decision-summary__footer-row .price-input__help {
