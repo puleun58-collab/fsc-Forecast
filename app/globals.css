@@ -1515,7 +1515,7 @@ main {
   gap: 7px 8px;
   align-items: end;
   width: min(100%, 340px);
-  padding-top: 6px;
+  margin-top: 12px;
 }
 
 .decision-summary__footer-row {

@@ -31,11 +31,6 @@
   font-size: 1rem;
 }
 
-.oil-price-history__identity strong {
-  color: var(--accent);
-  font-size: 0.84rem;
-}
-
 .oil-price-history__summary-values {
   display: flex;
   min-width: 0;

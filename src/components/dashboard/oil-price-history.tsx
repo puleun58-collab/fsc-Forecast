@@ -107,7 +107,6 @@ export function OilPriceHistory({ history }: OilPriceHistoryProps) {
       <div className="oil-price-history__bar">
         <div className="oil-price-history__identity">
           <h2 id={`${detailId}-title`}>분기별 유가 현황</h2>
-          <strong>{selectedYear}년</strong>
         </div>
         {selectedHistory ? (
           <SummaryValues year={selectedHistory} />
