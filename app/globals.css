@@ -10,6 +10,10 @@
   --accent: #185a52;
   --forecast-tint: #dce6e2;
   --forecast-line: #70817b;
+  --forecast-row: #fbf7e8;
+  --forecast-row-hover: #f6edcf;
+  --forecast-boundary: #f1e4b8;
+  --forecast-boundary-line: #b99b42;
   --warning: #a76018;
   --critical: #a33b32;
 
@@ -1896,6 +1900,14 @@ main {
   border-top: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
 }
 
+.weekly-table__row--forecast {
+  background: var(--forecast-row);
+}
+
+.weekly-table tbody tr.weekly-table__row--forecast:hover {
+  background: var(--forecast-row-hover);
+}
+
 .weekly-table__row--actual .numeric-cell:first-of-type,
 .weekly-table__row--actual .price-value__number {
   font-weight: 760;
@@ -1928,9 +1940,9 @@ main {
 
 .weekly-table__boundary td {
   padding: 8px 14px;
-  border-top: 2px solid var(--forecast-line);
-  background: var(--forecast-tint);
-  color: var(--forecast-line);
+  border-top: 2px solid var(--forecast-boundary-line);
+  background: var(--forecast-boundary);
+  color: #6f5a1b;
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -2639,6 +2651,12 @@ main {
     gap: 7px;
     padding: 14px 0;
     border-bottom: 1px solid var(--border);
+  }
+
+  .weekly-mobile-item--forecast {
+    padding-inline: 12px;
+    background: var(--forecast-row);
+    box-shadow: inset 3px 0 0 var(--forecast-boundary-line);
   }
 
   .weekly-mobile-item__top {
