@@ -1503,6 +1503,11 @@ main {
 
 .baseline-comparison strong {
   color: inherit;
+  font-weight: inherit;
+}
+
+.directional-value {
+  font-weight: 600;
 }
 
 .directional-value.directional-value--up {
@@ -2104,7 +2109,7 @@ main {
 .market-signal-card__change {
   color: var(--text-secondary);
   font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .market-signal-card__checking {
