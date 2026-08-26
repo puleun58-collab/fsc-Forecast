@@ -87,6 +87,17 @@ export interface FscDashboardMarketSignalsSection {
   unavailableReason?: string;
 }
 
+export interface FscDashboardForecastChangeSection {
+  comparisonStatus: 'available' | 'unavailable';
+  previousQuarterAverageKrwPerL: number | null;
+  currentQuarterAverageKrwPerL: number;
+  absoluteChangeKrwPerL: number | null;
+  direction: DashboardTrendDirection;
+  summaryText: string;
+  newActualWeekCount: number;
+  newActualWeekLabel: string | null;
+}
+
 export type OilPriceHistoryQuarterNumber = 1 | 2 | 3 | 4;
 
 export type OilPriceHistoryMonth = {
@@ -172,6 +183,7 @@ export interface FscDashboardResultSection {
     monthLabel: string;
     priceKrwPerL: string;
   }>;
+  forecastChange: FscDashboardForecastChangeSection;
 }
 
 export interface FscDashboardSupportSection {

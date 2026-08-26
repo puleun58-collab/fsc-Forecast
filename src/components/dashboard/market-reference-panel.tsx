@@ -3,28 +3,22 @@ import {
   formatDisplayDateTime,
   formatDirectionalPriceChange,
   mapDirectionLabel,
-  parseNumeric,
   PriceValue,
 } from './dashboard-format';
 
 import type {
+  FscDashboardForecastChangeSection,
   FscDashboardMarketSignal,
   FscDashboardSupportSection,
-  FscDashboardTrendPoint,
 } from '@/lib/dashboard/fsc-types';
-import { formatPercentText, formatPriceText } from '@/lib/dashboard/display-format';
+import { formatPercentText, formatPriceNumber, formatPriceText } from '@/lib/dashboard/display-format';
 
 type MarketReferencePanelProps = {
   support: FscDashboardSupportSection;
+  forecastChange?: FscDashboardForecastChangeSection;
 };
 
-type MarketSparklineProps = {
-  points: readonly FscDashboardTrendPoint[];
-  latestWeeklyAverageKrwPerL: number | null;
-  latestMonthlyAverageKrwPerL: number | null;
-};
-
-export function MarketReferencePanel({ support }: MarketReferencePanelProps) {
+export function MarketReferencePanel({ support, forecastChange }: MarketReferencePanelProps) {
   const current = support.currentPrice;
   const trend = support.trend;
 
@@ -61,10 +55,9 @@ export function MarketReferencePanel({ support }: MarketReferencePanelProps) {
               value={`${formatDisplayDate(current.coverageStartDate)}–${formatDisplayDate(current.coverageEndDate)}`}
             />
           </div>
-          <MarketSparkline
-            points={trend.points}
-            latestWeeklyAverageKrwPerL={trend.latestWeeklyAverageKrwPerL}
-            latestMonthlyAverageKrwPerL={trend.latestMonthlyAverageKrwPerL}
+          <ForecastChangeSummary
+            forecastChange={forecastChange}
+            marketSignals={support.marketSignals.signals}
           />
           <MarketSignalsSection support={support} />
         </div>
@@ -85,6 +78,90 @@ function MarketFact({ label, value }: { label: string; value: string }) {
       <strong>{value}</strong>
     </div>
   );
+}
+
+function ForecastChangeSummary({
+  forecastChange,
+  marketSignals,
+}: {
+  forecastChange?: FscDashboardForecastChangeSection;
+  marketSignals: readonly FscDashboardMarketSignal[];
+}) {
+  const direction = forecastChange?.direction ?? 'flat';
+  const dubai = marketSignals.find((signal) => signal.indicatorCode === 'dubai');
+  const usdKrw = marketSignals.find((signal) => signal.indicatorCode === 'usd-krw');
+  const newActualText =
+    forecastChange?.comparisonStatus !== 'available'
+      ? '비교 데이터 없음'
+      : forecastChange.newActualWeekLabel === null
+        ? '반영 없음'
+        : forecastChange.newActualWeekCount > 1
+          ? `${forecastChange.newActualWeekLabel} 외 ${forecastChange.newActualWeekCount - 1}건`
+          : forecastChange.newActualWeekLabel;
+
+  return (
+    <section className="forecast-change-summary" aria-labelledby="forecast-change-summary-title">
+      <strong id="forecast-change-summary-title" className="forecast-change-summary__title">
+        이번 주 전망 변화
+      </strong>
+      <p className={`forecast-change-summary__delta directional-value directional-value--${direction}`}>
+        {formatForecastChange(forecastChange)}
+      </p>
+      <p className="forecast-change-summary__reason">
+        {forecastChange?.summaryText ?? '지난 전망과 비교할 데이터가 없습니다.'}
+      </p>
+      <dl className="forecast-change-summary__details">
+        <ForecastChangeFact label="두바이유" signal={dubai} />
+        <ForecastChangeFact label="USD/KRW" signal={usdKrw} />
+        <div>
+          <dt>신규 Actual 값</dt>
+          <dd>{newActualText}</dd>
+        </div>
+      </dl>
+    </section>
+  );
+}
+
+function ForecastChangeFact({
+  label,
+  signal,
+}: {
+  label: string;
+  signal: FscDashboardMarketSignal | undefined;
+}) {
+  const direction = signal?.direction ?? 'flat';
+
+  return (
+    <div>
+      <dt>{label}</dt>
+      <dd className={`directional-value directional-value--${direction}`}>
+        {formatForecastSignal(signal)}
+      </dd>
+    </div>
+  );
+}
+
+function formatForecastChange(change: FscDashboardForecastChangeSection | undefined): string {
+  if (change?.comparisonStatus !== 'available' || change.absoluteChangeKrwPerL === null) {
+    return '비교 데이터 없음';
+  }
+
+  const sign = change.absoluteChangeKrwPerL > 0 ? '+' : '';
+  const icon = change.direction === 'up' ? '↑' : change.direction === 'down' ? '↓' : '→';
+  return `지난 전망 대비 ${sign}${formatPriceNumber(change.absoluteChangeKrwPerL)}원/L ${icon}`;
+}
+
+function formatForecastSignal(signal: FscDashboardMarketSignal | undefined): string {
+  if (
+    signal?.status !== 'ready' ||
+    signal.percentChange === null ||
+    signal.percentChange === undefined
+  ) {
+    return '비교 데이터 없음';
+  }
+
+  const icon = signal.direction === 'up' ? '↑' : signal.direction === 'down' ? '↓' : '→';
+  return `${formatPercentText(signal.percentChange)} ${icon}`;
 }
 
 function MarketSignalsSection({ support }: { support: FscDashboardSupportSection }) {
@@ -172,50 +249,4 @@ function formatMarketSignalChange(signal: FscDashboardMarketSignal): string {
   const signedAmount = `${signal.absoluteChange > 0 ? '+' : signal.absoluteChange < 0 ? '-' : ''}${amountText}`;
 
   return signal.indicatorCode === 'dubai' ? signedAmount : `${signedAmount}원`;
-}
-
-export function MarketSparkline({
-  points,
-  latestWeeklyAverageKrwPerL,
-  latestMonthlyAverageKrwPerL,
-}: MarketSparklineProps) {
-  const validPoints = points.filter((point) => Number.isFinite(point.priceKrwPerL));
-
-  if (validPoints.length < 2) {
-    return (
-      <div className="market-sparkline market-sparkline--empty" role="status">
-        추이 데이터 부족
-      </div>
-    );
-  }
-
-  const width = 360;
-  const height = 104;
-  const minMaxValues = [
-    ...validPoints.map((point) => point.priceKrwPerL),
-    ...[latestWeeklyAverageKrwPerL, latestMonthlyAverageKrwPerL].map(parseNumeric).filter((value): value is number => value !== null),
-  ];
-  const minValue = Math.min(...minMaxValues);
-  const maxValue = Math.max(...minMaxValues);
-  const spread = Math.max(maxValue - minValue, 1);
-  const padding = Math.max(spread * 0.16, 12);
-  const min = minValue - padding;
-  const max = maxValue + padding;
-  const xStep = width / (validPoints.length - 1);
-  const polyline = validPoints
-    .map((point, index) => {
-      const x = xStep * index;
-      const y = height - ((point.priceKrwPerL - min) / (max - min || 1)) * height;
-      return `${x},${y}`;
-    })
-    .join(' ');
-
-  return (
-    <div className="market-sparkline">
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="최근 오피넷 일별 가격 sparkline">
-        <polyline points={polyline} fill="none" stroke="var(--accent)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-      </svg>
-      <span>최근 {validPoints.length}일 추이</span>
-    </div>
-  );
 }

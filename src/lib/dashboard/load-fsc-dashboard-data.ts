@@ -14,6 +14,7 @@ import {
   calculateDataDelayMinutes,
   calculateDataFreshness,
 } from './dashboard-time';
+import { buildForecastChangeSummary } from './forecast-change-summary';
 import {
   buildPublicMarketSignals,
   buildPublicMarketSummaryText,
@@ -202,6 +203,67 @@ function buildSupportDataSources(support: FscDashboardSupportSection) {
       support.currentPrice.latestPriceDate === null
         ? 'unavailable'
         : calculateDataFreshness(support.currentPrice.latestPriceDate),
+  });
+}
+
+async function loadPreviousForecastResult(input: {
+  currentResultId: string;
+  currentForecastRunId: string | null;
+  currentCreatedAt: Date;
+  targetYear: number;
+  targetQuarter: number;
+}) {
+  if (input.currentForecastRunId === null) {
+    return null;
+  }
+
+  return db.fscResult.findFirst({
+    where: {
+      targetYear: input.targetYear,
+      targetQuarter: input.targetQuarter,
+      scenarioName: 'base',
+      id: {
+        not: input.currentResultId,
+      },
+      createdAt: {
+        lt: input.currentCreatedAt,
+      },
+      AND: [
+        {
+          forecastRunId: {
+            not: null,
+          },
+        },
+        {
+          forecastRunId: {
+            not: input.currentForecastRunId,
+          },
+        },
+      ],
+      weeks: {
+        none: {
+          forecastSourceKind: {
+            in: ['applied_price_fallback', 'base_price_fallback'],
+          },
+        },
+      },
+    },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    select: {
+      quarterAverageKrwPerL: true,
+      weeks: {
+        where: {
+          priceKind: 'actual',
+        },
+        orderBy: {
+          sequenceNo: 'asc',
+        },
+        select: {
+          weekStartDate: true,
+          weekEndDate: true,
+        },
+      },
+    },
   });
 }
 
@@ -426,6 +488,21 @@ export async function loadFscDashboardData(): Promise<FscDashboardData> {
     const fsc = serializeFscResultDto(result);
     const monthlyBasis = readMonthlyBasis(result.calculationPayload);
     const dataBasisAt = fsc.dataBasisAt;
+    const previousForecastResult = await loadPreviousForecastResult({
+      currentResultId: result.id,
+      currentForecastRunId: result.forecastRunId,
+      currentCreatedAt: result.createdAt,
+      targetYear: result.targetYear,
+      targetQuarter: result.targetQuarter,
+    });
+    const forecastChange = buildForecastChangeSummary({
+      currentQuarterAverageKrwPerL: Number(result.quarterAverageKrwPerL),
+      previousQuarterAverageKrwPerL:
+        previousForecastResult === null ? null : Number(previousForecastResult.quarterAverageKrwPerL),
+      currentActualWeeks: result.weeks.filter((week) => week.priceKind === 'actual'),
+      previousActualWeeks: previousForecastResult?.weeks ?? [],
+      marketSignals: support.marketSignals.signals,
+    });
 
     return {
       state: 'available',
@@ -463,6 +540,7 @@ export async function loadFscDashboardData(): Promise<FscDashboardData> {
         weeks: fsc.weeks,
         referenceQuarterAverageKrwPerL: monthlyBasis?.quarterAverageKrwPerL ?? null,
         referenceMonthlyBasis: monthlyBasis?.monthRows ?? [],
+        forecastChange,
       },
     };
   } catch (error) {

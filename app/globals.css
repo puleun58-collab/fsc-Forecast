@@ -1981,7 +1981,7 @@ main {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 18px;
-  align-items: end;
+  align-items: start;
 }
 
 .market-reference__source {
@@ -2021,23 +2021,60 @@ main {
   text-align: right;
 }
 
-.market-sparkline {
+.forecast-change-summary {
   display: grid;
   grid-column: 9 / -1;
+  gap: 9px;
+  min-width: 0;
+  padding-left: 18px;
+  border-left: 1px solid var(--border);
+}
+
+.forecast-change-summary__title {
+  color: var(--ink);
+  font-size: 0.92rem;
+}
+
+.forecast-change-summary__delta,
+.forecast-change-summary__reason {
+  margin: 0;
+}
+
+.forecast-change-summary__delta {
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.forecast-change-summary__reason {
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.forecast-change-summary__details {
+  display: grid;
   gap: 6px;
-  min-height: 112px;
-  align-content: end;
+  margin: 0;
+  padding-top: 2px;
 }
 
-.market-sparkline svg {
-  width: 100%;
-  height: 104px;
+.forecast-change-summary__details div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.market-sparkline span,
-.market-sparkline--empty {
+.forecast-change-summary__details dt {
   color: var(--text-secondary);
   font-size: 0.78rem;
+}
+
+.forecast-change-summary__details dd {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: right;
 }
 
 .market-commentary {
@@ -2501,8 +2538,11 @@ main {
     grid-column: 6 / -1;
   }
 
-  .market-sparkline {
+  .forecast-change-summary {
     grid-column: 1 / -1;
+    padding: 16px 0 0;
+    border-top: 1px solid var(--border);
+    border-left: 0;
   }
 
   .data-sources__cards {
@@ -2702,7 +2742,7 @@ main {
 
   .market-reference__latest,
   .market-reference__facts,
-  .market-sparkline,
+  .forecast-change-summary,
   .market-signals {
     grid-column: 1 / -1;
   }
