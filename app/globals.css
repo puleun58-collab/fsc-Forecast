@@ -1553,6 +1553,7 @@ main {
 }
 
 .decision-summary__footer-row .price-input__help {
+  grid-column: 2;
   padding-left: 28px;
 }
 
@@ -2598,12 +2599,9 @@ main {
   }
 
   .decision-summary__footer-row .price-input__help {
+    grid-column: 1;
     grid-row: 1;
     padding-left: 0;
-  }
-
-  .decision-summary__footer-row .boundary-key {
-    grid-row: 2;
   }
 
   .panel-header--inline {

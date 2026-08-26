@@ -11,7 +11,7 @@ export function WeeklyForecastSection({ fsc }: WeeklyForecastSectionProps) {
     <section className="weekly-forecast surface-panel" aria-labelledby="weekly-forecast-title">
       <div className="panel-header panel-header--inline">
         <div>
-          <h2 id="weekly-forecast-title">주간 유가 추이</h2>
+          <h2 id="weekly-forecast-title">주간 유가 전망</h2>
           <p>실제값이 있는 완료 주차는 actual 선으로, 이후 주차는 forecast 점선으로 표시합니다.</p>
         </div>
         <ForecastLegend actualWeekCount={fsc.actualWeekCount} forecastWeekCount={fsc.forecastWeekCount} />

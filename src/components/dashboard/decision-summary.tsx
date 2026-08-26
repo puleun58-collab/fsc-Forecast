@@ -138,16 +138,6 @@ function ForecastHeadline({
         </div>
       </div>
       <div className="decision-summary__footer-row">
-        <div className="boundary-key" aria-label={`Actual ${fsc.actualWeekCount}주, Forecast ${fsc.forecastWeekCount}주`}>
-          <span className="boundary-key__item">
-            <span className="boundary-key__line boundary-key__line--actual" aria-hidden="true" />
-            Actual {fsc.actualWeekCount}주
-          </span>
-          <span className="boundary-key__item">
-            <span className="boundary-key__line boundary-key__line--forecast" aria-hidden="true" />
-            Forecast {fsc.forecastWeekCount}주
-          </span>
-        </div>
         <p id="scenario-price-help" className={inputError ? 'price-input__help price-input__help--error' : 'price-input__help'}>
           {inputError ?? (isPriceModified ? '입력한 가격으로 화면의 파생값을 계산했습니다.' : '값을 바꾸면 관련 결과가 즉시 갱신됩니다.')}
         </p>
