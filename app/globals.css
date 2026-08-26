@@ -1984,13 +1984,6 @@ main {
   align-items: start;
 }
 
-.market-reference__source {
-  align-self: start;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
 .market-reference__latest {
   display: grid;
   grid-column: 1 / span 4;
@@ -2007,6 +2000,7 @@ main {
   display: grid;
   grid-column: 5 / span 4;
   gap: 10px;
+  padding-top: 29px;
 }
 
 .market-reference__fact {
@@ -2536,6 +2530,7 @@ main {
 
   .market-reference__facts {
     grid-column: 6 / -1;
+    padding-top: 0;
   }
 
   .forecast-change-summary {

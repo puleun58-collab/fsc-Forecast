@@ -29,7 +29,6 @@ export function MarketReferencePanel({ support, forecastChange }: MarketReferenc
           <h2 id="market-reference-title">오피넷 시장 참고값</h2>
           <p>FSC 판단의 보조 지표이며, 주요 산출 결과보다 낮은 우선순위로 표시합니다.</p>
         </div>
-        <span className="market-reference__source">출처: 오피넷</span>
       </div>
       {current.availability === 'available' ? (
         <div className="market-reference__grid">
