@@ -12,6 +12,7 @@ import {
   formatRatioPercentText,
   formatShortMonthLabel,
   getDirectionalChangeDisplay,
+  getChangeDirection,
 } from './display-format';
 
 test('formatPrice helpers add separators and units', () => {
@@ -45,6 +46,13 @@ test('directional change helper includes icon, text, and compact amounts', () =>
     amountText: '2.50원',
     percentText: '+0.13%',
   });
+});
+
+test('change direction maps positive, negative, and neutral values', () => {
+  assert.equal(getChangeDirection(17.68), 'up');
+  assert.equal(getChangeDirection('-17.68'), 'down');
+  assert.equal(getChangeDirection(0), 'flat');
+  assert.equal(getChangeDirection(null), 'flat');
 });
 
 test('recent average uses the latest available points up to the requested count', () => {

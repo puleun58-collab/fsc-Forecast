@@ -54,6 +54,10 @@
   --danger-soft: #f6e5e2;
   --danger-border: #d8b1ab;
 
+  /* 국내 금융 관례: 상승은 빨강, 하락은 파랑 */
+  --market-up: #b42318;
+  --market-down: #175cd3;
+
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -628,11 +632,11 @@ main {
 }
 
 .dashboard-shell__change-line--up {
-  color: var(--approved);
+  color: var(--market-up);
 }
 
 .dashboard-shell__change-line--down {
-  color: var(--danger);
+  color: var(--market-down);
 }
 
 .dashboard-shell__change-line--flat {
@@ -1469,11 +1473,11 @@ main {
 }
 
 .decision-summary__week-change--up {
-  color: var(--approved);
+  color: var(--market-up);
 }
 
 .decision-summary__week-change--down {
-  color: var(--danger);
+  color: var(--market-down);
 }
 
 .decision-summary__week-change--flat {
@@ -1498,7 +1502,19 @@ main {
 }
 
 .baseline-comparison strong {
-  color: var(--accent);
+  color: inherit;
+}
+
+.directional-value.directional-value--up {
+  color: var(--market-up);
+}
+
+.directional-value.directional-value--down {
+  color: var(--market-down);
+}
+
+.directional-value.directional-value--flat {
+  color: var(--text-secondary);
 }
 
 .decision-summary__baseline-grid {

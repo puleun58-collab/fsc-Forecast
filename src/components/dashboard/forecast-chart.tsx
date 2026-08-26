@@ -13,7 +13,7 @@ import {
 } from './dashboard-format';
 
 import type { FscDashboardWeekItem } from '@/lib/dashboard/fsc-types';
-import { formatPriceText } from '@/lib/dashboard/display-format';
+import { formatPriceText, getChangeDirection } from '@/lib/dashboard/display-format';
 import { buildForecastChartScale } from './forecast-chart-scale';
 
 type ForecastChartProps = {
@@ -230,7 +230,9 @@ export function ForecastChart({ weeks, basePriceKrwPerL }: ForecastChartProps) {
             {formatSequenceWeekLabel(activePlotPoint.week.sequenceNo)} · {formatWeekRange(activePlotPoint.week, true)}
           </strong>
           <span>{mapWeekKind(activePlotPoint.week.priceKind)} · {formatPriceText(activePlotPoint.price)}</span>
-          <span>
+          <span
+            className={`directional-value directional-value--${getChangeDirection(activePlotPoint.week.priceDiffKrwPerL)}`}
+          >
             기준 대비 {formatSignedPriceText(activePlotPoint.week.priceDiffKrwPerL)} · {formatSignedRatioText(activePlotPoint.week.diffRatio)}
           </span>
         </div>

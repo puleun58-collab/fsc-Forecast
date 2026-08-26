@@ -46,7 +46,7 @@ export function MarketReferencePanel({ support }: MarketReferencePanelProps) {
                 : `${formatDisplayDate(current.latestPriceDate)} 최종 평균 경유가`}
             </span>
             <PriceValue value={current.latestPriceKrwPerL} size="scenario" />
-            <p>
+            <p className={`directional-value directional-value--${current.direction}`}>
               전일 대비 {mapDirectionLabel(current.direction)}{' '}
               {formatDirectionalPriceChange(current.direction, current.absoluteChangeKrwPerL)} ·{' '}
               {formatPercentText(current.percentChange)}
@@ -124,7 +124,9 @@ function MarketSignalCard({ signal }: { signal: FscDashboardMarketSignal }) {
       {hasComparison ? (
         <>
           <strong className="market-signal-card__value">{formatMarketSignalValue(signal)}</strong>
-          <span className="market-signal-card__change">
+          <span
+            className={`market-signal-card__change directional-value directional-value--${signal.direction}`}
+          >
             전일 대비 {formatMarketSignalChange(signal)} ({formatPercentText(signal.percentChange)}) ·{' '}
             {mapDirectionLabel(signal.direction)}
           </span>

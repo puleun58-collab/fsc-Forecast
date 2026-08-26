@@ -2,7 +2,7 @@
 
 import { useId, useState } from 'react';
 
-import { formatPriceNumber } from '@/lib/dashboard/display-format';
+import { formatPriceNumber, getChangeDirection } from '@/lib/dashboard/display-format';
 
 import type {
   OilPriceHistoryQuarter,
@@ -67,6 +67,10 @@ function SummaryValues({ year }: { readonly year: OilPriceHistoryYear }) {
 }
 
 function QuarterColumn({ quarter }: { readonly quarter: OilPriceHistoryQuarter }) {
+  const quarterChangeDirection = getChangeDirection(
+    quarter.changeFromPreviousQuarter?.amountKrwPerL ?? null,
+  );
+
   return (
     <section className="oil-price-history__quarter" aria-labelledby={`oil-price-history-${quarter.year}-q${quarter.quarter}`}>
       <h3 id={`oil-price-history-${quarter.year}-q${quarter.quarter}`}>
@@ -85,7 +89,7 @@ function QuarterColumn({ quarter }: { readonly quarter: OilPriceHistoryQuarter }
           <span>{quarter.quarter}분기 평균</span>
           <strong>{formatPriceNumber(quarter.averagePriceKrwPerL)}원/L</strong>
           {quarter.changeFromPreviousQuarter ? (
-            <p>
+            <p className={`directional-value directional-value--${quarterChangeDirection}`}>
               직전 분기 대비 {formatSignedPrice(quarter.changeFromPreviousQuarter.amountKrwPerL)} ·{' '}
               {formatSignedPercent(quarter.changeFromPreviousQuarter.percent)}
             </p>

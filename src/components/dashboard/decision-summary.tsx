@@ -10,6 +10,7 @@ import {
 } from './dashboard-format';
 
 import type { FscDashboardResultSection, FscDashboardWeekItem } from '@/lib/dashboard/fsc-types';
+import { getChangeDirection } from '@/lib/dashboard/display-format';
 import { getOpinetDisplayWeek } from '@/lib/opinet/weekly-period';
 
 type DecisionSummaryProps = {
@@ -166,8 +167,13 @@ function findLatestActualWeek(weeks: readonly FscDashboardWeekItem[]): FscDashbo
 }
 
 function BaselineComparison({ fsc }: DecisionSummaryProps) {
+  const direction = getChangeDirection(fsc.priceDiffKrwPerL);
+
   return (
-    <p className="baseline-comparison" aria-label="기준유가 대비 차이">
+    <p
+      className={`baseline-comparison directional-value directional-value--${direction}`}
+      aria-label="기준유가 대비 차이"
+    >
       <strong>{formatSignedPriceText(fsc.priceDiffKrwPerL)}</strong>
       <span>· 기준유가 대비 {formatSignedRatioText(fsc.diffRatio)}</span>
     </p>

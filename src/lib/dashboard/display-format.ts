@@ -13,6 +13,19 @@ const PERCENT_FORMATTER = new Intl.NumberFormat('ko-KR', {
   maximumFractionDigits: 2,
 });
 
+export function getChangeDirection(value: number | string | null): DashboardTrendDirection {
+  if (value === null) {
+    return 'flat';
+  }
+
+  const parsed = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(parsed) || parsed === 0) {
+    return 'flat';
+  }
+
+  return parsed > 0 ? 'up' : 'down';
+}
+
 export function formatPriceNumber(value: number | string): string {
   const parsed = typeof value === 'number' ? value : Number(value);
   if (!Number.isFinite(parsed)) {

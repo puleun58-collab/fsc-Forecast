@@ -2,10 +2,10 @@ import { Fragment } from 'react';
 
 import {
   calculateWeekOverWeekChange,
-  formatWeekOverWeekChange,
   formatSignedPriceText,
   formatSignedRatioText,
   formatSequenceWeekLabel,
+  formatWeekOverWeekChange,
   formatWeekRange,
   getFirstForecastIndex,
   mapForecastSourceKind,
@@ -15,6 +15,7 @@ import {
 } from './dashboard-format';
 
 import type { FscDashboardWeekItem } from '@/lib/dashboard/fsc-types';
+import { getChangeDirection } from '@/lib/dashboard/display-format';
 import { getOpinetDisplayWeek } from '@/lib/opinet/weekly-period';
 
 type WeeklyDetailTableProps = {
@@ -129,8 +130,16 @@ function WeekTableRow({
       <td className="numeric-cell">
         <PriceValue value={week.priceKrwPerL} size="compact" />
       </td>
-      <td className="numeric-cell">{formatWeekChange(week, previousPriceKrwPerL)}</td>
-      <td className="numeric-cell">
+      <td
+        className={`numeric-cell directional-value directional-value--${getChangeDirection(
+          calculateWeekOverWeekChange(week.priceKrwPerL, previousPriceKrwPerL)?.amountKrwPerL ?? null,
+        )}`}
+      >
+        {formatWeekChange(week, previousPriceKrwPerL)}
+      </td>
+      <td
+        className={`numeric-cell directional-value directional-value--${getChangeDirection(week.priceDiffKrwPerL)}`}
+      >
         {formatSignedPriceText(week.priceDiffKrwPerL)} · {formatSignedRatioText(week.diffRatio)}
       </td>
       <td>{sourceText}</td>
@@ -169,10 +178,19 @@ function WeekMobileGroup({
             </div>
             <div className="weekly-mobile-item__metric">
               <span>전주 대비</span>
-              <strong>{formatWeekChange(week, previousWeekBySequenceNo.get(week.sequenceNo) ?? null)}</strong>
+              <strong
+                className={`directional-value directional-value--${getChangeDirection(
+                  calculateWeekOverWeekChange(
+                    week.priceKrwPerL,
+                    previousWeekBySequenceNo.get(week.sequenceNo) ?? null,
+                  )?.amountKrwPerL ?? null,
+                )}`}
+              >
+                {formatWeekChange(week, previousWeekBySequenceNo.get(week.sequenceNo) ?? null)}
+              </strong>
             </div>
           </div>
-          <p>
+          <p className={`directional-value directional-value--${getChangeDirection(week.priceDiffKrwPerL)}`}>
             기준 대비 {formatSignedPriceText(week.priceDiffKrwPerL)} · {formatSignedRatioText(week.diffRatio)}
           </p>
         </div>

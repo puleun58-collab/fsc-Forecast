@@ -170,7 +170,6 @@
 
 .oil-price-history__quarter-average p {
   margin: var(--space-1) 0 0;
-  color: var(--accent);
   font-size: 0.78rem;
   font-weight: 700;
 }
