@@ -42,7 +42,20 @@ test('forecast reason follows the mixed Dubai and exchange-rate rule', () => {
       usdKrwDirection: 'up',
       hasNewActual: false,
     }),
-    '두바이유 하락 영향이 있었지만 환율 상승이 일부 상쇄했습니다.',
+    '환율 상승 영향이 두바이유 하락보다 크게 작용했습니다.',
+  );
+});
+
+test('forecast reason identifies the dominant signal for a downward mixed move', () => {
+  assert.equal(
+    buildForecastChangeReason({
+      comparisonAvailable: true,
+      forecastDirection: 'down',
+      dubaiDirection: 'down',
+      usdKrwDirection: 'up',
+      hasNewActual: false,
+    }),
+    '두바이유 하락 영향이 환율 상승보다 크게 작용했습니다.',
   );
 });
 

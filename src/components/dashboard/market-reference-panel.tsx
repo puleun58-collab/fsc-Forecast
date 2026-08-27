@@ -97,15 +97,25 @@ function ForecastChangeSummary({
         : forecastChange.newActualWeekCount > 1
           ? `${forecastChange.newActualWeekLabel} 외 ${forecastChange.newActualWeekCount - 1}건`
           : forecastChange.newActualWeekLabel;
+  const changeValue = formatForecastChangeValue(forecastChange);
 
   return (
-    <section className="forecast-change-summary" aria-labelledby="forecast-change-summary-title">
+    <section
+      className={`forecast-change-summary forecast-change-summary--${direction}`}
+      aria-labelledby="forecast-change-summary-title"
+    >
       <strong id="forecast-change-summary-title" className="forecast-change-summary__title">
         이번 주 전망 변화
       </strong>
-      <p className={`forecast-change-summary__delta directional-value directional-value--${direction}`}>
-        {formatForecastChange(forecastChange)}
-      </p>
+      <div className="forecast-change-summary__change">
+        <span className="forecast-change-summary__eyebrow">지난 전망 대비</span>
+        <p
+          className={`forecast-change-summary__delta directional-value directional-value--${direction}`}
+          aria-label={`지난 전망 대비 ${changeValue}`}
+        >
+          {changeValue}
+        </p>
+      </div>
       <p className="forecast-change-summary__reason">
         {forecastChange?.summaryText ?? '지난 전망과 비교할 데이터가 없습니다.'}
       </p>
@@ -140,14 +150,14 @@ function ForecastChangeFact({
   );
 }
 
-function formatForecastChange(change: FscDashboardForecastChangeSection | undefined): string {
+function formatForecastChangeValue(change: FscDashboardForecastChangeSection | undefined): string {
   if (change?.comparisonStatus !== 'available' || change.absoluteChangeKrwPerL === null) {
     return '비교 데이터 없음';
   }
 
   const sign = change.absoluteChangeKrwPerL > 0 ? '+' : '';
   const icon = change.direction === 'up' ? '↑' : change.direction === 'down' ? '↓' : '→';
-  return `지난 전망 대비 ${sign}${formatPriceNumber(change.absoluteChangeKrwPerL)}원/L ${icon}`;
+  return `${sign}${formatPriceNumber(change.absoluteChangeKrwPerL)}원/L ${icon}`;
 }
 
 function formatForecastSignal(signal: FscDashboardMarketSignal | undefined): string {

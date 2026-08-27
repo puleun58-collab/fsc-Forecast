@@ -96,11 +96,15 @@ export function buildForecastChangeReason(input: {
   }
 
   if (dubaiDirection === 'down' && usdKrwDirection === 'up') {
-    return '두바이유 하락 영향이 있었지만 환율 상승이 일부 상쇄했습니다.';
+    return forecastDirection === 'down'
+      ? '두바이유 하락 영향이 환율 상승보다 크게 작용했습니다.'
+      : '환율 상승 영향이 두바이유 하락보다 크게 작용했습니다.';
   }
 
   if (dubaiDirection === 'up' && usdKrwDirection === 'down') {
-    return '환율 하락 영향이 있었지만 두바이유 상승이 일부 상쇄했습니다.';
+    return forecastDirection === 'down'
+      ? '환율 하락 영향이 두바이유 상승보다 크게 작용했습니다.'
+      : '두바이유 상승 영향이 환율 하락보다 크게 작용했습니다.';
   }
 
   if (forecastDirection === 'up') {
