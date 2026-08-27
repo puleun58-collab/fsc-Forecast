@@ -11,7 +11,7 @@ import type {
   FscDashboardMarketSignal,
   FscDashboardSupportSection,
 } from '@/lib/dashboard/fsc-types';
-import { formatPercentText, formatPriceNumber, formatPriceText } from '@/lib/dashboard/display-format';
+import { formatPercentText, formatPriceNumber } from '@/lib/dashboard/display-format';
 
 type MarketReferencePanelProps = {
   support: FscDashboardSupportSection;
@@ -20,7 +20,6 @@ type MarketReferencePanelProps = {
 
 export function MarketReferencePanel({ support, forecastChange }: MarketReferencePanelProps) {
   const current = support.currentPrice;
-  const trend = support.trend;
 
   return (
     <section className="market-reference surface-panel" aria-labelledby="market-reference-title">
@@ -46,14 +45,6 @@ export function MarketReferencePanel({ support, forecastChange }: MarketReferenc
             </p>
             <span className="metric-caption">수집 시각 {formatDisplayDateTime(current.sourceObservedAt)}</span>
           </div>
-          <div className="market-reference__facts" aria-label="시장 참고 요약">
-            <MarketFact label="최신 주간 평균" value={formatPriceText(trend.latestWeeklyAverageKrwPerL)} />
-            <MarketFact label="최신 월간 평균" value={formatPriceText(trend.latestMonthlyAverageKrwPerL)} />
-            <MarketFact
-              label="커버리지"
-              value={`${formatDisplayDate(current.coverageStartDate)}–${formatDisplayDate(current.coverageEndDate)}`}
-            />
-          </div>
           <ForecastChangeSummary
             forecastChange={forecastChange}
             marketSignals={support.marketSignals.signals}
@@ -67,15 +58,6 @@ export function MarketReferencePanel({ support, forecastChange }: MarketReferenc
         </div>
       )}
     </section>
-  );
-}
-
-function MarketFact({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="market-reference__fact">
-      <span className="metric-label">{label}</span>
-      <strong>{value}</strong>
-    </div>
   );
 }
 
