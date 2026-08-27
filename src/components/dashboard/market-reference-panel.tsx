@@ -111,7 +111,7 @@ function ForecastChangeSummary({
         id="forecast-change-summary-title"
         className="market-reference-card__title forecast-change-summary__title"
       >
-        이번 주 전망 변화
+        분기 평균 예상 유가 변화
       </strong>
       <span className="market-reference-card__context forecast-change-summary__eyebrow">
         지난 전망 대비
