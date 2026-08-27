@@ -20,37 +20,58 @@ type MarketReferencePanelProps = {
 
 export function MarketReferencePanel({ support, forecastChange }: MarketReferencePanelProps) {
   const current = support.currentPrice;
+  const marketSignals = support.marketSignals;
+  const orderedMarketSignals = (['dubai', 'usd-krw'] as const)
+    .map((indicatorCode) =>
+      marketSignals.signals.find((signal) => signal.indicatorCode === indicatorCode),
+    )
+    .filter((signal): signal is FscDashboardMarketSignal => signal !== undefined);
 
   return (
     <section className="market-reference surface-panel" aria-labelledby="market-reference-title">
       <div className="panel-header panel-header--inline">
         <div>
-          <h2 id="market-reference-title">오피넷 시장 참고값</h2>
-          <p>FSC 판단의 보조 지표이며, 주요 산출 결과보다 낮은 우선순위로 표시합니다.</p>
+          <h2 id="market-reference-title">유가·시장 참고 지표</h2>
+          <p>국내 일일 평균 경유가와 전망 변화, 두바이유·환율 흐름을 함께 표시합니다.</p>
         </div>
       </div>
       {current.availability === 'available' ? (
-        <div className="market-reference__grid">
-          <div className="market-reference__latest">
-            <span className="metric-label">
-              {current.latestPriceDate === null
-                ? '최종 평균 경유가'
-                : `${formatDisplayDate(current.latestPriceDate)} 최종 평균 경유가`}
-            </span>
-            <PriceValue value={current.latestPriceKrwPerL} size="scenario" />
-            <p className={`directional-value directional-value--${current.direction}`}>
-              전일 대비 {mapDirectionLabel(current.direction)}{' '}
-              {formatDirectionalPriceChange(current.direction, current.absoluteChangeKrwPerL)} ·{' '}
-              {formatPercentText(current.percentChange)}
-            </p>
-            <span className="metric-caption">수집 시각 {formatDisplayDateTime(current.sourceObservedAt)}</span>
+        <>
+          <div className="market-reference__grid" aria-label="유가 및 시장 참고 지표 카드">
+            <article className="market-reference-card market-reference__latest">
+              <strong className="market-reference-card__title">일일 평균 경유가</strong>
+              <span className="market-reference-card__context">
+                {current.latestPriceDate === null
+                  ? '기준일 확인 중'
+                  : `${formatDisplayDate(current.latestPriceDate)} 기준`}
+              </span>
+              <PriceValue value={current.latestPriceKrwPerL} size="scenario" />
+              <p className={`directional-value directional-value--${current.direction}`}>
+                전일 대비{' '}
+                {formatDirectionalPriceChange(current.direction, current.absoluteChangeKrwPerL)} ·{' '}
+                {formatPercentText(current.percentChange)} · {mapDirectionLabel(current.direction)}
+              </p>
+              <span className="market-reference-card__footer metric-caption">
+                수집 시각 {formatDisplayDateTime(current.sourceObservedAt)}
+              </span>
+            </article>
+            <ForecastChangeSummary
+              forecastChange={forecastChange}
+              marketSignals={marketSignals.signals}
+            />
+            {orderedMarketSignals.map((signal) => (
+              <MarketSignalCard key={signal.indicatorCode} signal={signal} />
+            ))}
           </div>
-          <ForecastChangeSummary
-            forecastChange={forecastChange}
-            marketSignals={support.marketSignals.signals}
-          />
-          <MarketSignalsSection support={support} />
-        </div>
+          {marketSignals.summaryText ? (
+            <p className="market-reference__summary">{marketSignals.summaryText}</p>
+          ) : null}
+          {marketSignals.status !== 'ready' && marketSignals.unavailableReason ? (
+            <span className="market-reference__status metric-caption">
+              {marketSignals.unavailableReason}
+            </span>
+          ) : null}
+        </>
       ) : (
         <div className="empty-state" role="status">
           <strong>오피넷 현재 유가를 불러오지 못했습니다.</strong>
@@ -83,21 +104,24 @@ function ForecastChangeSummary({
 
   return (
     <section
-      className={`forecast-change-summary forecast-change-summary--${direction}`}
+      className={`market-reference-card forecast-change-summary forecast-change-summary--${direction}`}
       aria-labelledby="forecast-change-summary-title"
     >
-      <strong id="forecast-change-summary-title" className="forecast-change-summary__title">
+      <strong
+        id="forecast-change-summary-title"
+        className="market-reference-card__title forecast-change-summary__title"
+      >
         이번 주 전망 변화
       </strong>
-      <div className="forecast-change-summary__change">
-        <span className="forecast-change-summary__eyebrow">지난 전망 대비</span>
-        <p
-          className={`forecast-change-summary__delta directional-value directional-value--${direction}`}
-          aria-label={`지난 전망 대비 ${changeValue}`}
-        >
-          {changeValue}
-        </p>
-      </div>
+      <span className="market-reference-card__context forecast-change-summary__eyebrow">
+        지난 전망 대비
+      </span>
+      <p
+        className={`forecast-change-summary__delta directional-value directional-value--${direction}`}
+        aria-label={`지난 전망 대비 ${changeValue}`}
+      >
+        {changeValue}
+      </p>
       <p className="forecast-change-summary__reason">
         {forecastChange?.summaryText ?? '지난 전망과 비교할 데이터가 없습니다.'}
       </p>
@@ -155,30 +179,6 @@ function formatForecastSignal(signal: FscDashboardMarketSignal | undefined): str
   return `${formatPercentText(signal.percentChange)} ${icon}`;
 }
 
-function MarketSignalsSection({ support }: { support: FscDashboardSupportSection }) {
-  const marketSignals = support.marketSignals;
-
-  return (
-    <div className="market-signals">
-      <div className="market-signals__heading">
-        <strong>주요 시장 요인</strong>
-        <span>두바이유와 USD/KRW의 최신 일별 유효 관측값을 표시합니다.</span>
-      </div>
-      {marketSignals.signals.length > 0 ? (
-        <div className="market-signals__grid" aria-label="공개 시장 요인">
-          {marketSignals.signals.map((signal) => (
-            <MarketSignalCard key={signal.indicatorCode} signal={signal} />
-          ))}
-        </div>
-      ) : null}
-      <p>{marketSignals.summaryText}</p>
-      {marketSignals.status !== 'ready' && marketSignals.unavailableReason ? (
-        <span className="metric-caption">{marketSignals.unavailableReason}</span>
-      ) : null}
-    </div>
-  );
-}
-
 function MarketSignalCard({ signal }: { signal: FscDashboardMarketSignal }) {
   const hasComparison =
     signal.value !== null &&
@@ -187,10 +187,16 @@ function MarketSignalCard({ signal }: { signal: FscDashboardMarketSignal }) {
     signal.percentChange !== null;
 
   return (
-    <article className="market-signal-card" title={signal.explanation}>
-      <span className="metric-label">{signal.displayName}</span>
+    <article
+      className="market-reference-card market-signal-card"
+      title={signal.explanation}
+    >
+      <strong className="market-reference-card__title">{signal.displayName}</strong>
       {hasComparison ? (
         <>
+          <span className="market-reference-card__context">
+            {formatDisplayDate(signal.latestObservationDate)} 관측
+          </span>
           <strong className="market-signal-card__value">{formatMarketSignalValue(signal)}</strong>
           <span
             className={`market-signal-card__change directional-value directional-value--${signal.direction}`}
@@ -198,12 +204,14 @@ function MarketSignalCard({ signal }: { signal: FscDashboardMarketSignal }) {
             전일 대비 {formatMarketSignalChange(signal)} ({formatPercentText(signal.percentChange)}) ·{' '}
             {mapDirectionLabel(signal.direction)}
           </span>
-          <span className="metric-caption">관측 기준 {formatDisplayDate(signal.latestObservationDate)}</span>
         </>
       ) : (
-        <strong>유효한 일별 관측값이 부족합니다.</strong>
+        <>
+          <span className="market-reference-card__context">관측 기준 확인 중</span>
+          <strong>유효한 일별 관측값이 부족합니다.</strong>
+        </>
       )}
-      <span className="metric-caption">
+      <span className="market-reference-card__footer metric-caption">
         {signal.providerName} · {signal.valueBasisLabel}
       </span>
       {signal.status === 'checking' ? (
