@@ -2211,15 +2211,49 @@ main {
 
 @media (min-width: 1101px) {
   .market-reference__grid {
-    row-gap: 0;
+    row-gap: 12px;
   }
 
   .forecast-change-summary {
-    margin-bottom: 12px;
+    gap: 8px;
+    margin-top: -41px;
+    margin-bottom: 0;
+    padding: 11px 15px 10px;
   }
 
-  .market-signals {
-    margin-top: 0;
+  .forecast-change-summary__title {
+    font-size: 0.9rem;
+    line-height: 1.2;
+  }
+
+  .forecast-change-summary__eyebrow {
+    font-size: 0.72rem;
+    line-height: 1.2;
+  }
+
+  .forecast-change-summary__delta {
+    font-size: 1.75rem;
+    line-height: 1.05;
+  }
+
+  .forecast-change-summary__reason {
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  .forecast-change-summary__details div {
+    min-height: 0;
+    padding: 3px 0;
+  }
+
+  .forecast-change-summary__details dt {
+    font-size: 0.74rem;
+    line-height: 1.2;
+  }
+
+  .forecast-change-summary__details dd {
+    font-size: 0.76rem;
+    line-height: 1.2;
   }
 }
 
