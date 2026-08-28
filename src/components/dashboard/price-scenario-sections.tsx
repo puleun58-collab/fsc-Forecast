@@ -7,15 +7,20 @@ import { OilPriceHistory } from './oil-price-history';
 import { WeeklyDetailTable } from './weekly-detail-table';
 import { WeeklyForecastSection } from './weekly-forecast-section';
 
-import type { FscDashboardResultSection, OilPriceHistorySection } from '@/lib/dashboard/fsc-types';
+import type {
+  FscDashboardCurrentPriceSection,
+  FscDashboardResultSection,
+  OilPriceHistorySection,
+} from '@/lib/dashboard/fsc-types';
 import { buildFscPriceScenario, parseScenarioPrice } from '@/lib/dashboard/price-scenario';
 
 type PriceScenarioSectionsProps = {
   fsc: FscDashboardResultSection;
   oilPriceHistory: OilPriceHistorySection;
+  currentPrice: FscDashboardCurrentPriceSection;
 };
 
-export function PriceScenarioSections({ fsc, oilPriceHistory }: PriceScenarioSectionsProps) {
+export function PriceScenarioSections({ fsc, oilPriceHistory, currentPrice }: PriceScenarioSectionsProps) {
   const [priceInput, setPriceInput] = useState(fsc.basePriceKrwPerL);
   const scenarioPrice = parseScenarioPrice(priceInput);
   const scenarioFsc = scenarioPrice === null ? fsc : buildFscPriceScenario(fsc, scenarioPrice);
@@ -31,6 +36,7 @@ export function PriceScenarioSections({ fsc, oilPriceHistory }: PriceScenarioSec
     <>
       <DecisionSummary
         fsc={scenarioFsc}
+        currentPrice={currentPrice}
         priceInput={priceInput}
         inputError={inputError}
         isPriceModified={isModified}

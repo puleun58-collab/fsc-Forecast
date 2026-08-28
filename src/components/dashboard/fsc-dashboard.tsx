@@ -55,8 +55,9 @@ export async function FscDashboard({ data }: FscDashboardProps) {
         key={data.fsc.resultId}
         fsc={data.fsc}
         oilPriceHistory={oilPriceHistory}
+        currentPrice={data.support.currentPrice}
       />
-      <MarketReferencePanel support={data.support} forecastChange={data.fsc.forecastChange} />
+      <MarketReferencePanel support={data.support} />
       <MethodologyDisclosure fsc={data.fsc} />
       <DataSourcesDisclosure dataSources={data.dataSources} />
     </main>
