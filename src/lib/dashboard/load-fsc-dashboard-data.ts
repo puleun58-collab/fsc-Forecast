@@ -243,7 +243,7 @@ async function loadPreviousForecastResult(input: {
       weeks: {
         none: {
           forecastSourceKind: {
-            in: ['applied_price_fallback', 'base_price_fallback'],
+            in: ['monthly_point', 'carry_forward', 'applied_price_fallback', 'base_price_fallback'],
           },
         },
       },

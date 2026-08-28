@@ -108,7 +108,8 @@ function WeekTableRow({
   week: FscDashboardWeekItem;
   previousPriceKrwPerL: string | null;
 }) {
-  const sourceText = `${mapForecastSourceKind(week.forecastSourceKind)}${week.fallbackUsed ? ' · 대체값 사용' : ''}`;
+  const isPendingForecast = week.priceKind === 'forecast' && week.priceKrwPerL === null;
+  const sourceText = isPendingForecast ? '예측값 산정 중' : mapForecastSourceKind(week.forecastSourceKind);
 
   return (
     <tr className={`weekly-table__row weekly-table__row--${week.priceKind}`}>
@@ -124,11 +125,11 @@ function WeekTableRow({
       <td>
         <span className={`kind-label kind-label--${week.priceKind}`}>
           <span aria-hidden="true" />
-          {mapWeekKind(week.priceKind)}
+          {isPendingForecast ? '예측값 산정 중' : mapWeekKind(week.priceKind)}
         </span>
       </td>
       <td className="numeric-cell">
-        <PriceValue value={week.priceKrwPerL} size="compact" />
+        <PriceValue value={week.priceKrwPerL} fallback="-" size="compact" />
       </td>
       <td
         className={`numeric-cell directional-value directional-value--${getChangeDirection(
@@ -140,7 +141,9 @@ function WeekTableRow({
       <td
         className={`numeric-cell directional-value directional-value--${getChangeDirection(week.priceDiffKrwPerL)}`}
       >
-        {formatSignedPriceText(week.priceDiffKrwPerL)} · {formatSignedRatioText(week.diffRatio)}
+        {isPendingForecast
+          ? '-'
+          : `${formatSignedPriceText(week.priceDiffKrwPerL)} · ${formatSignedRatioText(week.diffRatio)}`}
       </td>
       <td>{sourceText}</td>
     </tr>
@@ -169,12 +172,16 @@ function WeekMobileGroup({
             <strong>
               {formatSequenceWeekLabel(week.sequenceNo)} · {formatWeekRange(week, true)}
             </strong>
-            <span>{mapWeekKind(week.priceKind)}</span>
+            <span>
+              {week.priceKind === 'forecast' && week.priceKrwPerL === null
+                ? '예측값 산정 중'
+                : mapWeekKind(week.priceKind)}
+            </span>
           </div>
           <div className="weekly-mobile-item__metrics">
             <div className="weekly-mobile-item__metric">
               <span>가격</span>
-              <PriceValue value={week.priceKrwPerL} size="scenario" />
+              <PriceValue value={week.priceKrwPerL} fallback="-" size="scenario" />
             </div>
             <div className="weekly-mobile-item__metric">
               <span>전주 대비</span>
@@ -191,7 +198,9 @@ function WeekMobileGroup({
             </div>
           </div>
           <p className={`directional-value directional-value--${getChangeDirection(week.priceDiffKrwPerL)}`}>
-            기준 대비 {formatSignedPriceText(week.priceDiffKrwPerL)} · {formatSignedRatioText(week.diffRatio)}
+            {week.priceKrwPerL === null
+              ? '기준 대비 -'
+              : `기준 대비 ${formatSignedPriceText(week.priceDiffKrwPerL)} · ${formatSignedRatioText(week.diffRatio)}`}
           </p>
         </div>
       ))}

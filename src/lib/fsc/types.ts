@@ -133,17 +133,17 @@ export interface FscQuarterWeekDraft {
   weekStartDate: Date;
   weekEndDate: Date;
   priceKind: 'actual' | 'forecast';
-  priceKrwPerL: Prisma.Decimal;
+  priceKrwPerL: Prisma.Decimal | null;
   actualPriceKrwPerL: Prisma.Decimal | null;
   forecastPriceKrwPerL: Prisma.Decimal | null;
   sourcePriceDate: Date | null;
   sourceRevisionIds: Prisma.JsonValue | null;
   forecastPointId: string | null;
-  forecastSourceKind: 'weekly_point' | 'monthly_point' | 'carry_forward' | 'applied_price_fallback' | 'base_price_fallback' | null;
+  forecastSourceKind: 'weekly_point' | 'weekly_trend_extension' | null;
   fallbackUsed: boolean;
   basePriceKrwPerL: Prisma.Decimal;
-  priceDiffKrwPerL: Prisma.Decimal;
-  diffRatio: Prisma.Decimal;
+  priceDiffKrwPerL: Prisma.Decimal | null;
+  diffRatio: Prisma.Decimal | null;
 }
 
 export interface BuildFscQuarterWeeksResult {

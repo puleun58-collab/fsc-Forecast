@@ -52,6 +52,7 @@ enum FscDataFreshnessStatus {
 
 enum FscForecastSourceKind {
   weekly_point
+  weekly_trend_extension
   monthly_point
   carry_forward
   applied_price_fallback
@@ -347,7 +348,7 @@ model FscQuarterWeek {
   weekStartDate        DateTime
   weekEndDate          DateTime
   priceKind            FscPriceKind
-  priceKrwPerL         Decimal                @db.Decimal(10, 3)
+  priceKrwPerL         Decimal?               @db.Decimal(10, 3)
   actualPriceKrwPerL   Decimal?               @db.Decimal(10, 3)
   forecastPriceKrwPerL Decimal?               @db.Decimal(10, 3)
   sourcePriceDate      DateTime?
@@ -357,8 +358,8 @@ model FscQuarterWeek {
   forecastSourceKind   FscForecastSourceKind?
   fallbackUsed         Boolean                @default(false)
   basePriceKrwPerL     Decimal                @db.Decimal(10, 3)
-  priceDiffKrwPerL     Decimal                @db.Decimal(10, 3)
-  diffRatio            Decimal                @db.Decimal(10, 6)
+  priceDiffKrwPerL     Decimal?               @db.Decimal(10, 3)
+  diffRatio            Decimal?               @db.Decimal(10, 6)
   createdAt            DateTime               @default(now())
 
   @@unique([fscResultId, sequenceNo])

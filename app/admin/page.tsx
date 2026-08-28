@@ -203,7 +203,7 @@ export default async function AdminPage() {
         <SectionCard
           title="actual/forecast 주차"
           badge={activeResultDto ? `${activeResultDto.weeks.length}개 주차` : '결과 없음'}
-          description="actual/forecast 구분과 fallback source를 개발용 상세로 확인합니다."
+          description="actual과 주간 기반 forecast 산출 방식을 개발용 상세로 확인합니다."
         >
           {activeResultDto ? (
             <ul className="admin-list">
@@ -213,8 +213,8 @@ export default async function AdminPage() {
                     {week.sequenceNo}주차 · {week.weekStartDate.slice(0, 10)} ~ {week.weekEndDate.slice(0, 10)}
                   </strong>
                   <span>
-                    {week.priceKind} · {week.priceKrwPerL}원/L · source {week.forecastSourceKind ?? 'actual'}
-                    {week.fallbackUsed ? ' · fallback' : ''}
+                    {week.priceKind} · {week.priceKrwPerL === null ? '산정 중' : `${week.priceKrwPerL}원/L`} · source{' '}
+                    {week.forecastSourceKind ?? (week.priceKind === 'actual' ? 'actual' : 'pending')}
                   </span>
                 </li>
               ))}

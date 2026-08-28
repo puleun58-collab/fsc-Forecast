@@ -140,13 +140,13 @@ export interface FscDashboardWeekItem {
   weekStartDate: string;
   weekEndDate: string;
   priceKind: 'actual' | 'forecast';
-  priceKrwPerL: string;
+  priceKrwPerL: string | null;
   actualPriceKrwPerL: string | null;
   forecastPriceKrwPerL: string | null;
-  forecastSourceKind: 'weekly_point' | 'monthly_point' | 'carry_forward' | 'applied_price_fallback' | 'base_price_fallback' | null;
+  forecastSourceKind: 'weekly_point' | 'weekly_trend_extension' | null;
   fallbackUsed: boolean;
-  priceDiffKrwPerL: string;
-  diffRatio: string;
+  priceDiffKrwPerL: string | null;
+  diffRatio: string | null;
 }
 
 export interface FscDashboardResultSection {

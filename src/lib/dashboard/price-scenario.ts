@@ -2,10 +2,6 @@ import type { FscDashboardResultSection, FscDashboardWeekItem } from './fsc-type
 
 const PRICE_SCALE = 3;
 const RATIO_SCALE = 6;
-const FALLBACK_SOURCE_KINDS = new Set<FscDashboardWeekItem['forecastSourceKind']>([
-  'applied_price_fallback',
-  'base_price_fallback',
-]);
 
 function round(value: number, scale: number): number {
   const factor = 10 ** scale;
@@ -59,19 +55,20 @@ function buildScenarioWeek(
   week: FscDashboardWeekItem,
   scenarioPriceKrwPerL: number,
 ): FscDashboardWeekItem {
-  const originalWeekPrice = Number(week.priceKrwPerL);
-  const usesScenarioFallback = FALLBACK_SOURCE_KINDS.has(week.forecastSourceKind);
-  const priceKrwPerL = usesScenarioFallback ? scenarioPriceKrwPerL : originalWeekPrice;
+  if (week.priceKrwPerL === null) {
+    return {
+      ...week,
+      priceDiffKrwPerL: null,
+      diffRatio: null,
+    };
+  }
+
+  const priceKrwPerL = Number(week.priceKrwPerL);
   const priceDiffKrwPerL = round(priceKrwPerL - scenarioPriceKrwPerL, PRICE_SCALE);
   const diffRatio = round(priceDiffKrwPerL / scenarioPriceKrwPerL, RATIO_SCALE);
 
   return {
     ...week,
-    priceKrwPerL: formatPrice(priceKrwPerL),
-    forecastPriceKrwPerL:
-      usesScenarioFallback && week.priceKind === 'forecast'
-        ? formatPrice(priceKrwPerL)
-        : week.forecastPriceKrwPerL,
     priceDiffKrwPerL: formatPrice(priceDiffKrwPerL),
     diffRatio: formatRatio(diffRatio),
   };
@@ -82,18 +79,7 @@ export function buildFscPriceScenario(
   scenarioPriceKrwPerL: number,
 ): FscDashboardResultSection {
   const weeks = fsc.weeks.map((week) => buildScenarioWeek(week, scenarioPriceKrwPerL));
-  const fallbackDelta = fsc.weeks.reduce((total, week, index) => {
-    if (!FALLBACK_SOURCE_KINDS.has(week.forecastSourceKind)) {
-      return total;
-    }
-
-    return total + Number(weeks[index]?.priceKrwPerL ?? week.priceKrwPerL) - Number(week.priceKrwPerL);
-  }, 0);
-  const originalQuarterAverage = Number(fsc.quarterAverageKrwPerL);
-  const quarterAverageKrwPerL = round(
-    originalQuarterAverage + (weeks.length === 0 ? 0 : fallbackDelta / weeks.length),
-    PRICE_SCALE,
-  );
+  const quarterAverageKrwPerL = Number(fsc.quarterAverageKrwPerL);
   const calculation = calculateScenarioFscValues({
     scenarioPriceKrwPerL,
     quarterAverageKrwPerL,

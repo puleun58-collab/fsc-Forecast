@@ -272,14 +272,8 @@ export function mapForecastSourceKind(value: FscDashboardWeekItem['forecastSourc
   switch (value) {
     case 'weekly_point':
       return '주간 예측값';
-    case 'monthly_point':
-      return '월간 예측값';
-    case 'carry_forward':
-      return '직전 예측값 유지';
-    case 'applied_price_fallback':
-      return '현재 적용유가 대체';
-    case 'base_price_fallback':
-      return '기준유가 대체';
+    case 'weekly_trend_extension':
+      return '주간 추세 연장값';
     case null:
     default:
       return '실제값 반영';

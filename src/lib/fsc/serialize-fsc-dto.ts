@@ -1,7 +1,6 @@
 import type {
   ForecastRun,
   FscDataFreshnessStatus,
-  FscForecastSourceKind,
   FscPriceKind,
   FscQuarterWeek,
   FscResult,
@@ -16,15 +15,15 @@ export interface FscQuarterWeekDto {
   weekStartDate: string;
   weekEndDate: string;
   priceKind: FscPriceKind;
-  priceKrwPerL: string;
+  priceKrwPerL: string | null;
   actualPriceKrwPerL: string | null;
   forecastPriceKrwPerL: string | null;
   sourcePriceDate: string | null;
-  forecastSourceKind: FscForecastSourceKind | null;
+  forecastSourceKind: 'weekly_point' | 'weekly_trend_extension' | null;
   fallbackUsed: boolean;
   basePriceKrwPerL: string;
-  priceDiffKrwPerL: string;
-  diffRatio: string;
+  priceDiffKrwPerL: string | null;
+  diffRatio: string | null;
 }
 
 export interface FscResultDto {
@@ -89,6 +88,10 @@ function formatOptionalDecimal(value: { toFixed: (scale: number) => string } | n
 }
 
 function serializeFscQuarterWeek(value: FscQuarterWeek): FscQuarterWeekDto {
+  const forecastSourceKind =
+    value.forecastSourceKind === 'weekly_point' || value.forecastSourceKind === 'weekly_trend_extension'
+      ? value.forecastSourceKind
+      : null;
   return {
     sequenceNo: value.sequenceNo,
     targetMonth: value.targetMonth,
@@ -96,15 +99,15 @@ function serializeFscQuarterWeek(value: FscQuarterWeek): FscQuarterWeekDto {
     weekStartDate: value.weekStartDate.toISOString(),
     weekEndDate: value.weekEndDate.toISOString(),
     priceKind: value.priceKind,
-    priceKrwPerL: value.priceKrwPerL.toFixed(PRICE_SCALE),
+    priceKrwPerL: formatOptionalDecimal(value.priceKrwPerL, PRICE_SCALE),
     actualPriceKrwPerL: formatOptionalDecimal(value.actualPriceKrwPerL, PRICE_SCALE),
     forecastPriceKrwPerL: formatOptionalDecimal(value.forecastPriceKrwPerL, PRICE_SCALE),
     sourcePriceDate: value.sourcePriceDate?.toISOString() ?? null,
-    forecastSourceKind: value.forecastSourceKind ?? null,
+    forecastSourceKind,
     fallbackUsed: value.fallbackUsed,
     basePriceKrwPerL: value.basePriceKrwPerL.toFixed(PRICE_SCALE),
-    priceDiffKrwPerL: value.priceDiffKrwPerL.toFixed(PRICE_SCALE),
-    diffRatio: value.diffRatio.toFixed(6),
+    priceDiffKrwPerL: formatOptionalDecimal(value.priceDiffKrwPerL, PRICE_SCALE),
+    diffRatio: formatOptionalDecimal(value.diffRatio, 6),
   };
 }
 

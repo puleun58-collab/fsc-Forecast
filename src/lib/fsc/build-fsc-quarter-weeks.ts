@@ -16,6 +16,7 @@ import type {
 
 const ROUND_HALF_UP = Prisma.Decimal.ROUND_HALF_UP;
 const ZERO = new Prisma.Decimal(0);
+const WEEK_MS = 604_800_000;
 
 type QuarterSettingInput = Pick<
   QuarterSetting,
@@ -91,9 +92,6 @@ function formatDateKey(value: Date): string {
   return value.toISOString().slice(0, 10);
 }
 
-function formatMonthKey(value: Date): string {
-  return `${value.getUTCFullYear()}-${String(value.getUTCMonth() + 1).padStart(2, '0')}`;
-}
 
 
 function getIsoWeekNumber(value: Date): number {
@@ -123,39 +121,77 @@ function averageDecimals(values: readonly Prisma.Decimal[]): Prisma.Decimal {
   return roundPrice(sum.dividedBy(values.length));
 }
 
-function buildWeeklyForecastIndex(points: readonly FscSourceForecastPointRow[]): Map<string, FscSourceForecastPointRow> {
-  return new Map(
-    points
-      .filter((point) => point.horizonKind === 'weekly')
-      .map((point) => [formatDateKey(toDateOnly(point.targetDate)), point]),
+function buildWeeklyForecastSeries(points: readonly FscSourceForecastPointRow[]): {
+  points: FscSourceForecastPointRow[];
+  index: Map<string, FscSourceForecastPointRow>;
+} {
+  const index = new Map<string, FscSourceForecastPointRow>();
+
+  for (const point of points) {
+    if (point.horizonKind === 'weekly') {
+      index.set(formatDateKey(toDateOnly(point.targetDate)), point);
+    }
+  }
+
+  const weeklyPoints = [...index.values()].sort(
+    (left, right) => left.targetDate.getTime() - right.targetDate.getTime(),
   );
+
+  return {
+    points: weeklyPoints,
+    index,
+  };
 }
 
-function buildMonthlyForecastIndex(points: readonly FscSourceForecastPointRow[]): Map<string, FscSourceForecastPointRow> {
-  return new Map(
-    points
-      .filter((point) => point.horizonKind === 'monthly')
-      .map((point) => [formatMonthKey(toDateOnly(point.targetDate)), point]),
-  );
-}
-
-function findCarryForwardForecastPoint(
+function calculateWeeklyTrendExtension(
   points: readonly FscSourceForecastPointRow[],
-  anchorDate: Date,
-): FscSourceForecastPointRow | null {
-  let candidate: FscSourceForecastPointRow | null = null;
+  targetDate: Date,
+): { priceKrwPerL: Prisma.Decimal; sourcePriceDate: Date } | null {
+  let previousPoint: FscSourceForecastPointRow | null = null;
+  let latestPoint: FscSourceForecastPointRow | null = null;
+  let totalWeeklyChange = ZERO;
+  let weeklyChangeCount = 0;
 
   for (const point of points) {
     const pointDate = toDateOnly(point.targetDate);
 
-    if (pointDate.getTime() > anchorDate.getTime()) {
+    if (pointDate.getTime() >= targetDate.getTime()) {
       break;
     }
 
-    candidate = point;
+    if (previousPoint) {
+      const elapsedWeeks =
+        (pointDate.getTime() - toDateOnly(previousPoint.targetDate).getTime()) / WEEK_MS;
+
+      if (elapsedWeeks > 0) {
+        totalWeeklyChange = totalWeeklyChange.plus(
+          point.pointKrwPerL.minus(previousPoint.pointKrwPerL).dividedBy(elapsedWeeks),
+        );
+        weeklyChangeCount += 1;
+      }
+    }
+
+    previousPoint = point;
+    latestPoint = point;
   }
 
-  return candidate;
+  if (latestPoint === null || weeklyChangeCount === 0) {
+    return null;
+  }
+
+  const elapsedWeeks =
+    (targetDate.getTime() - toDateOnly(latestPoint.targetDate).getTime()) / WEEK_MS;
+
+  if (elapsedWeeks <= 0) {
+    return null;
+  }
+
+  const averageWeeklyChange = totalWeeklyChange.dividedBy(weeklyChangeCount);
+
+  return {
+    priceKrwPerL: latestPoint.pointKrwPerL.plus(averageWeeklyChange.times(elapsedWeeks)),
+    sourcePriceDate: latestPoint.targetDate,
+  };
 }
 
 function findOfficialWeeklyMatch(
@@ -289,46 +325,36 @@ function createForecastWeekDraft(
   fullWeekEnd: Date,
   weekNo: number,
   sequenceNo: number,
-  forecastRun: FscSourceForecastRunRecord | null,
+  weeklyForecastPoints: readonly FscSourceForecastPointRow[],
+  weeklyForecastIndex: ReadonlyMap<string, FscSourceForecastPointRow>,
 ): FscQuarterWeekDraft {
-  const forecastPoints = forecastRun?.points ?? [];
-  const weeklyIndex = buildWeeklyForecastIndex(forecastPoints);
-  const monthlyIndex = buildMonthlyForecastIndex(forecastPoints);
-  const weeklyMatch = weeklyIndex.get(formatDateKey(fullWeekEnd)) ?? null;
-  const monthlyMatch = monthlyIndex.get(formatMonthKey(effectiveEnd)) ?? null;
-  const carryForward = findCarryForwardForecastPoint(forecastPoints, fullWeekEnd);
+  const weeklyMatch = weeklyForecastIndex.get(formatDateKey(fullWeekEnd)) ?? null;
+  const trendExtension =
+    weeklyMatch === null ? calculateWeeklyTrendExtension(weeklyForecastPoints, fullWeekEnd) : null;
 
-  let sourceKind: FscQuarterWeekDraft['forecastSourceKind'];
-  let sourcePoint: FscSourceForecastPointRow | null;
-  let priceKrwPerL: Prisma.Decimal;
-  let fallbackUsed = false;
-  let sourcePriceDate: Date | null;
+  let sourceKind: FscQuarterWeekDraft['forecastSourceKind'] = null;
+  let sourcePoint: FscSourceForecastPointRow | null = null;
+  let priceKrwPerL: Prisma.Decimal | null = null;
+  let sourcePriceDate: Date | null = null;
 
   if (weeklyMatch) {
     sourceKind = 'weekly_point';
     sourcePoint = weeklyMatch;
     priceKrwPerL = weeklyMatch.pointKrwPerL;
     sourcePriceDate = weeklyMatch.targetDate;
-  } else if (monthlyMatch) {
-    sourceKind = 'monthly_point';
-    sourcePoint = monthlyMatch;
-    priceKrwPerL = monthlyMatch.pointKrwPerL;
-    sourcePriceDate = monthlyMatch.targetDate;
-  } else if (carryForward) {
-    sourceKind = 'carry_forward';
-    sourcePoint = carryForward;
-    priceKrwPerL = carryForward.pointKrwPerL;
-    sourcePriceDate = carryForward.targetDate;
-    fallbackUsed = true;
-  } else {
-    throw new Error(
-      `Forecast coverage is missing for FSC week ${formatDateKey(effectiveStart)}..${formatDateKey(effectiveEnd)}.`,
-    );
+  } else if (trendExtension) {
+    sourceKind = 'weekly_trend_extension';
+    priceKrwPerL = trendExtension.priceKrwPerL;
+    sourcePriceDate = trendExtension.sourcePriceDate;
   }
 
-  const roundedPrice = roundPrice(priceKrwPerL);
-  const priceDiffKrwPerL = roundPrice(roundedPrice.minus(quarterSetting.basePriceKrwPerL));
-  const diffRatio = roundRatio(priceDiffKrwPerL.dividedBy(quarterSetting.basePriceKrwPerL));
+  const roundedPrice = priceKrwPerL === null ? null : roundPrice(priceKrwPerL);
+  const priceDiffKrwPerL =
+    roundedPrice === null ? null : roundPrice(roundedPrice.minus(quarterSetting.basePriceKrwPerL));
+  const diffRatio =
+    priceDiffKrwPerL === null
+      ? null
+      : roundRatio(priceDiffKrwPerL.dividedBy(quarterSetting.basePriceKrwPerL));
 
   return {
     targetYear: quarterSetting.targetYear,
@@ -346,7 +372,7 @@ function createForecastWeekDraft(
     sourceRevisionIds: null,
     forecastPointId: sourcePoint?.id ?? null,
     forecastSourceKind: sourceKind,
-    fallbackUsed,
+    fallbackUsed: false,
     basePriceKrwPerL: quarterSetting.basePriceKrwPerL,
     priceDiffKrwPerL,
     diffRatio,
@@ -363,15 +389,15 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
     dailyPriceMap,
     input.officialWeeklyPrices,
   );
+  const weeklyForecastSeries = buildWeeklyForecastSeries(input.forecastRun?.points ?? []);
 
   const weeks: FscQuarterWeekDraft[] = [];
+  const basePriceKrwPerL = input.quarterSetting.basePriceKrwPerL;
   const sourceBreakdown = {
     actual: 0,
     weekly_point: 0,
-    monthly_point: 0,
-    carry_forward: 0,
-    applied_price_fallback: 0,
-    base_price_fallback: 0,
+    weekly_trend_extension: 0,
+    forecast_pending: 0,
   };
   const actualSourceBreakdown: FscActualSourceBreakdown = {
     officialWeekly: 0,
@@ -408,8 +434,8 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
       const actualPriceKrwPerL = officialWeeklyMatch
         ? roundPrice(officialWeeklyMatch.priceKrwPerL)
         : averageDecimals(slotRows.map((row) => row.observedPriceKrwPerL));
-      const priceDiffKrwPerL = roundPrice(actualPriceKrwPerL.minus(input.quarterSetting.basePriceKrwPerL));
-      const diffRatio = roundRatio(priceDiffKrwPerL.dividedBy(input.quarterSetting.basePriceKrwPerL));
+      const priceDiffKrwPerL = roundPrice(actualPriceKrwPerL.minus(basePriceKrwPerL));
+      const diffRatio = roundRatio(priceDiffKrwPerL.dividedBy(basePriceKrwPerL));
 
       weeks.push({
         targetYear: input.quarterSetting.targetYear,
@@ -428,7 +454,7 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
         forecastPointId: null,
         forecastSourceKind: null,
         fallbackUsed: false,
-        basePriceKrwPerL: input.quarterSetting.basePriceKrwPerL,
+        basePriceKrwPerL,
         priceDiffKrwPerL,
         diffRatio,
       });
@@ -446,11 +472,14 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
         fullWeekEnd,
         weekNo,
         sequenceNo,
-        input.forecastRun,
+        weeklyForecastSeries.points,
+        weeklyForecastSeries.index,
       );
       weeks.push(forecastWeek);
       if (forecastWeek.forecastSourceKind) {
         sourceBreakdown[forecastWeek.forecastSourceKind] += 1;
+      } else {
+        sourceBreakdown.forecast_pending += 1;
       }
     }
 
@@ -462,11 +491,27 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
     throw new Error('No FSC quarter week slots were generated for the active quarter.');
   }
 
-  const actualWeekCount = weeks.filter((week) => week.priceKind === 'actual').length;
-  const forecastWeekCount = weeks.length - actualWeekCount;
-  const quarterAverageKrwPerL = averageDecimals(weeks.map((week) => week.priceKrwPerL));
-  const fallbackWeekCount =
-    sourceBreakdown.carry_forward + sourceBreakdown.applied_price_fallback + sourceBreakdown.base_price_fallback;
+  let actualWeekCount = 0;
+  let forecastWeekCount = 0;
+  const validWeekPrices: Prisma.Decimal[] = [];
+
+  for (const week of weeks) {
+    if (week.priceKind === 'actual') {
+      actualWeekCount += 1;
+    } else if (week.priceKrwPerL !== null) {
+      forecastWeekCount += 1;
+    }
+
+    if (week.priceKrwPerL !== null) {
+      validWeekPrices.push(week.priceKrwPerL);
+    }
+  }
+
+  if (validWeekPrices.length === 0) {
+    throw new Error('No valid actual or weekly forecast prices are available for FSC calculation.');
+  }
+
+  const quarterAverageKrwPerL = averageDecimals(validWeekPrices);
   const monthlyBasis = buildMonthlyBasisSummary(input.quarterSetting, input.officialMonthlyPrices);
 
   return {
@@ -483,10 +528,7 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
         dailyAverage: actualSourceBreakdown.dailyAverage,
       },
       sourceBreakdown,
-      fallbackSummary: {
-        weekCount: fallbackWeekCount,
-        ratio: weeks.length === 0 ? '0.000000' : (fallbackWeekCount / weeks.length).toFixed(6),
-      },
+      pendingForecastWeekCount: sourceBreakdown.forecast_pending,
       monthlyBasis:
         monthlyBasis === null
           ? null
