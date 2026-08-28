@@ -1695,30 +1695,40 @@ main {
   gap: 7px;
 }
 
-.scenario-matrix {
-  display: grid;
-  gap: 0;
+.scenario-panel__intro > p:last-child {
+  max-width: 44ch;
+  text-wrap: pretty;
+}
+
+.scenario-rate {
   margin: 0;
 }
 
-.scenario-matrix__row {
+.scenario-rate__row {
   display: grid;
-  grid-template-columns: minmax(110px, 0.55fr) minmax(0, 1fr);
-  gap: 12px;
-  align-items: baseline;
-  padding: 15px 0;
-  border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  gap: 14px;
+  padding: 22px 0 26px;
+  border-block: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
 }
 
-.scenario-matrix__row dt {
+.scenario-rate__row dt {
   color: var(--text-secondary);
   font-size: 0.94rem;
   font-weight: 800;
 }
 
-.scenario-matrix__row dd {
+.scenario-rate__row dd {
   margin: 0;
-  text-align: right;
+}
+
+.scenario-rate__value {
+  color: var(--ink);
+  font-size: clamp(3rem, 5vw, 4.5rem);
+  font-weight: 780;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.055em;
+  line-height: 0.92;
 }
 
 .scenario-panel__formula {
@@ -2525,13 +2535,6 @@ main {
     grid-column: 6 / -1;
   }
 
-  .scenario-matrix__row {
-    grid-template-columns: 1fr;
-  }
-
-  .scenario-matrix__row dd {
-    text-align: left;
-  }
 
   .market-reference__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

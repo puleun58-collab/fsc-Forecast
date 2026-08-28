@@ -43,7 +43,7 @@ export function DecisionSummary({
         onPriceChange={onPriceChange}
         onPriceReset={onPriceReset}
       />
-      <FscScenarioMatrix fsc={fsc} />
+      <EstimatedFscRateCard fsc={fsc} />
     </section>
   );
 }
@@ -170,34 +170,34 @@ function BaselineComparison({ fsc }: DecisionSummaryProps) {
   );
 }
 
-function FscScenarioMatrix({ fsc }: DecisionSummaryProps) {
-  const lowRateLabel = formatRateLabel(fsc.fscLowRate);
-  const highRateLabel = formatRateLabel(fsc.fscHighRate);
+type EstimatedFscRateCardProps = {
+  fsc: Pick<FscDashboardResultSection, 'diffRatio' | 'fscLowRate'>;
+};
+
+export function EstimatedFscRateCard({ fsc }: EstimatedFscRateCardProps) {
+  const oilWeightLabel = formatRateLabel(fsc.fscLowRate);
+  const estimatedFscRate = Number(fsc.diffRatio) * Number(fsc.fscLowRate);
+  const estimatedFscRateLabel = formatSignedRatioText(estimatedFscRate);
 
   return (
     <div className="decision-summary__scenario" aria-labelledby="scenario-title">
       <div className="scenario-panel">
         <div className="scenario-panel__intro">
-          <p className="section-heading__label">Derived FSC Result</p>
-          <h2 id="scenario-title">분기 예상 유가 기반 FSC 결과</h2>
-          <p>분기 평균 예상 유가에 시나리오별 FSC 조정분을 반영한 결과입니다.</p>
+          <p className="section-heading__label">Estimated FSC Rate</p>
+          <h2 id="scenario-title">다음 분기 예상 FSC율</h2>
+          <p>
+            현재 분기 평균 예상 유가와 기준유가의 차이에 유가 비중 30%를 적용하여 산출한 다음 분기 예상
+            FSC율입니다.
+          </p>
         </div>
-        <dl className="scenario-matrix">
-          <div className="scenario-matrix__row">
-            <dt>{lowRateLabel} 적용</dt>
-            <dd>
-              <PriceValue value={fsc.fscLowKrwPerL} size="scenario" />
-            </dd>
-          </div>
-          <div className="scenario-matrix__row">
-            <dt>{highRateLabel} 적용</dt>
-            <dd>
-              <PriceValue value={fsc.fscHighKrwPerL} size="scenario" />
-            </dd>
+        <dl className="scenario-rate">
+          <div className="scenario-rate__row">
+            <dt>유가 비중 {oilWeightLabel} 적용</dt>
+            <dd className="scenario-rate__value">{estimatedFscRateLabel}</dd>
           </div>
         </dl>
         <p className="scenario-panel__formula">
-          {lowRateLabel} 적용값과 {highRateLabel} 적용값은 분기 평균 예상 유가에서 파생됩니다.
+          예상 FSC율 = 기준유가 대비 증감률 × 유가 비중 {oilWeightLabel}
         </p>
       </div>
     </div>
