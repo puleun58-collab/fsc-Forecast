@@ -25,23 +25,8 @@ type DecisionSummaryProps = {
   currentPrice: FscDashboardCurrentPriceSection;
 };
 
-type DecisionSummaryInteractiveProps = DecisionSummaryProps & {
-  priceInput: string;
-  inputError: string | null;
-  isPriceModified: boolean;
-  onPriceChange: (value: string) => void;
-  onPriceReset: () => void;
-};
 
-export function DecisionSummary({
-  fsc,
-  currentPrice,
-  priceInput,
-  inputError,
-  isPriceModified,
-  onPriceChange,
-  onPriceReset,
-}: DecisionSummaryInteractiveProps) {
+export function DecisionSummary({ fsc, currentPrice }: DecisionSummaryProps) {
   const latestActualWeek = findLatestActualWeek(fsc.weeks);
   const previousActualWeek = latestActualWeek
     ? fsc.weeks.find(
@@ -57,14 +42,7 @@ export function DecisionSummary({
         previousActualWeek={previousActualWeek}
         basePriceKrwPerL={fsc.basePriceKrwPerL}
       />
-      <QuarterForecastPriceCard
-        fsc={fsc}
-        priceInput={priceInput}
-        inputError={inputError}
-        isPriceModified={isPriceModified}
-        onPriceChange={onPriceChange}
-        onPriceReset={onPriceReset}
-      />
+      <QuarterForecastPriceCard fsc={fsc} />
       <EstimatedFscRateCard fsc={fsc} />
     </section>
   );
@@ -105,6 +83,7 @@ function DailyDieselPriceCard({
         <BaselineRateComparison
           priceKrwPerL={currentPrice.latestPriceKrwPerL}
           basePriceKrwPerL={basePriceKrwPerL}
+          includeAmount
         />
         <span className="metric-caption">
           수집 시각 {formatDisplayDateTime(currentPrice.sourceObservedAt)}
@@ -163,20 +142,14 @@ function LatestActualPriceCard({
         <BaselineRateComparison
           priceKrwPerL={latestActualWeek?.priceKrwPerL ?? null}
           basePriceKrwPerL={basePriceKrwPerL}
+          includeAmount
         />
       </div>
     </article>
   );
 }
 
-function QuarterForecastPriceCard({
-  fsc,
-  priceInput,
-  inputError,
-  isPriceModified,
-  onPriceChange,
-  onPriceReset,
-}: Omit<DecisionSummaryInteractiveProps, 'currentPrice'>) {
+function QuarterForecastPriceCard({ fsc }: { fsc: FscDashboardResultSection }) {
   return (
     <article className="summary-card summary-card--quarter">
       <div className="summary-card__header">
@@ -191,37 +164,6 @@ function QuarterForecastPriceCard({
           basePriceKrwPerL={fsc.basePriceKrwPerL}
           includeAmount
         />
-        <div className="decision-summary__price-control">
-          <label htmlFor="scenario-price-input">
-            <span className="metric-label">기준유가</span>
-            <span className={`price-input${inputError ? ' price-input--error' : ''}`}>
-              <input
-                id="scenario-price-input"
-                type="number"
-                inputMode="decimal"
-                min="0.01"
-                step="0.01"
-                value={priceInput}
-                aria-describedby="scenario-price-help"
-                aria-invalid={inputError !== null}
-                onChange={(event) => onPriceChange(event.target.value)}
-              />
-              <span>원/L</span>
-            </span>
-          </label>
-          <button type="button" onClick={onPriceReset} disabled={!isPriceModified && inputError === null}>
-            초기화
-          </button>
-        </div>
-        <p
-          id="scenario-price-help"
-          className={inputError ? 'price-input__help price-input__help--error' : 'price-input__help'}
-        >
-          {inputError ??
-            (isPriceModified
-              ? '입력한 기준유가로 4개 핵심 카드를 다시 계산했습니다.'
-              : '변경하면 4개 핵심 카드에 즉시 반영됩니다.')}
-        </p>
       </div>
     </article>
   );

@@ -4,6 +4,7 @@ import test from 'node:test';
 import React, { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
+import { BaselinePriceControl } from './baseline-price-control';
 import { DecisionSummary, EstimatedFscRateCard } from './decision-summary';
 import type { FscDashboardResultSection } from '@/lib/dashboard/fsc-types';
 
@@ -66,11 +67,6 @@ test('decision summary renders the ordered four-card flow with one shared baseli
         coverageEndDate: '2026-08-27',
         sourceObservedAt: '2026-08-27T18:17:44.467Z',
       },
-      priceInput: '1500.00',
-      inputError: null,
-      isPriceModified: false,
-      onPriceChange: () => undefined,
-      onPriceReset: () => undefined,
     }),
   );
   const titles = [
@@ -83,8 +79,27 @@ test('decision summary renders the ordered four-card flow with one shared baseli
 
   assert.equal(titlePositions.every((position) => position >= 0), true);
   assert.deepEqual(titlePositions, [...titlePositions].sort((left, right) => left - right));
-  assert.match(markup, /기준유가 대비 \+23\.00% ↑/);
-  assert.equal(markup.match(/summary-card__baseline/g)?.length, 3);
+  assert.match(markup, /기준유가 대비 \+344\.94원 · \+23\.00% ↑/);
+  assert.match(markup, /기준유가 대비 \+345\.23원 · \+23\.02% ↑/);
   assert.match(markup, /기준유가 대비 \+345\.24원 · \+23\.02% ↑/);
-  assert.match(markup, /입력한 기준유가|4개 핵심 카드/);
+  assert.equal(markup.match(/summary-card__baseline/g)?.length, 3);
+  assert.doesNotMatch(markup, /scenario-price-input|기준유가 설정/);
+});
+
+test('baseline control is a standalone shared setting above the cards', () => {
+  const markup = renderToStaticMarkup(
+    createElement(BaselinePriceControl, {
+      priceInput: '1500.00',
+      inputError: null,
+      isPriceModified: false,
+      onPriceChange: () => undefined,
+      onPriceReset: () => undefined,
+    }),
+  );
+
+  assert.match(markup, /공통 계산 기준/);
+  assert.match(markup, /기준유가 설정/);
+  assert.match(markup, /4개 핵심 카드의 공통 계산 기준입니다/);
+  assert.match(markup, /변경하면 아래 4개 핵심 카드에 즉시 반영됩니다/);
+  assert.match(markup, /id="scenario-price-input"/);
 });

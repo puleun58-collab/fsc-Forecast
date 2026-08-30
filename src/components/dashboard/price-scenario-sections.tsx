@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 
+import { BaselinePriceControl } from './baseline-price-control';
 import { DecisionSummary } from './decision-summary';
 import { OilPriceHistory } from './oil-price-history';
 import { WeeklyDetailTable } from './weekly-detail-table';
@@ -27,22 +28,21 @@ export function PriceScenarioSections({ fsc, oilPriceHistory, currentPrice }: Pr
   const defaultPrice = Number(fsc.basePriceKrwPerL);
   const isModified = scenarioPrice !== null && Math.abs(scenarioPrice - defaultPrice) >= 0.005;
   const inputError = priceInput.trim() === ''
-    ? '가격을 입력해 주세요.'
+    ? '기준유가를 입력해 주세요.'
     : scenarioPrice === null
-      ? '0보다 큰 숫자를 입력해 주세요.'
+      ? '0보다 큰 기준유가를 입력해 주세요.'
       : null;
 
   return (
     <>
-      <DecisionSummary
-        fsc={scenarioFsc}
-        currentPrice={currentPrice}
+      <BaselinePriceControl
         priceInput={priceInput}
         inputError={inputError}
         isPriceModified={isModified}
         onPriceChange={setPriceInput}
         onPriceReset={() => setPriceInput(fsc.basePriceKrwPerL)}
       />
+      <DecisionSummary fsc={scenarioFsc} currentPrice={currentPrice} />
       <OilPriceHistory history={oilPriceHistory} />
       <WeeklyForecastSection fsc={scenarioFsc} />
       <WeeklyDetailTable
