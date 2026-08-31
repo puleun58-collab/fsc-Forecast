@@ -86,7 +86,7 @@ test('decision summary renders the ordered four-card flow with one shared baseli
   assert.doesNotMatch(markup, /scenario-price-input|기준유가 설정/);
 });
 
-test('baseline control is a standalone shared setting above the cards', () => {
+test('baseline control renders as a compact shared toolbar', () => {
   const markup = renderToStaticMarkup(
     createElement(BaselinePriceControl, {
       priceInput: '1500.00',
@@ -98,8 +98,24 @@ test('baseline control is a standalone shared setting above the cards', () => {
   );
 
   assert.match(markup, /공통 계산 기준/);
-  assert.match(markup, /기준유가 설정/);
-  assert.match(markup, /4개 핵심 카드의 공통 계산 기준입니다/);
-  assert.match(markup, /변경하면 아래 4개 핵심 카드에 즉시 반영됩니다/);
+  assert.match(markup, />기준유가<\/h2>/);
+  assert.match(markup, /4개 카드에 즉시 반영/);
+  assert.doesNotMatch(markup, /기준유가 설정|4개 핵심 카드의 공통 계산 기준입니다/);
   assert.match(markup, /id="scenario-price-input"/);
+});
+
+test('compact baseline toolbar keeps validation feedback inline', () => {
+  const markup = renderToStaticMarkup(
+    createElement(BaselinePriceControl, {
+      priceInput: '',
+      inputError: '기준유가를 입력해 주세요.',
+      isPriceModified: false,
+      onPriceChange: () => undefined,
+      onPriceReset: () => undefined,
+    }),
+  );
+
+  assert.match(markup, /price-input--error/);
+  assert.match(markup, /price-input__help price-input__help--error/);
+  assert.match(markup, /기준유가를 입력해 주세요/);
 });
