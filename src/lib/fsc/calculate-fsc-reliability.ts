@@ -2,6 +2,10 @@ import { Prisma } from '@prisma/client';
 
 import { calculateDataFreshness } from '@/lib/dashboard/dashboard-time';
 
+import {
+  applyReliabilityGuardrails,
+  calculateBaseReliabilityGrade,
+} from './reliability-grade';
 import { MIN_RELIABILITY_SAMPLE_COUNT, type CalculateFscReliabilityInput, type CalculateFscReliabilityOutput } from './types';
 
 const ROUND_HALF_UP = Prisma.Decimal.ROUND_HALF_UP;
@@ -137,32 +141,6 @@ function calculateRecent4wErrorTrend(points: readonly BacktestPointRecord[]): st
   return 'stable';
 }
 
-function calculateReliabilityGrade(
-  sampleCount: number,
-  recent13wWeeklyPriceMape: Prisma.Decimal | null,
-): string {
-  if (sampleCount < MIN_RELIABILITY_SAMPLE_COUNT || recent13wWeeklyPriceMape === null) {
-    return 'U';
-  }
-
-  const mape = recent13wWeeklyPriceMape.toNumber();
-
-  if (mape <= 3) {
-    return 'A';
-  }
-  if (mape <= 5) {
-    return 'B';
-  }
-  if (mape <= 7.5) {
-    return 'C';
-  }
-  if (mape <= 10) {
-    return 'D';
-  }
-
-  return 'E';
-}
-
 function calculateFreshnessStatus(
   currentTruthCutoffAt: Date | null,
   now: Date,
@@ -179,12 +157,21 @@ export function calculateFscReliability(input: CalculateFscReliabilityInput): Ca
   const recent13wDirectionAccuracy = calculateDirectionAccuracy(backtestPoints.slice(-13));
   const recent4wWeeklyPriceMae = calculateMae(backtestPoints, 4);
   const recent4wErrorTrend = calculateRecent4wErrorTrend(backtestPoints);
-  const recent26wWeeklyPriceMae =
-    input.forecastRun?.maeKrwPerL?.toDecimalPlaces(3, ROUND_HALF_UP) ?? calculateMae(backtestPoints, 26);
+  const recent26wWeeklyPriceMae = calculateMae(backtestPoints, 26);
   const forecastBias4w = calculateBias(backtestPoints, 4);
   const forecastBias13w = calculateBias(backtestPoints, 13);
-  const reliabilityGrade = calculateReliabilityGrade(reliabilitySampleCount, recent13wWeeklyPriceMape);
+  const baseReliabilityGrade = calculateBaseReliabilityGrade(
+    reliabilitySampleCount,
+    recent13wWeeklyPriceMape,
+  );
   const dataFreshnessStatus = calculateFreshnessStatus(input.currentTruthCutoffAt, input.now ?? new Date());
+  const guardrails = applyReliabilityGuardrails({
+    baseGrade: baseReliabilityGrade,
+    recent4wErrorTrend,
+    recent13wMaeKrwPerL: recent13wWeeklyPriceMae,
+    recent26wMaeKrwPerL: recent26wWeeklyPriceMae,
+    dataFreshnessStatus,
+  });
 
   return {
     recent13wWeeklyPriceMae,
@@ -198,7 +185,9 @@ export function calculateFscReliability(input: CalculateFscReliabilityInput): Ca
     forecastBias13w,
     reliabilitySampleCount,
     reliabilityMinimumSampleCount: MIN_RELIABILITY_SAMPLE_COUNT,
-    reliabilityGrade,
+    baseReliabilityGrade,
+    reliabilityGrade: guardrails.grade,
+    reliabilityAdjustmentReasons: guardrails.reasons,
     dataFreshnessStatus,
   };
 }

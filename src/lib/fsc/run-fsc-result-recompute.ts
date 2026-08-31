@@ -98,6 +98,18 @@ export async function runFscResultRecompute(now = new Date()): Promise<FscResult
             actualWeekCount: quarterWeeks.actualWeekCount,
             forecastWeekCount: quarterWeeks.forecastWeekCount,
             monthlyBasisQuarterAverageKrwPerL: quarterWeeks.monthlyBasis?.quarterAverageKrwPerL?.toFixed(3) ?? null,
+            reliability: {
+              baseGrade: reliability.baseReliabilityGrade,
+              finalGrade: reliability.reliabilityGrade,
+              adjustmentReasons: reliability.reliabilityAdjustmentReasons,
+              sampleCount: reliability.reliabilitySampleCount,
+              minimumSampleCount: reliability.reliabilityMinimumSampleCount,
+              recent13wWeeklyPriceMape: reliability.recent13wWeeklyPriceMape?.toFixed(6) ?? null,
+              recent13wWeeklyPriceMae: reliability.recent13wWeeklyPriceMae?.toFixed(3) ?? null,
+              recent26wWeeklyPriceMae: reliability.recent26wWeeklyPriceMae?.toFixed(3) ?? null,
+              recent4wErrorTrend: reliability.recent4wErrorTrend,
+              dataFreshnessStatus: reliability.dataFreshnessStatus,
+            },
             ...((quarterWeeks.calculationPayload as Prisma.InputJsonObject) ?? {}),
           },
           weeks: {

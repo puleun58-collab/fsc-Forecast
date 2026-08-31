@@ -86,7 +86,7 @@ test('mapReliabilityStatus distinguishes pre-sample, in-progress, and graded sta
     }),
     {
       label: '신뢰도 B · MAPE 4.2%',
-      detail: '최근 13개 주간 백테스트의 MAPE를 기준으로 산정한 등급입니다.',
+      detail: '최근 13주 MAPE 기본 등급에 최근 4주 오차 추세, 최근 26주 안정성, 데이터 최신성을 반영한 등급입니다.',
       tone: 'ok',
     },
   );
@@ -114,11 +114,27 @@ test('mapReliabilityStatus assigns warning and critical tones for lower grades',
   );
 });
 
+test('mapReliabilityStatus renders the top grade with its MAPE', () => {
+  assert.deepEqual(
+    mapReliabilityStatus({
+      grade: 'A+',
+      sampleCount: 18,
+      minimumSampleCount: 13,
+      recent13wWeeklyPriceMape: 0.84,
+    }),
+    {
+      label: '신뢰도 A+ · MAPE 0.8%',
+      detail: '최근 13주 MAPE 기본 등급에 최근 4주 오차 추세, 최근 26주 안정성, 데이터 최신성을 반영한 등급입니다.',
+      tone: 'ok',
+    },
+  );
+});
+
 test('reliability policy copy explains sample minimum and MAPE-only grading', () => {
   assert.deepEqual(RELIABILITY_POLICY_ITEMS, [
     '공식 신뢰도 등급은 유효한 주간 백테스트 13개가 확보된 후 산정합니다.',
     '현재 분기의 Actual·Forecast 주차 수는 신뢰도 표본 수에 포함하지 않습니다.',
-    '등급은 최근 13개 백테스트의 MAPE를 기준으로 산정합니다.',
+    '등급은 최근 13주 MAPE로 기본 산정한 뒤 최근 4주 오차 추세, 최근 26주 안정성, 데이터 최신성으로 보정합니다.',
     'MAE와 Bias는 품질 참고 지표로 사용하며 공식 등급에는 반영하지 않습니다.',
   ]);
 });

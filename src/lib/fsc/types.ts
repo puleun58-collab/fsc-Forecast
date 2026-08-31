@@ -179,6 +179,8 @@ export interface CalculateFscReliabilityOutput {
   forecastBias13w: Prisma.Decimal | null;
   reliabilitySampleCount: number;
   reliabilityMinimumSampleCount: number;
+  baseReliabilityGrade: string;
   reliabilityGrade: string;
+  reliabilityAdjustmentReasons: string[];
   dataFreshnessStatus: 'fresh' | 'delayed' | 'stale' | 'unavailable';
 }
