@@ -14,7 +14,7 @@ export function BaselinePriceControl({
   onPriceReset,
 }: BaselinePriceControlProps) {
   return (
-    <section className="baseline-control surface-panel" aria-label="기준유가 설정">
+    <section className="baseline-control" aria-label="기준유가 설정">
       <div className="baseline-control__fields">
         <label htmlFor="scenario-price-input">기준유가</label>
         <span className={`price-input${inputError ? ' price-input--error' : ''}`}>

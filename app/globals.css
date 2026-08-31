@@ -1524,7 +1524,6 @@ main {
   margin-left: auto;
   width: max-content;
   max-width: 100%;
-  padding: 10px 14px;
 }
 
 .baseline-control__fields {
@@ -2473,7 +2472,6 @@ main {
     flex: 1 1 100%;
     width: auto;
     margin-left: 0;
-    padding: 12px 14px;
   }
 
   .baseline-control__fields {

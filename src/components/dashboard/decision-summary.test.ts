@@ -102,7 +102,7 @@ test('baseline control renders as a compact input-only card', () => {
   assert.match(markup, /id="scenario-price-input"/);
   assert.match(markup, /초기화/);
   assert.doesNotMatch(markup, /공통 계산 기준|4개 카드에 즉시 반영|기준유가 설정<\/h2>/);
-  assert.doesNotMatch(markup, /scenario-price-help/);
+  assert.doesNotMatch(markup, /scenario-price-help|surface-panel/);
 });
 
 test('compact baseline toolbar keeps validation feedback inline', () => {
