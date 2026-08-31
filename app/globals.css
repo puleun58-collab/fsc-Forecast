@@ -1342,6 +1342,24 @@ main {
   box-shadow: 0 12px 28px color-mix(in srgb, var(--ink) 12%, transparent);
 }
 
+.reliability-detail__grade {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.reliability-detail__note {
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
 .reliability-detail__row {
   margin: 0;
   color: var(--text-secondary);

@@ -31,17 +31,20 @@ export const RELIABILITY_POLICY_ITEMS = [
 ] as const;
 
 const RELIABILITY_ADJUSTMENT_REASON_TEXT: Record<string, string> = {
-  recent_4w_error_worsening: '최근 4주 예측 오차가 이전보다 악화되었습니다.',
-  long_window_instability: '최근 26주 장기 성능이 최근 13주 대비 불안정합니다.',
-  long_window_caution: '장기 성능이 단기 성능보다 낮아 최고 신뢰도가 제한되었습니다.',
-  data_stale: '최신 데이터 갱신 상태를 반영해 최고 신뢰도가 제한되었습니다.',
-  data_delayed: '데이터 수집이 다소 지연되고 있습니다.',
-  incomplete_guardrail_metrics: '안정성 평가에 필요한 데이터가 충분하지 않아 최고 등급이 제한되었습니다.',
+  recent_4w_error_worsening: '최근 단기 오차 변동성이 커져 신뢰도 평가에 반영되었습니다.',
+  long_window_instability: '장기 예측 성능의 안정성을 보수적으로 반영했습니다.',
+  long_window_caution: '단기 정확도와 장기 성능을 함께 고려했습니다.',
+  data_stale: '데이터 최신성 상태를 신뢰도 평가에 반영했습니다.',
+  data_delayed: '데이터 수집 주기를 신뢰도 평가에 반영했습니다.',
+  incomplete_guardrail_metrics: '안정성 평가에 필요한 데이터가 아직 충분하지 않아 보수적으로 평가했습니다.',
   data_unavailable: '신뢰도 평가에 필요한 데이터가 부족합니다.',
 };
 
+export const RELIABILITY_EVALUATION_NOTE =
+  '신뢰도는 최근 예측 정확도뿐 아니라 단기 오차 추세, 장기 안정성, 데이터 최신성을 함께 반영해 평가합니다.';
+
 export function mapReliabilityAdjustmentReason(code: string): string {
-  return RELIABILITY_ADJUSTMENT_REASON_TEXT[code] ?? '추가 검증이 필요한 조정 사유가 적용되었습니다.';
+  return RELIABILITY_ADJUSTMENT_REASON_TEXT[code] ?? '여러 품질 지표를 종합해 평가에 반영했습니다.';
 }
 
 export function formatOfficialWeekName(officialWeekLabel: string): string {

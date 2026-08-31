@@ -4,6 +4,7 @@ import {
   mapFreshnessStatus,
   mapReliabilityAdjustmentReason,
   mapReliabilityStatus,
+  RELIABILITY_EVALUATION_NOTE,
 } from './dashboard-format';
 import { QuarterSelect } from './quarter-select';
 
@@ -85,29 +86,25 @@ export function StatusRail({
             {reliability.label}
             <span aria-hidden="true">ⓘ</span>
           </summary>
-          <div className="reliability-detail__panel" role="group" aria-label="신뢰도 산정 상세">
+          <div className="reliability-detail__panel" role="group" aria-label="예측 신뢰도 상세">
+            <p className="reliability-detail__grade">
+              예측 신뢰도 <strong>{fsc.reliabilityGrade}</strong>
+            </p>
             <p className="reliability-detail__row">
-              최근 {fsc.reliabilityMinimumSampleCount}주 MAPE{' '}
+              최근 {fsc.reliabilityMinimumSampleCount}주 평균 오차(MAPE){' '}
               <strong>{mape === null ? '산정 중' : `${Number(mape).toFixed(2)}%`}</strong>
             </p>
-            <p className="reliability-detail__row">
-              기본 등급 <strong>{fsc.baseReliabilityGrade ?? '산정 중'}</strong>
-            </p>
-            <p className="reliability-detail__row">
-              최종 등급 <strong>{fsc.reliabilityGrade}</strong>
-            </p>
-            {fsc.reliabilityAdjustmentReasons.length === 0 ? (
-              <p className="reliability-detail__row">추가 조정 없음</p>
-            ) : (
+            {fsc.reliabilityAdjustmentReasons.length > 0 ? (
               <>
-                <p className="reliability-detail__row">조정 사유</p>
+                <p className="reliability-detail__row">신뢰도 참고 요인</p>
                 <ul className="reliability-detail__reasons">
                   {fsc.reliabilityAdjustmentReasons.map((reason) => (
                     <li key={reason}>{mapReliabilityAdjustmentReason(reason)}</li>
                   ))}
                 </ul>
               </>
-            )}
+            ) : null}
+            <p className="reliability-detail__note">{RELIABILITY_EVALUATION_NOTE}</p>
           </div>
         </details>
       ) : (

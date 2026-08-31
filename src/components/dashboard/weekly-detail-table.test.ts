@@ -39,8 +39,8 @@ test('historical weekly detail shows the official Opinet week label and unclippe
 
   assert.match(markup, /2026\.03\.29–2026\.04\.02/);
   assert.match(markup, /4월 1주차/);
-  assert.match(markup, /오피넷 공식 주차/);
-  assert.doesNotMatch(markup, /ISO 14|14주|3월 주차/);
+  assert.match(markup, /오피넷 기준 주차/);
+  assert.doesNotMatch(markup, /ISO 14|14주|3월 주차|오피넷 공식 주차/);
 });
 
 test('public weekly detail hides expected ranges while retaining the forecast value', () => {
@@ -69,4 +69,37 @@ test('public weekly detail hides expected ranges while retaining the forecast va
   assert.match(markup, /1,837\.44/);
   assert.match(markup, /주간 예측값/);
   assert.doesNotMatch(markup, /90% 예상 범위|1,779\.46|1,895\.41/);
+});
+
+test('active quarter weekly detail uses the same Opinet week labels without ISO chips', () => {
+  const actualWeek: FscDashboardWeekItem = {
+    ...HISTORICAL_WEEK,
+    sequenceNo: 1,
+    targetMonth: 7,
+    weekNo: 27,
+    weekStartDate: '2026-07-01T00:00:00.000Z',
+    weekEndDate: '2026-07-02T00:00:00.000Z',
+    officialWeekLabel: null,
+  };
+  const forecastWeek: FscDashboardWeekItem = {
+    ...actualWeek,
+    sequenceNo: 10,
+    targetMonth: 9,
+    weekNo: 36,
+    weekStartDate: '2026-08-30T00:00:00.000Z',
+    weekEndDate: '2026-09-03T00:00:00.000Z',
+    priceKind: 'forecast',
+    forecastSourceKind: 'weekly_point',
+  };
+  const markup = renderToStaticMarkup(
+    createElement(WeeklyDetailTable, {
+      weeks: [actualWeek, forecastWeek],
+      previousWeekPriceKrwPerL: null,
+    }),
+  );
+
+  assert.match(markup, /7월 1주차/);
+  assert.match(markup, /9월 1주차/);
+  assert.equal(markup.match(/오피넷 기준 주차/g)?.length, 2);
+  assert.doesNotMatch(markup, /ISO 27|ISO 36/);
 });

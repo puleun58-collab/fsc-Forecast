@@ -34,12 +34,12 @@ function formatOpinetWeekLabel(week: FscDashboardWeekItem): string {
   }
 }
 
-function formatWeekName(week: FscDashboardWeekItem, useStoredWeekRange: boolean): string {
+function formatWeekName(week: FscDashboardWeekItem): string {
   if (week.officialWeekLabel !== null) {
     return formatOfficialWeekName(week.officialWeekLabel);
   }
 
-  return useStoredWeekRange ? `${week.targetMonth}월 주차` : formatOpinetWeekLabel(week);
+  return formatOpinetWeekLabel(week);
 }
 
 export function WeeklyDetailTable({
@@ -146,12 +146,8 @@ function WeekTableRow({
   return (
     <tr className={`weekly-table__row weekly-table__row--${week.priceKind}`}>
       <th scope="row">
-        <strong>{formatWeekName(week, useStoredWeekRange)}</strong>
-        {week.officialWeekLabel === null ? (
-          <span>ISO {week.weekNo} · {week.targetMonth}월</span>
-        ) : (
-          <span>오피넷 공식 주차</span>
-        )}
+        <strong>{formatWeekName(week)}</strong>
+        <span>오피넷 기준 주차</span>
       </th>
       <td className="weekly-table__period">
         <span>{useStoredWeekRange ? formatStoredWeekRange(week) : formatWeekRange(week)}</span>
@@ -206,7 +202,7 @@ function WeekMobileGroup({
         <div key={week.sequenceNo} className={`weekly-mobile-item weekly-mobile-item--${week.priceKind}`}>
           <div className="weekly-mobile-item__top">
             <strong>
-              {formatWeekName(week, useStoredWeekRange)} ·{' '}
+              {formatWeekName(week)} ·{' '}
               {useStoredWeekRange ? formatStoredWeekRange(week, true) : formatWeekRange(week, true)}
             </strong>
             <span>

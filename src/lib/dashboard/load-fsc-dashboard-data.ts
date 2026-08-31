@@ -7,6 +7,7 @@ import {
   findStoredBaseFscResultByQuarter,
 } from '@/lib/fsc/load-latest-fsc-result';
 import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
+import { readFscReliabilityTrail } from '@/lib/fsc/reliability-trail';
 import { loadPublicConfirmedLatestDate } from '@/lib/opinet/resolve-public-confirmed-date';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
 
@@ -229,30 +230,6 @@ function readQuarterAverageBasisKind(
   }
 
   return 'weekly_actual_forecast';
-}
-
-function readReliabilityTrail(payload: unknown): {
-  baseGrade: string | null;
-  adjustmentReasons: string[];
-} {
-  if (!payload || typeof payload !== 'object' || !('reliability' in payload)) {
-    return { baseGrade: null, adjustmentReasons: [] };
-  }
-
-  const reliability = payload.reliability;
-
-  if (!reliability || typeof reliability !== 'object') {
-    return { baseGrade: null, adjustmentReasons: [] };
-  }
-
-  const baseGrade =
-    'baseGrade' in reliability && typeof reliability.baseGrade === 'string' ? reliability.baseGrade : null;
-  const rawReasons = 'adjustmentReasons' in reliability ? reliability.adjustmentReasons : null;
-  const adjustmentReasons = Array.isArray(rawReasons)
-    ? rawReasons.filter((reason): reason is string => typeof reason === 'string')
-    : [];
-
-  return { baseGrade, adjustmentReasons };
 }
 
 
@@ -639,7 +616,7 @@ export async function loadFscDashboardData(
 
     const fsc = serializeFscResultDto(result);
     const monthlyBasis = readMonthlyBasis(result.calculationPayload);
-    const reliabilityTrail = readReliabilityTrail(result.calculationPayload);
+    const reliabilityTrail = readFscReliabilityTrail(result.calculationPayload);
     const dataBasisAt = fsc.dataBasisAt;
     const previousForecastResult = await loadPreviousForecastResult({
       currentResultId: result.id,

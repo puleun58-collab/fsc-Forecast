@@ -24,19 +24,21 @@ function createFsc(overrides: Partial<FscDashboardResultSection> = {}): FscDashb
   } as FscDashboardResultSection;
 }
 
-test('reliability chip discloses the base grade, final grade and adjustment reasons', () => {
+test('reliability chip explains the final grade with evaluation factors instead of a downgrade path', () => {
   const markup = renderToStaticMarkup(createElement(StatusRail, { fsc: createFsc() }));
 
   assert.match(markup, /신뢰도 C · MAPE 1\.5%/);
-  assert.match(markup, /최근 13주 MAPE.*1\.53%/);
-  assert.match(markup, /기본 등급.*A/);
-  assert.match(markup, /최종 등급.*C/);
-  assert.match(markup, /최근 4주 예측 오차가 이전보다 악화되었습니다\./);
-  assert.match(markup, /최근 26주 장기 성능이 최근 13주 대비 불안정합니다\./);
+  assert.match(markup, /예측 신뢰도.*C/);
+  assert.match(markup, /최근 13주 평균 오차\(MAPE\).*1\.53%/);
+  assert.match(markup, /신뢰도 참고 요인/);
+  assert.match(markup, /최근 단기 오차 변동성이 커져 신뢰도 평가에 반영되었습니다\./);
+  assert.match(markup, /장기 예측 성능의 안정성을 보수적으로 반영했습니다\./);
+  assert.match(markup, /신뢰도는 최근 예측 정확도뿐 아니라/);
+  assert.doesNotMatch(markup, /기본 등급|최종 등급|하향|강등|악화|불안정/);
   assert.doesNotMatch(markup, /recent_4w_error_worsening|long_window_instability/);
 });
 
-test('reliability chip states that no guardrail adjustment was applied', () => {
+test('reliability chip omits the factor list when no guardrail was applied', () => {
   const markup = renderToStaticMarkup(
     createElement(StatusRail, {
       fsc: createFsc({
@@ -49,8 +51,8 @@ test('reliability chip states that no guardrail adjustment was applied', () => {
   );
 
   assert.match(markup, /신뢰도 A · MAPE 1\.3%/);
-  assert.match(markup, /최근 13주 MAPE.*1\.27%/);
-  assert.match(markup, /추가 조정 없음/);
+  assert.match(markup, /최근 13주 평균 오차\(MAPE\).*1\.27%/);
+  assert.doesNotMatch(markup, /신뢰도 참고 요인|기본 등급|최종 등급/);
 });
 
 test('historical status rail keeps the confirmed-actual chip without reliability disclosure', () => {
@@ -62,14 +64,14 @@ test('historical status rail keeps the confirmed-actual chip without reliability
   assert.doesNotMatch(markup, /신뢰도|reliability-detail/);
 });
 
-test('reason codes map to user-facing sentences without leaking internal codes', () => {
+test('reason codes map to neutral user-facing sentences without leaking internal codes', () => {
   assert.equal(
     mapReliabilityAdjustmentReason('data_stale'),
-    '최신 데이터 갱신 상태를 반영해 최고 신뢰도가 제한되었습니다.',
+    '데이터 최신성 상태를 신뢰도 평가에 반영했습니다.',
   );
   assert.equal(
-    mapReliabilityAdjustmentReason('incomplete_guardrail_metrics'),
-    '안정성 평가에 필요한 데이터가 충분하지 않아 최고 등급이 제한되었습니다.',
+    mapReliabilityAdjustmentReason('long_window_caution'),
+    '단기 정확도와 장기 성능을 함께 고려했습니다.',
   );
   assert.doesNotMatch(mapReliabilityAdjustmentReason('unknown_reason_code'), /unknown_reason_code/);
 });

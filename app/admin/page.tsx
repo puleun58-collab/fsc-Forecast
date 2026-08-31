@@ -8,6 +8,7 @@ import { db } from '@/lib/db';
 
 import { findLatestBaseFscResultByQuarter } from '@/lib/fsc/load-latest-fsc-result';
 import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
+import { readFscReliabilityTrail } from '@/lib/fsc/reliability-trail';
 import { mapReliabilityStatus } from '@/components/dashboard/dashboard-format';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
 
@@ -91,6 +92,13 @@ export default async function AdminPage() {
   const remainingSampleCount = activeResultDto
     ? Math.max(activeResultDto.reliabilityMinimumSampleCount - activeResultDto.reliabilitySampleCount, 0)
     : 0;
+  const reliabilityTrail = readFscReliabilityTrail(activeResult?.calculationPayload ?? null);
+  const guardrailDecisionPath =
+    reliabilityTrail.baseGrade === null
+      ? '기록 없음'
+      : reliabilityTrail.adjustmentReasons.length === 0
+        ? `기본 ${reliabilityTrail.baseGrade} → guardrail 미적용 → 최종 ${reliabilityTrail.finalGrade ?? reliabilityTrail.baseGrade}`
+        : `기본 ${reliabilityTrail.baseGrade} → guardrail ${reliabilityTrail.adjustmentReasons.length}건 적용 → 최종 ${reliabilityTrail.finalGrade ?? reliabilityTrail.baseGrade}`;
   const nextDraft = quarters.find(
     (quarter) => quarter.status === 'draft' && (quarter.targetYear > activeQuarter.targetYear || (quarter.targetYear === activeQuarter.targetYear && quarter.targetQuarter > activeQuarter.targetQuarter)),
   );
@@ -189,6 +197,17 @@ export default async function AdminPage() {
                   <span>26주 MAE: {activeResultDto.qualityMetrics.recent26wWeeklyPriceMae ?? '기록 없음'}</span>
                   <span>4주 bias: {activeResultDto.qualityMetrics.forecastBias4w ?? '기록 없음'}</span>
                   <span>13주 bias: {activeResultDto.qualityMetrics.forecastBias13w ?? '기록 없음'}</span>
+                  <span>기본 등급: {reliabilityTrail.baseGrade ?? '기록 없음'}</span>
+                  <span>최종 등급: {reliabilityTrail.finalGrade ?? activeResultDto.reliabilityGrade}</span>
+                  <span>guardrail 판정: {guardrailDecisionPath}</span>
+                  <span>
+                    조정 사유 코드:{' '}
+                    {reliabilityTrail.adjustmentReasons.length === 0
+                      ? '없음'
+                      : reliabilityTrail.adjustmentReasons.join(', ')}
+                  </span>
+                  <span>4주 오차 추세: {reliabilityTrail.recent4wErrorTrend ?? '기록 없음'}</span>
+                  <span>데이터 최신성: {reliabilityTrail.dataFreshnessStatus ?? activeResultDto.dataFreshnessStatus}</span>
                 </div>
               </div>
             ) : (
