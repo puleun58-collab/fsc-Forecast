@@ -58,7 +58,6 @@ export function QuarterSelect({ quarter, availableQuarters = [] }: QuarterSelect
             value={toQuarterValue(option.targetYear, option.targetQuarter)}
           >
             {formatQuarterLabel(option.targetYear, option.targetQuarter)}
-            {option.isActive ? ' · 진행 중' : ''}
           </option>
         ))}
       </select>

@@ -6,12 +6,14 @@ import type {
   BuildFscQuarterWeeksResult,
   FscActualSourceBreakdown,
   FscMonthlyBasisSummary,
+  FscQuarterAverageBasis,
   FscQuarterWeekDraft,
   FscSourceDailyPriceRow,
   FscSourceForecastPointRow,
   FscSourceForecastRunRecord,
   FscSourceOfficialMonthlyPriceRow,
   FscSourceOfficialWeeklyPriceRow,
+  FscSourceOfficialQuarterlyPriceRow,
 } from './types';
 
 const ROUND_HALF_UP = Prisma.Decimal.ROUND_HALF_UP;
@@ -36,6 +38,7 @@ export interface BuildFscQuarterWeeksInput {
   dailyPrices: readonly FscSourceDailyPriceRow[];
   officialWeeklyPrices: readonly FscSourceOfficialWeeklyPriceRow[];
   officialMonthlyPrices: readonly FscSourceOfficialMonthlyPriceRow[];
+  officialQuarterlyPrices: readonly FscSourceOfficialQuarterlyPriceRow[];
   forecastRun: FscSourceForecastRunRecord | null;
 }
 
@@ -318,6 +321,80 @@ function buildMonthlyBasisSummary(
   };
 }
 
+function isCompletedQuarter(quarterEndDate: Date, currentTruthCutoffAt: Date | null): boolean {
+  if (currentTruthCutoffAt === null) {
+    return false;
+  }
+
+  return quarterEndDate.getTime() < toDateOnly(currentTruthCutoffAt).getTime();
+}
+
+function resolveQuarterAverage(input: {
+  quarterSetting: QuarterSettingInput;
+  quarterEndDate: Date;
+  currentTruthCutoffAt: Date | null;
+  officialQuarterlyPrices: readonly FscSourceOfficialQuarterlyPriceRow[];
+  officialMonthlyPrices: readonly FscSourceOfficialMonthlyPriceRow[];
+  weeklyAverageKrwPerL: Prisma.Decimal | null;
+}): { quarterAverageKrwPerL: Prisma.Decimal; basis: FscQuarterAverageBasis } {
+  const quarterKey = `${input.quarterSetting.targetYear}Q${input.quarterSetting.targetQuarter}`;
+
+  if (!isCompletedQuarter(input.quarterEndDate, input.currentTruthCutoffAt)) {
+    if (input.weeklyAverageKrwPerL === null) {
+      throw new Error('No valid actual or weekly forecast prices are available for FSC calculation.');
+    }
+
+    return {
+      quarterAverageKrwPerL: input.weeklyAverageKrwPerL,
+      basis: {
+        kind: 'weekly_actual_forecast',
+        quarterKey,
+        sourceLabel: null,
+        weeklyAverageKrwPerL: input.weeklyAverageKrwPerL,
+      },
+    };
+  }
+
+  const officialQuarterly = input.officialQuarterlyPrices.find((row) => row.quarterKey === quarterKey);
+
+  if (officialQuarterly) {
+    return {
+      quarterAverageKrwPerL: roundPrice(officialQuarterly.priceKrwPerL),
+      basis: {
+        kind: 'official_quarterly',
+        quarterKey,
+        sourceLabel: officialQuarterly.quarterLabel,
+        weeklyAverageKrwPerL: input.weeklyAverageKrwPerL,
+      },
+    };
+  }
+
+  const quarterMonthKeys = new Set(
+    getQuarterMonths(input.quarterSetting.targetQuarter).map(
+      (month) => `${input.quarterSetting.targetYear}${String(month).padStart(2, '0')}`,
+    ),
+  );
+  const officialMonthRows = input.officialMonthlyPrices
+    .filter((row) => quarterMonthKeys.has(row.monthKey))
+    .sort((left, right) => left.monthKey.localeCompare(right.monthKey));
+
+  if (officialMonthRows.length === 3) {
+    return {
+      quarterAverageKrwPerL: averageDecimals(officialMonthRows.map((row) => row.priceKrwPerL)),
+      basis: {
+        kind: 'official_monthly_average',
+        quarterKey,
+        sourceLabel: officialMonthRows.map((row) => row.monthLabel).join(', '),
+        weeklyAverageKrwPerL: input.weeklyAverageKrwPerL,
+      },
+    };
+  }
+
+  throw new Error(
+    `Official Opinet quarterly average is unavailable for completed quarter ${quarterKey}; weekly averages must not substitute it.`,
+  );
+}
+
 function createForecastWeekDraft(
   quarterSetting: QuarterSettingInput,
   effectiveStart: Date,
@@ -517,11 +594,15 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
     }
   }
 
-  if (validWeekPrices.length === 0) {
-    throw new Error('No valid actual or weekly forecast prices are available for FSC calculation.');
-  }
-
-  const quarterAverageKrwPerL = averageDecimals(validWeekPrices);
+  const weeklyAverageKrwPerL = validWeekPrices.length > 0 ? averageDecimals(validWeekPrices) : null;
+  const { quarterAverageKrwPerL, basis: quarterAverageBasis } = resolveQuarterAverage({
+    quarterSetting: input.quarterSetting,
+    quarterEndDate,
+    currentTruthCutoffAt: input.currentTruthCutoffAt,
+    officialQuarterlyPrices: input.officialQuarterlyPrices,
+    officialMonthlyPrices: input.officialMonthlyPrices,
+    weeklyAverageKrwPerL,
+  });
   const monthlyBasis = buildMonthlyBasisSummary(input.quarterSetting, input.officialMonthlyPrices);
 
   return {
@@ -529,6 +610,7 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
     actualWeekCount,
     forecastWeekCount,
     quarterAverageKrwPerL,
+    quarterAverageBasis,
     monthlyBasis,
     calculationPayload: {
       actualWeekCount,
@@ -539,6 +621,13 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
       },
       sourceBreakdown,
       pendingForecastWeekCount: sourceBreakdown.forecast_pending,
+      quarterAverageBasis: {
+        kind: quarterAverageBasis.kind,
+        quarterKey: quarterAverageBasis.quarterKey,
+        sourceLabel: quarterAverageBasis.sourceLabel,
+        quarterAverageKrwPerL: quarterAverageKrwPerL.toFixed(3),
+        weeklyAverageKrwPerL: quarterAverageBasis.weeklyAverageKrwPerL?.toFixed(3) ?? null,
+      },
       monthlyBasis:
         monthlyBasis === null
           ? null

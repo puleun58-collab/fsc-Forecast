@@ -1483,9 +1483,8 @@ main {
 .summary-card__footer {
   display: grid;
   align-content: start;
-  align-self: end;
   gap: 6px;
-  min-height: 68px;
+  min-height: 58px;
   margin-top: auto;
   padding-top: 10px;
 }

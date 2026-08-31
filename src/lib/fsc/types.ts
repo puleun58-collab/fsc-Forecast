@@ -90,6 +90,7 @@ export interface LoadFscSourceDataResult {
   dailyPrices: FscSourceDailyPriceRow[];
   officialWeeklyPrices: FscSourceOfficialWeeklyPriceRow[];
   officialMonthlyPrices: FscSourceOfficialMonthlyPriceRow[];
+  officialQuarterlyPrices: FscSourceOfficialQuarterlyPriceRow[];
 }
 
 export interface FscSourceOfficialWeeklyPriceRow {
@@ -108,6 +109,27 @@ export interface FscSourceOfficialMonthlyPriceRow {
   monthEndDate: Date;
   priceKrwPerL: Prisma.Decimal;
   fetchedAt: Date;
+}
+
+export interface FscSourceOfficialQuarterlyPriceRow {
+  quarterKey: string;
+  quarterLabel: string;
+  quarterStartDate: Date;
+  quarterEndDate: Date;
+  priceKrwPerL: Prisma.Decimal;
+  fetchedAt: Date;
+}
+
+export type FscQuarterAverageBasisKind =
+  | 'official_quarterly'
+  | 'official_monthly_average'
+  | 'weekly_actual_forecast';
+
+export interface FscQuarterAverageBasis {
+  kind: FscQuarterAverageBasisKind;
+  quarterKey: string;
+  sourceLabel: string | null;
+  weeklyAverageKrwPerL: Prisma.Decimal | null;
 }
 
 export interface FscMonthlyBasisSummary {
@@ -155,6 +177,7 @@ export interface BuildFscQuarterWeeksResult {
   actualWeekCount: number;
   forecastWeekCount: number;
   quarterAverageKrwPerL: Prisma.Decimal;
+  quarterAverageBasis: FscQuarterAverageBasis;
   monthlyBasis: FscMonthlyBasisSummary | null;
   calculationPayload: Prisma.InputJsonValue;
 }

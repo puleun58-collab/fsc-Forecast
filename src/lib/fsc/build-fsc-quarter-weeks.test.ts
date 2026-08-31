@@ -56,6 +56,7 @@ function createInput(dailyPrices: readonly FscSourceDailyPriceRow[]): BuildFscQu
     dailyPrices,
     officialWeeklyPrices: [],
     officialMonthlyPrices: [],
+    officialQuarterlyPrices: [],
     forecastRun: createMonthlyForecastRun(),
   };
 }
@@ -512,4 +513,108 @@ test('weekly forecast weeks carry the backtest-derived expected range', () => {
   assert.equal(trendExtensionWeek?.forecastUpperBoundKrwPerL, null);
   assert.equal(actualWeek?.forecastLowerBoundKrwPerL, null);
   assert.equal(actualWeek?.forecastUpperBoundKrwPerL, null);
+});
+
+function createCompletedQuarterInput(): BuildFscQuarterWeeksInput {
+  const dailyPrices: FscSourceDailyPriceRow[] = [];
+
+  for (let day = new Date('2026-04-01T00:00:00.000Z'); day.getTime() <= Date.UTC(2026, 5, 30); day.setUTCDate(day.getUTCDate() + 1)) {
+    dailyPrices.push(createDailyRow(day.toISOString().slice(0, 10), 1900));
+  }
+
+  const input = createInput(dailyPrices);
+  input.quarterSetting.targetQuarter = 2;
+  input.quarterSetting.referenceQuarter = 1;
+  input.quarterSetting.quarterStartDate = new Date('2026-04-01T00:00:00.000Z');
+  input.quarterSetting.quarterEndDate = new Date('2026-06-30T00:00:00.000Z');
+  input.currentTruthCutoffAt = new Date('2026-08-31T05:16:07.374Z');
+  input.forecastRun = null;
+  return input;
+}
+
+function createOfficialMonth(monthKey: string, monthLabel: string, price: string) {
+  const year = Number(monthKey.slice(0, 4));
+  const month = Number(monthKey.slice(4, 6));
+
+  return {
+    monthKey,
+    monthLabel,
+    monthStartDate: new Date(Date.UTC(year, month - 1, 1)),
+    monthEndDate: new Date(Date.UTC(year, month, 0)),
+    priceKrwPerL: new Prisma.Decimal(price),
+    fetchedAt: new Date('2026-08-31T00:00:00.000Z'),
+  };
+}
+
+test('completed quarter uses the official Opinet quarterly average instead of the weekly average', () => {
+  const input = createCompletedQuarterInput();
+  input.officialQuarterlyPrices = [
+    {
+      quarterKey: '2026Q2',
+      quarterLabel: '2026년2분기',
+      quarterStartDate: new Date('2026-04-01T00:00:00.000Z'),
+      quarterEndDate: new Date('2026-06-30T00:00:00.000Z'),
+      priceKrwPerL: new Prisma.Decimal('1994.65'),
+      fetchedAt: new Date('2026-08-31T00:00:00.000Z'),
+    },
+  ];
+
+  const result = buildFscQuarterWeeks(input);
+  const calculation = calculateFscResult({
+    basePriceKrwPerL: input.quarterSetting.basePriceKrwPerL,
+    appliedPriceKrwPerL: input.quarterSetting.appliedPriceKrwPerL,
+    quarterAverageKrwPerL: result.quarterAverageKrwPerL,
+    fscLowRate: '0.3000',
+    fscHighRate: '0.7000',
+  });
+
+  assert.equal(result.quarterAverageKrwPerL.toFixed(3), '1994.650');
+  assert.equal(result.quarterAverageBasis.kind, 'official_quarterly');
+  assert.equal(result.quarterAverageBasis.weeklyAverageKrwPerL?.toFixed(3), '1900.000');
+  assert.equal(calculation.diffRatio.toFixed(6), '0.329767');
+});
+
+test('completed quarter without an official quarterly average falls back to the three official monthly averages', () => {
+  const input = createCompletedQuarterInput();
+  input.officialMonthlyPrices = [
+    createOfficialMonth('202604', '2026년04월', '1979.31'),
+    createOfficialMonth('202605', '2026년05월', '2005.71'),
+    createOfficialMonth('202606', '2026년06월', '1998.65'),
+  ];
+
+  const result = buildFscQuarterWeeks(input);
+
+  assert.equal(result.quarterAverageBasis.kind, 'official_monthly_average');
+  assert.equal(result.quarterAverageKrwPerL.toFixed(3), '1994.557');
+});
+
+test('completed quarter without official Opinet averages never substitutes the weekly average', () => {
+  const input = createCompletedQuarterInput();
+  input.officialMonthlyPrices = [createOfficialMonth('202604', '2026년04월', '1979.31')];
+
+  assert.throws(() => buildFscQuarterWeeks(input), /Official Opinet quarterly average is unavailable/);
+});
+
+test('active quarter keeps the weekly actual and forecast average even when an official quarterly average exists', () => {
+  const input = createInput([
+    createDailyRow('2026-07-01', 1900),
+    createDailyRow('2026-07-02', 1900),
+  ]);
+  input.quarterSetting.quarterEndDate = new Date('2026-07-16T00:00:00.000Z');
+  input.forecastRun = createForecastRun([['2026-07-09', '1840.000'], ['2026-07-16', '1820.000']]);
+  input.officialQuarterlyPrices = [
+    {
+      quarterKey: '2026Q3',
+      quarterLabel: '2026년3분기',
+      quarterStartDate: new Date('2026-07-01T00:00:00.000Z'),
+      quarterEndDate: new Date('2026-09-30T00:00:00.000Z'),
+      priceKrwPerL: new Prisma.Decimal('1700.00'),
+      fetchedAt: new Date('2026-07-15T00:00:00.000Z'),
+    },
+  ];
+
+  const result = buildFscQuarterWeeks(input);
+
+  assert.equal(result.quarterAverageBasis.kind, 'weekly_actual_forecast');
+  assert.equal(result.quarterAverageKrwPerL.toFixed(3), '1853.333');
 });

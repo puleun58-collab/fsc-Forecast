@@ -5,6 +5,8 @@ import { env } from '@/lib/env';
 import { fetchPublishedOpinetMonthlyDieselPrices } from '@/lib/opinet/fetch-monthly-price';
 import { fetchPublishedOpinetWeeklyDieselPrices } from '@/lib/opinet/fetch-weekly-price';
 import { loadPublicConfirmedLatestDate } from '@/lib/opinet/resolve-public-confirmed-date';
+import { readQuarterlySeries } from '@/lib/opinet/save-quarterly-series';
+import { readPersistedQuarterlySeries } from '@/lib/opinet/published-price-store';
 
 import type {
   FscSourceDailyPriceRow,
@@ -12,6 +14,7 @@ import type {
   FscSourceOfficialMonthlyPriceRow,
   FscSourceOfficialWeeklyPriceRow,
   LoadFscSourceDataResult,
+  FscSourceOfficialQuarterlyPriceRow,
 } from './types';
 
 function toForecastRunRecord(run: {
@@ -114,6 +117,24 @@ function toOfficialMonthlyPriceRow(row: {
   };
 }
 
+function toOfficialQuarterlyPriceRow(row: {
+  quarterKey: string;
+  quarterLabel: string;
+  quarterStartDate: string;
+  quarterEndDate: string;
+  price: number;
+  fetchedAt: string;
+}): FscSourceOfficialQuarterlyPriceRow {
+  return {
+    quarterKey: row.quarterKey,
+    quarterLabel: row.quarterLabel,
+    quarterStartDate: new Date(`${row.quarterStartDate}T00:00:00.000Z`),
+    quarterEndDate: new Date(`${row.quarterEndDate}T00:00:00.000Z`),
+    priceKrwPerL: new Prisma.Decimal(row.price),
+    fetchedAt: new Date(row.fetchedAt),
+  };
+}
+
 export async function loadFscSourceData(
   tx: PrismaTypes.TransactionClient = db,
 ): Promise<LoadFscSourceDataResult> {
@@ -147,7 +168,15 @@ export async function loadFscSourceData(
     throw new Error('No forecast-ready recompute snapshot is available for FSC recomputation.');
   }
 
-  const [forecastRun, dailyPrices, officialWeeklyPrices, officialMonthlyPrices, latestConfirmedDate] = await Promise.all([
+  const [
+    forecastRun,
+    dailyPrices,
+    officialWeeklyPrices,
+    officialMonthlyPrices,
+    fileQuarterlyPrices,
+    persistedQuarterlyPrices,
+    latestConfirmedDate,
+  ] = await Promise.all([
     tx.forecastRun.findFirst({
       where: {
         recomputeSnapshotId: recomputeSnapshot.id,
@@ -201,6 +230,8 @@ export async function loadFscSourceData(
     }),
     fetchPublishedOpinetWeeklyDieselPrices(),
     fetchPublishedOpinetMonthlyDieselPrices(),
+    readQuarterlySeries(),
+    readPersistedQuarterlySeries(),
     loadPublicConfirmedLatestDate(tx, {
       datasetKey: env.datasetKey,
       observedBeforeOrAt: recomputeSnapshot.currentTruthCutoffAt,
@@ -210,6 +241,11 @@ export async function loadFscSourceData(
     dailyPrices.map(toDailyPriceRow),
     latestConfirmedDate,
   );
+  const officialQuarterlyPrices = Array.from(
+    new Map(
+      [...fileQuarterlyPrices, ...persistedQuarterlyPrices].map((row) => [row.quarterKey, row]),
+    ).values(),
+  ).sort((left, right) => left.quarterKey.localeCompare(right.quarterKey));
 
   if (forecastRun === null) {
     throw new Error(
@@ -223,5 +259,6 @@ export async function loadFscSourceData(
     dailyPrices: normalizedDailyPrices,
     officialWeeklyPrices: officialWeeklyPrices.map(toOfficialWeeklyPriceRow),
     officialMonthlyPrices: officialMonthlyPrices.map(toOfficialMonthlyPriceRow),
+    officialQuarterlyPrices: officialQuarterlyPrices.map(toOfficialQuarterlyPriceRow),
   };
 }

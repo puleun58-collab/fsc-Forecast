@@ -54,7 +54,7 @@ function SummaryValues({ year }: { readonly year: OilPriceHistoryYear }) {
       ))}
       {latestIncompleteQuarter ? (
         <span className="oil-price-history__summary-item oil-price-history__summary-item--in-progress">
-          <strong>{latestIncompleteQuarter.quarter}분기 진행 중</strong>
+          <strong>{latestIncompleteQuarter.quarter}분기</strong>
           {latestIncompleteQuarter.months.map((month) => (
             <span key={`month-${month.month}`}>
               {' · '}{month.month}월 평균 {formatPriceNumber(month.averagePriceKrwPerL)}원/L

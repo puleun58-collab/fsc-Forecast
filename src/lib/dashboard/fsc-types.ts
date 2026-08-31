@@ -165,6 +165,7 @@ export interface FscDashboardResultSection {
   basePriceKrwPerL: string;
   appliedPriceKrwPerL: string;
   quarterAverageKrwPerL: string;
+  quarterAverageBasisKind: 'official_quarterly' | 'official_monthly_average' | 'weekly_actual_forecast';
   priceDiffKrwPerL: string;
   diffRatio: string;
   fscLowRate: string;

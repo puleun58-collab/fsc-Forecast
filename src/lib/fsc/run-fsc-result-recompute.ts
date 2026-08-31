@@ -46,6 +46,7 @@ export async function runFscResultRecompute(
         dailyPrices: sourceData.dailyPrices,
         officialWeeklyPrices: sourceData.officialWeeklyPrices,
         officialMonthlyPrices: sourceData.officialMonthlyPrices,
+        officialQuarterlyPrices: sourceData.officialQuarterlyPrices,
         forecastRun: sourceData.forecastRun,
       });
       const calculation = calculateFscResult({

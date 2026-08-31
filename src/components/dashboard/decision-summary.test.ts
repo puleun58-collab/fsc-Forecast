@@ -94,14 +94,15 @@ test('decision summary renders the ordered four-card flow with one shared baseli
   assert.match(markup, /기준유가 대비 \+345\.23원 · \+23\.02% ↑/);
   assert.match(markup, /기준유가 대비 \+345\.24원 · \+23\.02% ↑/);
   assert.equal(markup.match(/summary-card__baseline/g)?.length, 3);
-  assert.doesNotMatch(markup, /scenario-price-input|기준유가 설정/);
+  assert.doesNotMatch(markup, /scenario-price-input|기준유가 설정|수집 시각/);
 });
 
 test('historical summary uses only selected-quarter Actual wording and boundaries', () => {
   const fsc = {
     basePriceKrwPerL: '1500.00',
-    quarterAverageKrwPerL: '1986.94',
-    diffRatio: '0.324625',
+    quarterAverageKrwPerL: '1994.65',
+    quarterAverageBasisKind: 'official_quarterly',
+    diffRatio: '0.329767',
     fscLowRate: '0.3000',
     weeks: [
       {
@@ -162,12 +163,12 @@ test('historical summary uses only selected-quarter Actual wording and boundarie
   assert.match(markup, /6월 마지막 주 평균 유가/);
   assert.match(markup, /2026\.06\.28–2026\.06\.30/);
   assert.match(markup, /2분기 평균 유가/);
-  assert.match(markup, /Actual 기준/);
+  assert.match(markup, /오피넷 공식 분기 평균/);
   assert.match(markup, /3분기 산출 FSC율/);
   assert.match(markup, /산출 FSC율 = 기준유가 대비 증감률/);
   assert.doesNotMatch(
     markup,
-    /현재|최근 주차|분기 평균 예상 유가|Actual과 주간 Forecast 기준|다음 분기 예상 FSC율|2100\.00/,
+    /현재|최근 주차|분기 평균 예상 유가|Actual과 주간 Forecast 기준|Actual 기준|다음 분기 예상 FSC율|2100\.00/,
   );
 });
 

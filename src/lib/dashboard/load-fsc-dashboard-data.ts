@@ -28,6 +28,7 @@ import type {
   FscDashboardData,
   FscDashboardMarketSignalsSection,
   FscDashboardQuarterSummary,
+  FscDashboardResultSection,
   FscDashboardSupportSection,
   FscDashboardTrendSection,
 } from './fsc-types';
@@ -202,6 +203,32 @@ function readMonthlyBasis(
         : null,
     monthRows,
   };
+}
+
+function readQuarterAverageBasisKind(
+  payload: unknown,
+): FscDashboardResultSection['quarterAverageBasisKind'] {
+  if (!payload || typeof payload !== 'object') {
+    return 'weekly_actual_forecast';
+  }
+
+  if (!('quarterAverageBasis' in payload)) {
+    return 'weekly_actual_forecast';
+  }
+
+  const candidate = payload.quarterAverageBasis;
+
+  if (!candidate || typeof candidate !== 'object' || !('kind' in candidate)) {
+    return 'weekly_actual_forecast';
+  }
+
+  const kind = candidate.kind;
+
+  if (kind === 'official_quarterly' || kind === 'official_monthly_average') {
+    return kind;
+  }
+
+  return 'weekly_actual_forecast';
 }
 
 function readPreviousWeekPrice(payload: unknown): string | null {
@@ -625,6 +652,7 @@ export async function loadFscDashboardData(
         basePriceKrwPerL: fsc.basePriceKrwPerL,
         appliedPriceKrwPerL: fsc.appliedPriceKrwPerL,
         quarterAverageKrwPerL: fsc.quarterAverageKrwPerL,
+        quarterAverageBasisKind: readQuarterAverageBasisKind(result.calculationPayload),
         priceDiffKrwPerL: fsc.priceDiffKrwPerL,
         diffRatio: fsc.diffRatio,
         fscLowRate: fsc.fscLowRate,

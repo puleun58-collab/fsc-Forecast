@@ -116,11 +116,6 @@ function DailyDieselPriceCard({
           basePriceKrwPerL={basePriceKrwPerL}
           includeAmount
         />
-        {currentPrice.sourceObservedAt ? (
-          <span className="metric-caption">
-            수집 시각 {formatDisplayDateTime(currentPrice.sourceObservedAt)}
-          </span>
-        ) : null}
       </div>
     </article>
   );
@@ -210,7 +205,11 @@ function QuarterForecastPriceCard({
         </h1>
       </div>
       <p className="summary-card__context">
-        {historical ? 'Actual 기준' : 'Actual과 주간 Forecast 기준'}
+        {historical
+          ? fsc.quarterAverageBasisKind === 'official_monthly_average'
+            ? '오피넷 공식 월 평균 기준'
+            : '오피넷 공식 분기 평균'
+          : 'Actual과 주간 Forecast 기준'}
       </p>
       <PriceValue value={fsc.quarterAverageKrwPerL} size="headline" />
       <div className="summary-card__footer">

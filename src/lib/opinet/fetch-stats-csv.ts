@@ -2,7 +2,7 @@ const DEFAULT_OPINET_STATS_PRICE_URL = "https://www.opinet.co.kr/user/dopospdrg/
 const STATS_CSV_PATH = "/user/dopospdrg/dopOsPdrgCsv.do";
 const EUC_KR_DECODER = new TextDecoder("euc-kr");
 
-export type OpinetStatsTerm = "W" | "M" | "Q";
+export type OpinetStatsTerm = "D" | "W" | "M" | "Q";
 
 interface StatsPageState {
   allChkCount: string;
@@ -39,7 +39,17 @@ export interface QuarterlyStatsRange extends BaseStatsRange {
   endQuarter: number;
 }
 
-export type OpinetStatsRange = WeeklyStatsRange | MonthlyStatsRange | QuarterlyStatsRange;
+export interface DailyStatsRange extends BaseStatsRange {
+  term: "D";
+  startDay: number;
+  endDay: number;
+}
+
+export type OpinetStatsRange =
+  | DailyStatsRange
+  | WeeklyStatsRange
+  | MonthlyStatsRange
+  | QuarterlyStatsRange;
 
 export interface OpinetStatsCsvRow {
   label: string;
@@ -105,6 +115,11 @@ function buildStatsFormData(state: StatsPageState, range: OpinetStatsRange): URL
   formData.set("STA_M", String(range.startMonth).padStart(2, "0"));
   formData.set("END_Y", String(range.endYear));
   formData.set("END_M", String(range.endMonth).padStart(2, "0"));
+
+  if (range.term === "D") {
+    formData.set("STA_D", String(range.startDay).padStart(2, "0"));
+    formData.set("END_D", String(range.endDay).padStart(2, "0"));
+  }
 
   if (range.term === "W") {
     formData.set("STA_W", String(range.startWeek));
