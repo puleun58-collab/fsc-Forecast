@@ -502,7 +502,7 @@ async function loadSupportSection(): Promise<FscDashboardSupportSection> {
         rows: await db.externalIndicatorHistory.findMany({
           where: { indicatorCode },
           orderBy: [{ observedAt: 'desc' }, { collectedAt: 'desc' }],
-          take: 64,
+          take: 240,
           select: {
             observedAt: true,
             collectedAt: true,

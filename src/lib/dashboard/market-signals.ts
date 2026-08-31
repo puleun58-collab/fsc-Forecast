@@ -13,6 +13,11 @@ type SourcePayload = {
   seriesId?: string;
 };
 
+export type PublicMarketTrendPoint = {
+  observedAt: string;
+  value: number;
+};
+
 export type PublicMarketSignal = {
   indicatorCode: PublicMarketIndicatorCode;
   displayName: string;
@@ -30,6 +35,8 @@ export type PublicMarketSignal = {
   providerName: string;
   sourceUrl: string;
   explanation: string;
+  trendWindowDays: number;
+  history: PublicMarketTrendPoint[];
 };
 
 export const PUBLIC_MARKET_INDICATORS = new Set<PublicMarketIndicatorCode>(['dubai', 'usd-krw']);
@@ -119,11 +126,16 @@ export function calculateDirection(absoluteChange: number | null): DashboardTren
   return absoluteChange > 0 ? 'up' : 'down';
 }
 
-function selectLatestTwoValidRows(
+type ValidMarketRow = MarketSignalHistoryInput['rows'][number] & { source: SourcePayload };
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+export const MARKET_TREND_WINDOW_DAYS = 30;
+
+function selectValidRowsDesc(
   indicatorCode: PublicMarketIndicatorCode,
   rows: MarketSignalHistoryInput['rows'],
-): Array<MarketSignalHistoryInput['rows'][number] & { source: SourcePayload }> {
-  const rowsByDate = new Map<string, MarketSignalHistoryInput['rows'][number] & { source: SourcePayload }>();
+): ValidMarketRow[] {
+  const rowsByDate = new Map<string, ValidMarketRow>();
 
   for (const row of rows) {
     const source = parseSourcePayload(indicatorCode, row.sourcePayload);
@@ -140,9 +152,28 @@ function selectLatestTwoValidRows(
     }
   }
 
-  return [...rowsByDate.values()]
-    .sort((left, right) => right.observedAt.getTime() - left.observedAt.getTime())
-    .slice(0, 2);
+  return [...rowsByDate.values()].sort((left, right) => right.observedAt.getTime() - left.observedAt.getTime());
+}
+
+function buildTrendHistory(rowsDesc: readonly ValidMarketRow[]): PublicMarketTrendPoint[] {
+  const latestRow = rowsDesc[0];
+
+  if (!latestRow) {
+    return [];
+  }
+
+  const windowStart = latestRow.observedAt.getTime() - (MARKET_TREND_WINDOW_DAYS - 1) * DAY_MS;
+  const points: PublicMarketTrendPoint[] = [];
+
+  for (const row of rowsDesc) {
+    if (row.observedAt.getTime() < windowStart) {
+      break;
+    }
+
+    points.push({ observedAt: row.observedAt.toISOString(), value: row.value });
+  }
+
+  return points.reverse();
 }
 
 export function buildPublicMarketSignals(
@@ -154,7 +185,7 @@ export function buildPublicMarketSignals(
     }
 
     const indicatorCode = signal.indicatorCode as PublicMarketIndicatorCode;
-    const rows = selectLatestTwoValidRows(indicatorCode, signal.rows);
+    const rows = selectValidRowsDesc(indicatorCode, signal.rows);
     const latestRow = rows[0] ?? null;
     const previousRow = rows[1] ?? null;
     const currentValue = latestRow?.value ?? null;
@@ -190,6 +221,8 @@ export function buildPublicMarketSignals(
         providerName: meta.providerName,
         sourceUrl: latestRow?.source.sourceUrl ?? '',
         explanation: meta.explanation,
+        trendWindowDays: MARKET_TREND_WINDOW_DAYS,
+        history: buildTrendHistory(rows),
       },
     ];
   });

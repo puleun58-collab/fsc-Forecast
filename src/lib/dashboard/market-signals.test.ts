@@ -6,6 +6,7 @@ import {
   buildPublicMarketSummaryText,
   calculateDirection,
   calculatePercentChange,
+  MARKET_TREND_WINDOW_DAYS,
   type MarketSignalHistoryInput,
 } from './market-signals';
 
@@ -139,4 +140,54 @@ test('a signal with fewer than two valid daily rows is unavailable', () => {
 
   assert.equal(signals[0]?.status, 'unavailable');
   assert.equal(buildPublicMarketSummaryText(signals), '시장 영향 판단 보류');
+});
+
+test('trend history keeps real observations inside the 30-day window in ascending order', () => {
+  const dubai = history('dubai', 76.9, 75.79);
+  dubai.rows.push(
+    {
+      observedAt: new Date('2026-06-25T00:00:00.000Z'),
+      collectedAt,
+      value: 70.1,
+      sourcePayload: sourcePayload('dubai'),
+    },
+    {
+      observedAt: new Date('2026-06-18T00:00:00.000Z'),
+      collectedAt,
+      value: 69.4,
+      sourcePayload: sourcePayload('dubai'),
+    },
+    {
+      observedAt: new Date('2026-06-17T00:00:00.000Z'),
+      collectedAt,
+      value: 68.2,
+      sourcePayload: sourcePayload('dubai'),
+    },
+    {
+      observedAt: new Date('2026-07-15T00:00:00.000Z'),
+      collectedAt: new Date('2026-07-19T00:00:00.000Z'),
+      value: 74.1,
+      sourcePayload: sourcePayload('dubai'),
+    },
+    {
+      observedAt: new Date('2026-07-15T00:00:00.000Z'),
+      collectedAt: new Date('2026-07-21T00:00:00.000Z'),
+      value: 74.5,
+      sourcePayload: sourcePayload('dubai'),
+    },
+  );
+
+  const dubaiSignal = buildPublicMarketSignals([dubai])[0];
+
+  assert.equal(dubaiSignal?.trendWindowDays, MARKET_TREND_WINDOW_DAYS);
+  assert.deepEqual(
+    dubaiSignal?.history.map((point) => [point.observedAt.slice(0, 10), point.value]),
+    [
+      ['2026-06-18', 69.4],
+      ['2026-06-25', 70.1],
+      ['2026-07-15', 74.5],
+      ['2026-07-16', 75.79],
+      ['2026-07-17', 76.9],
+    ],
+  );
 });

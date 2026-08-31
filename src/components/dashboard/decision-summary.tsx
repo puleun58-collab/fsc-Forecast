@@ -6,7 +6,7 @@ import {
   formatRateLabel,
   formatSignedPriceText,
   formatSignedRatioText,
-  formatOfficialWeekName,
+  formatWeekDisplayName,
   formatWeekRange,
   formatWeekOverWeekChange,
   PriceValue,
@@ -20,7 +20,6 @@ import type {
   FscDashboardWeekItem,
 } from '@/lib/dashboard/fsc-types';
 import { formatPercentText } from '@/lib/dashboard/display-format';
-import { getOpinetDisplayWeek } from '@/lib/opinet/weekly-period';
 
 type DecisionSummaryProps = {
   fsc: FscDashboardResultSection;
@@ -126,21 +125,9 @@ function LatestActualPriceCard({
         previousActualWeek?.priceKrwPerL ?? null,
       )
     : null;
-  const officialWeekName =
-    latestActualWeek?.officialWeekLabel === null || latestActualWeek?.officialWeekLabel === undefined
-      ? null
-      : formatOfficialWeekName(latestActualWeek.officialWeekLabel);
-  const title = officialWeekName
-    ? `${officialWeekName} 평균 유가`
-    : latestActualWeek
-      ? (() => {
-          const { month, weekOfMonth } = getOpinetDisplayWeek(
-            latestActualWeek.weekStartDate,
-            latestActualWeek.weekEndDate,
-          );
-          return `${month}월 ${weekOfMonth}주차 평균 유가`;
-        })()
-      : '최신 주차 평균 유가';
+  const title = latestActualWeek
+    ? `${formatWeekDisplayName(latestActualWeek)} 평균 유가`
+    : '최신 주차 평균 유가';
 
   return (
     <article className="summary-card summary-card--actual">

@@ -5,7 +5,7 @@ import {
   formatDisplayDate,
   formatSignedPriceText,
   formatSignedRatioText,
-  formatOfficialWeekName,
+  formatWeekDisplayName,
   formatWeekOverWeekChange,
   formatWeekRange,
   getFirstForecastIndex,
@@ -17,30 +17,12 @@ import {
 
 import type { FscDashboardWeekItem } from '@/lib/dashboard/fsc-types';
 import { getChangeDirection } from '@/lib/dashboard/display-format';
-import { getOpinetDisplayWeek } from '@/lib/opinet/weekly-period';
 
 type WeeklyDetailTableProps = {
   weeks: readonly FscDashboardWeekItem[];
   previousWeekPriceKrwPerL: string | null;
   useStoredWeekRange?: boolean;
 };
-
-function formatOpinetWeekLabel(week: FscDashboardWeekItem): string {
-  try {
-    const displayWeek = getOpinetDisplayWeek(week.weekStartDate, week.weekEndDate);
-    return `${displayWeek.month}월 ${displayWeek.weekOfMonth}주차`;
-  } catch {
-    return `${week.targetMonth}월`;
-  }
-}
-
-function formatWeekName(week: FscDashboardWeekItem): string {
-  if (week.officialWeekLabel !== null) {
-    return formatOfficialWeekName(week.officialWeekLabel);
-  }
-
-  return formatOpinetWeekLabel(week);
-}
 
 export function WeeklyDetailTable({
   weeks,
@@ -146,8 +128,7 @@ function WeekTableRow({
   return (
     <tr className={`weekly-table__row weekly-table__row--${week.priceKind}`}>
       <th scope="row">
-        <strong>{formatWeekName(week)}</strong>
-        <span>오피넷 기준 주차</span>
+        <strong>{formatWeekDisplayName(week)}</strong>
       </th>
       <td className="weekly-table__period">
         <span>{useStoredWeekRange ? formatStoredWeekRange(week) : formatWeekRange(week)}</span>
@@ -202,7 +183,7 @@ function WeekMobileGroup({
         <div key={week.sequenceNo} className={`weekly-mobile-item weekly-mobile-item--${week.priceKind}`}>
           <div className="weekly-mobile-item__top">
             <strong>
-              {formatWeekName(week)} ·{' '}
+              {formatWeekDisplayName(week)} ·{' '}
               {useStoredWeekRange ? formatStoredWeekRange(week, true) : formatWeekRange(week, true)}
             </strong>
             <span>

@@ -61,6 +61,11 @@ export interface FscDashboardTrendSection {
   unavailableReason?: string;
 }
 
+export interface FscDashboardMarketTrendPoint {
+  observedAt: string;
+  value: number;
+}
+
 export interface FscDashboardMarketSignal {
   indicatorCode: 'dubai' | 'usd-krw';
   displayName: string;
@@ -78,6 +83,8 @@ export interface FscDashboardMarketSignal {
   valueBasisLabel: string;
   providerName: string;
   sourceUrl: string;
+  trendWindowDays: number;
+  history: FscDashboardMarketTrendPoint[];
 }
 
 export interface FscDashboardMarketSignalsSection {

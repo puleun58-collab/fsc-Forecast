@@ -1,5 +1,5 @@
 import { formatDotDate, formatDotDateTime, formatPriceNumber } from '@/lib/dashboard/display-format';
-import { getOpinetWeekEnd, getOpinetWeekStart } from '@/lib/opinet/weekly-period';
+import { getOpinetDisplayWeek, getOpinetWeekEnd, getOpinetWeekStart } from '@/lib/opinet/weekly-period';
 
 import type { DashboardTrendDirection, FscDashboardWeekItem } from '@/lib/dashboard/fsc-types';
 
@@ -47,7 +47,7 @@ export function mapReliabilityAdjustmentReason(code: string): string {
   return RELIABILITY_ADJUSTMENT_REASON_TEXT[code] ?? '여러 품질 지표를 종합해 평가에 반영했습니다.';
 }
 
-export function formatOfficialWeekName(officialWeekLabel: string): string {
+function formatOfficialWeekName(officialWeekLabel: string): string {
   const match = officialWeekLabel.match(/^\d{4}년(\d{2})월(\d)주$/);
 
   if (!match) {
@@ -55,6 +55,24 @@ export function formatOfficialWeekName(officialWeekLabel: string): string {
   }
 
   return `${Number(match[1])}월 ${Number(match[2])}주차`;
+}
+
+export function formatWeekDisplayName(week: {
+  officialWeekLabel: string | null;
+  weekStartDate: string;
+  weekEndDate: string;
+  targetMonth: number;
+}): string {
+  if (typeof week.officialWeekLabel === 'string') {
+    return formatOfficialWeekName(week.officialWeekLabel);
+  }
+
+  try {
+    const displayWeek = getOpinetDisplayWeek(week.weekStartDate, week.weekEndDate);
+    return `${displayWeek.month}월 ${displayWeek.weekOfMonth}주차`;
+  } catch {
+    return `${week.targetMonth}월`;
+  }
 }
 
 

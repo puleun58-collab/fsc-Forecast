@@ -2,6 +2,7 @@ import {
   formatDisplayDate,
   mapDirectionLabel,
 } from './dashboard-format';
+import { MarketTrendChart } from './market-trend-chart';
 
 import type {
   FscDashboardMarketSignal,
@@ -65,25 +66,36 @@ function MarketSignalCard({ signal }: { signal: FscDashboardMarketSignal }) {
       title={signal.explanation}
     >
       <strong className="market-reference-card__title">{signal.displayName}</strong>
-      {hasComparison ? (
-        <>
-          <span className="market-reference-card__context">
-            {formatDisplayDate(signal.latestObservationDate)} 관측
-          </span>
-          <strong className="market-signal-card__value">{formatMarketSignalValue(signal)}</strong>
-          <span
-            className={`market-signal-card__change directional-value directional-value--${signal.direction}`}
-          >
-            전일 대비 {formatMarketSignalChange(signal)} ({formatPercentText(signal.percentChange)}) ·{' '}
-            {mapDirectionLabel(signal.direction)}
-          </span>
-        </>
-      ) : (
-        <>
-          <span className="market-reference-card__context">관측 기준 확인 중</span>
-          <strong>유효한 일별 관측값이 부족합니다.</strong>
-        </>
-      )}
+      <div className="market-signal-card__body">
+        <div className="market-signal-card__info">
+          {hasComparison ? (
+            <>
+              <span className="market-reference-card__context">
+                {formatDisplayDate(signal.latestObservationDate)} 관측
+              </span>
+              <strong className="market-signal-card__value">{formatMarketSignalValue(signal)}</strong>
+              <span
+                className={`market-signal-card__change directional-value directional-value--${signal.direction}`}
+              >
+                전일 대비 {formatMarketSignalChange(signal)} ({formatPercentText(signal.percentChange)}) ·{' '}
+                {mapDirectionLabel(signal.direction)}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="market-reference-card__context">관측 기준 확인 중</span>
+              <strong>유효한 일별 관측값이 부족합니다.</strong>
+            </>
+          )}
+        </div>
+        <MarketTrendChart
+          displayName={signal.displayName}
+          unitLabel={signal.unitLabel}
+          windowDays={signal.trendWindowDays}
+          direction={signal.direction}
+          points={signal.history}
+        />
+      </div>
       <span className="market-reference-card__footer metric-caption">
         {signal.providerName} · {signal.valueBasisLabel}
       </span>
