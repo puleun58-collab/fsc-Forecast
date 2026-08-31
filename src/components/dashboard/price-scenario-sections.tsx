@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { BaselinePriceControl } from './baseline-price-control';
 import { DecisionSummary } from './decision-summary';
@@ -19,9 +19,15 @@ type PriceScenarioSectionsProps = {
   fsc: FscDashboardResultSection;
   oilPriceHistory: OilPriceHistorySection;
   currentPrice: FscDashboardCurrentPriceSection;
+  statusRail: ReactNode;
 };
 
-export function PriceScenarioSections({ fsc, oilPriceHistory, currentPrice }: PriceScenarioSectionsProps) {
+export function PriceScenarioSections({
+  fsc,
+  oilPriceHistory,
+  currentPrice,
+  statusRail,
+}: PriceScenarioSectionsProps) {
   const [priceInput, setPriceInput] = useState(fsc.basePriceKrwPerL);
   const scenarioPrice = parseScenarioPrice(priceInput);
   const scenarioFsc = scenarioPrice === null ? fsc : buildFscPriceScenario(fsc, scenarioPrice);
@@ -35,13 +41,16 @@ export function PriceScenarioSections({ fsc, oilPriceHistory, currentPrice }: Pr
 
   return (
     <>
-      <BaselinePriceControl
-        priceInput={priceInput}
-        inputError={inputError}
-        isPriceModified={isModified}
-        onPriceChange={setPriceInput}
-        onPriceReset={() => setPriceInput(fsc.basePriceKrwPerL)}
-      />
+      <div className="dashboard-controls">
+        {statusRail}
+        <BaselinePriceControl
+          priceInput={priceInput}
+          inputError={inputError}
+          isPriceModified={isModified}
+          onPriceChange={setPriceInput}
+          onPriceReset={() => setPriceInput(fsc.basePriceKrwPerL)}
+        />
+      </div>
       <DecisionSummary fsc={scenarioFsc} currentPrice={currentPrice} />
       <OilPriceHistory history={oilPriceHistory} />
       <WeeklyForecastSection fsc={scenarioFsc} />

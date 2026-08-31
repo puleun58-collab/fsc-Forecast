@@ -50,12 +50,12 @@ export async function FscDashboard({ data }: FscDashboardProps) {
   return (
     <main id="main-content" className="fsc-dashboard">
       <DashboardHeader quarter={data.quarter} fsc={data.fsc} />
-      <StatusRail fsc={data.fsc} />
       <PriceScenarioSections
         key={data.fsc.resultId}
         fsc={data.fsc}
         oilPriceHistory={oilPriceHistory}
         currentPrice={data.support.currentPrice}
+        statusRail={<StatusRail fsc={data.fsc} />}
       />
       <MarketReferencePanel support={data.support} />
       <MethodologyDisclosure fsc={data.fsc} />

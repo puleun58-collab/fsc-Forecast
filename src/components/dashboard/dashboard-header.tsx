@@ -58,7 +58,6 @@ export function StatusRail({ fsc }: { fsc?: FscDashboardResultSection }) {
       <span className={`status-tag status-tag--${reliability.tone}`} title={reliability.detail}>
         {reliability.label}
       </span>
-      {fsc !== undefined ? <span className="status-rail__timestamp">생성 {formatDisplayDateTime(fsc.createdAt)}</span> : null}
     </div>
   );
 }
