@@ -85,6 +85,77 @@ function selectDisplayCurrentRows(
   return filteredRows.length > 0 ? filteredRows : rows;
 }
 
+async function loadQuarterEndCurrentPrice(
+  quarterStartDate: Date,
+  quarterEndDate: Date,
+): Promise<FscDashboardCurrentPriceSection> {
+  const rows = await db.dailyPriceCurrent.findMany({
+    where: {
+      datasetKey: NATIONAL_AVERAGE_DATASET_KEY,
+      priceDate: {
+        gte: quarterStartDate,
+        lte: quarterEndDate,
+      },
+    },
+    orderBy: {
+      priceDate: 'desc',
+    },
+    take: 2,
+    include: {
+      currentRevision: {
+        select: {
+          observedPriceKrwPerL: true,
+          sourceObservedAt: true,
+        },
+      },
+    },
+  });
+  const latest = rows[0];
+  const previous = rows[1];
+
+  if (!latest) {
+    return {
+      availability: 'unavailable',
+      latestPriceDate: null,
+      latestPriceKrwPerL: null,
+      previousPriceDate: null,
+      previousPriceKrwPerL: null,
+      absoluteChangeKrwPerL: null,
+      percentChange: null,
+      direction: 'flat',
+      coverageStartDate: formatDate(quarterStartDate),
+      coverageEndDate: formatDate(quarterEndDate),
+      sourceObservedAt: null,
+      unavailableReason: '선택한 분기 내 일별 Actual 데이터가 없습니다.',
+    };
+  }
+
+  const latestPriceKrwPerL = Number(latest.currentRevision.observedPriceKrwPerL);
+  const previousPriceKrwPerL = previous
+    ? Number(previous.currentRevision.observedPriceKrwPerL)
+    : null;
+  const absoluteChangeKrwPerL =
+    previousPriceKrwPerL === null ? null : roundPrice(latestPriceKrwPerL - previousPriceKrwPerL);
+  const percentChange =
+    previousPriceKrwPerL === null || previousPriceKrwPerL === 0
+      ? null
+      : ((latestPriceKrwPerL - previousPriceKrwPerL) / previousPriceKrwPerL) * 100;
+
+  return {
+    availability: 'available',
+    latestPriceDate: formatDate(latest.priceDate),
+    latestPriceKrwPerL,
+    previousPriceDate: previous ? formatDate(previous.priceDate) : null,
+    previousPriceKrwPerL,
+    absoluteChangeKrwPerL,
+    percentChange,
+    direction: deriveDirection(absoluteChangeKrwPerL),
+    coverageStartDate: formatDate(quarterStartDate),
+    coverageEndDate: formatDate(quarterEndDate),
+    sourceObservedAt: latest.currentRevision.sourceObservedAt?.toISOString() ?? null,
+  };
+}
+
 function normalizeError(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -418,8 +489,6 @@ async function loadSupportSection(): Promise<FscDashboardSupportSection> {
   const publicSignals = buildPublicMarketSignals(
     indicatorRows.map((entry) => ({
       indicatorCode: entry.indicatorCode,
-      syncStatus:
-        indicatorSyncStates.find((state) => state.indicatorCode === entry.indicatorCode)?.status ?? null,
       rows: entry.rows.map((row) => ({
         observedAt: row.observedAt,
         collectedAt: row.collectedAt,
@@ -490,7 +559,16 @@ export async function loadFscDashboardData(
     const isActiveQuarterSelected = selectedQuarter.id === activeQuarter.id;
     const availableQuarters = quarterSettings.map((candidate) => toQuarterSummary(candidate));
     const quarter = toQuarterSummary(selectedQuarter);
-    const support = await loadSupportSection();
+    const sharedSupport = await loadSupportSection();
+    const support = isActiveQuarterSelected
+      ? sharedSupport
+      : {
+          ...sharedSupport,
+          currentPrice: await loadQuarterEndCurrentPrice(
+            selectedQuarter.quarterStartDate,
+            selectedQuarter.quarterEndDate,
+          ),
+        };
     const dataSources = buildSupportDataSources(support);
     const result = isActiveQuarterSelected
       ? await findLatestBaseFscResultByQuarter(selectedQuarter.targetYear, selectedQuarter.targetQuarter)

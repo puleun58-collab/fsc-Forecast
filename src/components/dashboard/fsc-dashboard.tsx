@@ -59,9 +59,13 @@ export async function FscDashboard({ data }: FscDashboardProps) {
         fsc={data.fsc}
         oilPriceHistory={oilPriceHistory}
         currentPrice={data.support.currentPrice}
-        statusRail={<StatusRail fsc={data.fsc} />}
+        quarter={data.quarter}
+        isActiveQuarterSelected={data.isActiveQuarterSelected}
+        statusRail={
+          <StatusRail fsc={data.fsc} historical={!data.isActiveQuarterSelected} />
+        }
       />
-      <MarketReferencePanel support={data.support} />
+      {data.isActiveQuarterSelected ? <MarketReferencePanel support={data.support} /> : null}
       <MethodologyDisclosure fsc={data.fsc} />
       <DataSourcesDisclosure dataSources={data.dataSources} />
     </main>

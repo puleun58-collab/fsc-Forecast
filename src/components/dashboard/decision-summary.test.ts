@@ -67,6 +67,17 @@ test('decision summary renders the ordered four-card flow with one shared baseli
         coverageEndDate: '2026-08-27',
         sourceObservedAt: '2026-08-27T18:17:44.467Z',
       },
+      quarter: {
+        targetYear: 2026,
+        targetQuarter: 3,
+        referenceYear: 2026,
+        referenceQuarter: 2,
+        quarterStartDate: '2026-07-01T00:00:00.000Z',
+        quarterEndDate: '2026-09-30T00:00:00.000Z',
+        status: 'active',
+        isActive: true,
+      },
+      isActiveQuarterSelected: true,
     }),
   );
   const titles = [
@@ -84,6 +95,80 @@ test('decision summary renders the ordered four-card flow with one shared baseli
   assert.match(markup, /기준유가 대비 \+345\.24원 · \+23\.02% ↑/);
   assert.equal(markup.match(/summary-card__baseline/g)?.length, 3);
   assert.doesNotMatch(markup, /scenario-price-input|기준유가 설정/);
+});
+
+test('historical summary uses only selected-quarter Actual wording and boundaries', () => {
+  const fsc = {
+    basePriceKrwPerL: '1500.00',
+    quarterAverageKrwPerL: '1986.94',
+    diffRatio: '0.324625',
+    fscLowRate: '0.3000',
+    weeks: [
+      {
+        sequenceNo: 13,
+        priceKind: 'actual',
+        priceKrwPerL: '1960.00',
+        weekStartDate: '2026-06-21T00:00:00.000Z',
+        weekEndDate: '2026-06-25T00:00:00.000Z',
+      },
+      {
+        sequenceNo: 14,
+        priceKind: 'actual',
+        priceKrwPerL: '1970.00',
+        weekStartDate: '2026-06-28T00:00:00.000Z',
+        weekEndDate: '2026-06-30T00:00:00.000Z',
+      },
+      {
+        sequenceNo: 15,
+        priceKind: 'actual',
+        priceKrwPerL: '2100.00',
+        weekStartDate: '2026-07-01T00:00:00.000Z',
+        weekEndDate: '2026-07-02T00:00:00.000Z',
+      },
+    ],
+  } as FscDashboardResultSection;
+  const markup = renderToStaticMarkup(
+    createElement(DecisionSummary, {
+      fsc,
+      currentPrice: {
+        availability: 'unavailable',
+        latestPriceDate: null,
+        latestPriceKrwPerL: null,
+        previousPriceDate: null,
+        previousPriceKrwPerL: null,
+        absoluteChangeKrwPerL: null,
+        percentChange: null,
+        direction: 'flat',
+        coverageStartDate: '2026-04-01',
+        coverageEndDate: '2026-06-30',
+        sourceObservedAt: null,
+        unavailableReason: '선택한 분기 내 일별 Actual 데이터가 없습니다.',
+      },
+      quarter: {
+        targetYear: 2026,
+        targetQuarter: 2,
+        referenceYear: 2026,
+        referenceQuarter: 1,
+        quarterStartDate: '2026-04-01T00:00:00.000Z',
+        quarterEndDate: '2026-06-30T00:00:00.000Z',
+        status: 'closed',
+        isActive: false,
+      },
+      isActiveQuarterSelected: false,
+    }),
+  );
+
+  assert.match(markup, /분기 말 전국 평균 경유가/);
+  assert.match(markup, /6월 마지막 주 평균 유가/);
+  assert.match(markup, /2026\.06\.28–2026\.06\.30/);
+  assert.match(markup, /2분기 평균 유가/);
+  assert.match(markup, /Actual 기준/);
+  assert.match(markup, /3분기 산출 FSC율/);
+  assert.match(markup, /산출 FSC율 = 기준유가 대비 증감률/);
+  assert.doesNotMatch(
+    markup,
+    /현재|최근 주차|분기 평균 예상 유가|Actual과 주간 Forecast 기준|다음 분기 예상 FSC율|2100\.00/,
+  );
 });
 
 test('baseline control renders as a compact input-only card', () => {

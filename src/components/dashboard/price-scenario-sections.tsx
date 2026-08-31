@@ -10,6 +10,7 @@ import { WeeklyForecastSection } from './weekly-forecast-section';
 
 import type {
   FscDashboardCurrentPriceSection,
+  FscDashboardQuarterSummary,
   FscDashboardResultSection,
   OilPriceHistorySection,
 } from '@/lib/dashboard/fsc-types';
@@ -20,12 +21,16 @@ type PriceScenarioSectionsProps = {
   oilPriceHistory: OilPriceHistorySection;
   currentPrice: FscDashboardCurrentPriceSection;
   statusRail: ReactNode;
+  quarter: FscDashboardQuarterSummary;
+  isActiveQuarterSelected: boolean;
 };
 
 export function PriceScenarioSections({
   fsc,
   oilPriceHistory,
   currentPrice,
+  quarter,
+  isActiveQuarterSelected,
   statusRail,
 }: PriceScenarioSectionsProps) {
   const [priceInput, setPriceInput] = useState(fsc.basePriceKrwPerL);
@@ -51,12 +56,18 @@ export function PriceScenarioSections({
           onPriceReset={() => setPriceInput(fsc.basePriceKrwPerL)}
         />
       </div>
-      <DecisionSummary fsc={scenarioFsc} currentPrice={currentPrice} />
+      <DecisionSummary
+        fsc={scenarioFsc}
+        currentPrice={currentPrice}
+        quarter={quarter}
+        isActiveQuarterSelected={isActiveQuarterSelected}
+      />
       <OilPriceHistory history={oilPriceHistory} />
-      <WeeklyForecastSection fsc={scenarioFsc} />
+      <WeeklyForecastSection fsc={scenarioFsc} historical={!isActiveQuarterSelected} />
       <WeeklyDetailTable
         weeks={scenarioFsc.weeks}
         previousWeekPriceKrwPerL={scenarioFsc.previousWeekPriceKrwPerL}
+        useStoredWeekRange={!isActiveQuarterSelected}
       />
     </>
   );

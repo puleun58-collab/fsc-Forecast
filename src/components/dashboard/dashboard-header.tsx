@@ -34,17 +34,42 @@ export function DashboardHeader({ quarter, availableQuarters, fsc }: DashboardHe
   );
 }
 
-export function StatusRail({ fsc }: { fsc?: FscDashboardResultSection }) {
-  const freshness = fsc === undefined ? { label: '데이터 대기', tone: 'neutral' as const } : mapFreshnessStatus(fsc.dataFreshnessStatus);
-  const approval = fsc === undefined ? { label: '승인 대기', tone: 'warning' as const } : mapApprovalStatus(fsc.approvalStatus);
-  const reliability = fsc === undefined
-    ? { label: '신뢰도 산정 전', detail: 'FSC 결과 생성 후 신뢰도 조건을 평가합니다.', tone: 'neutral' as const }
-    : mapReliabilityStatus({
-        grade: fsc.reliabilityGrade,
-        sampleCount: fsc.reliabilitySampleCount,
-        minimumSampleCount: fsc.reliabilityMinimumSampleCount,
-        recent13wWeeklyPriceMape: fsc.recent13wWeeklyPriceMape,
-      });
+export function StatusRail({
+  fsc,
+  historical = false,
+}: {
+  fsc?: FscDashboardResultSection;
+  historical?: boolean;
+}) {
+  if (historical) {
+    return (
+      <div className="status-rail" aria-label="데이터 상태">
+        <span className="status-tag status-tag--ok">확정 실적</span>
+      </div>
+    );
+  }
+
+  const freshness =
+    fsc === undefined
+      ? { label: '데이터 대기', tone: 'neutral' as const }
+      : mapFreshnessStatus(fsc.dataFreshnessStatus);
+  const approval =
+    fsc === undefined
+      ? { label: '승인 대기', tone: 'warning' as const }
+      : mapApprovalStatus(fsc.approvalStatus);
+  const reliability =
+    fsc === undefined
+      ? {
+          label: '신뢰도 산정 전',
+          detail: 'FSC 결과 생성 후 신뢰도 조건을 평가합니다.',
+          tone: 'neutral' as const,
+        }
+      : mapReliabilityStatus({
+          grade: fsc.reliabilityGrade,
+          sampleCount: fsc.reliabilitySampleCount,
+          minimumSampleCount: fsc.reliabilityMinimumSampleCount,
+          recent13wWeeklyPriceMape: fsc.recent13wWeeklyPriceMape,
+        });
 
   return (
     <div className="status-rail" aria-label="데이터 상태">
