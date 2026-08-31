@@ -70,7 +70,7 @@ test('decision summary renders the ordered four-card flow with one shared baseli
     }),
   );
   const titles = [
-    '일일 평균 경유가',
+    '전국 평균 경유가',
     '8월 4주차 평균 유가',
     '분기 평균 예상 유가',
     '다음 분기 예상 FSC율',

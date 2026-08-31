@@ -204,6 +204,8 @@ export interface FscDashboardUnavailableData {
 export interface FscDashboardEmptyData {
   state: 'empty';
   quarter: FscDashboardQuarterSummary;
+  availableQuarters: FscDashboardQuarterSummary[];
+  isActiveQuarterSelected: boolean;
   support: FscDashboardSupportSection;
   dataSources: DashboardDataSource[];
 }
@@ -211,6 +213,8 @@ export interface FscDashboardEmptyData {
 export interface FscDashboardAvailableData {
   state: 'available';
   quarter: FscDashboardQuarterSummary;
+  availableQuarters: FscDashboardQuarterSummary[];
+  isActiveQuarterSelected: boolean;
   fsc: FscDashboardResultSection;
   support: FscDashboardSupportSection;
   dataSources: DashboardDataSource[];

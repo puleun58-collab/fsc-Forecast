@@ -4,17 +4,17 @@ import {
   mapFreshnessStatus,
   mapReliabilityStatus,
 } from './dashboard-format';
+import { QuarterSelect } from './quarter-select';
 
 import type { FscDashboardQuarterSummary, FscDashboardResultSection } from '@/lib/dashboard/fsc-types';
-import { formatQuarterLabel } from '@/lib/dashboard/display-format';
 
 type DashboardHeaderProps = {
   quarter?: FscDashboardQuarterSummary;
+  availableQuarters?: readonly FscDashboardQuarterSummary[];
   fsc?: FscDashboardResultSection;
 };
 
-export function DashboardHeader({ quarter, fsc }: DashboardHeaderProps) {
-  const quarterLabel = quarter === undefined ? 'Active quarter 없음' : formatQuarterLabel(quarter.targetYear, quarter.targetQuarter);
+export function DashboardHeader({ quarter, availableQuarters, fsc }: DashboardHeaderProps) {
   const basisDateTime = fsc === undefined ? '산출 결과 없음' : formatDisplayDateTime(fsc.dataBasisAt, '기록 없음');
 
   return (
@@ -24,12 +24,7 @@ export function DashboardHeader({ quarter, fsc }: DashboardHeaderProps) {
         <span>Fuel surcharge decision support</span>
       </div>
       <div className="ops-header__controls" aria-label="대시보드 기준">
-        <label className="ops-header__select-label">
-          <span>Active quarter</span>
-          <select className="ops-header__select" defaultValue={quarterLabel} disabled={quarter === undefined}>
-            <option value={quarterLabel}>{quarterLabel}</option>
-          </select>
-        </label>
+        <QuarterSelect quarter={quarter} availableQuarters={availableQuarters} />
         <div className="ops-header__basis">
           <span>데이터 기준 시각</span>
           <strong>{basisDateTime}</strong>

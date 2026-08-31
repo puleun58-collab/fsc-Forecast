@@ -61,5 +61,5 @@ test('market reference panel keeps only Dubai oil and USD KRW cards', () => {
   assert.match(markup, /두바이유/);
   assert.match(markup, /USD\/KRW/);
   assert.equal(markup.match(/market-reference-card market-signal-card/g)?.length, 2);
-  assert.doesNotMatch(markup, /일일 평균 경유가|분기 평균 예상 유가 변화/);
+  assert.doesNotMatch(markup, /전국 평균 경유가|일일 평균 경유가|분기 평균 예상 유가 변화/);
 });

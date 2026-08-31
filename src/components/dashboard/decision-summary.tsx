@@ -60,7 +60,7 @@ function DailyDieselPriceCard({
 
   return (
     <article className="summary-card summary-card--current">
-      <SummaryCardHeader eyebrow="현재" title="일일 평균 경유가" />
+      <SummaryCardHeader eyebrow="현재" title="전국 평균 경유가" />
       <p className="summary-card__context">
         {currentPrice.latestPriceDate === null
           ? '기준일 확인 중'

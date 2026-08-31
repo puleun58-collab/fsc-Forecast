@@ -2,7 +2,10 @@ import { RunStatus } from '@prisma/client';
 
 import { buildSeriesSnapshot, NATIONAL_AVERAGE_DATASET_KEY } from '@/lib/aggregates';
 import { db } from '@/lib/db';
-import { findLatestBaseFscResultByQuarter } from '@/lib/fsc/load-latest-fsc-result';
+import {
+  findLatestBaseFscResultByQuarter,
+  findStoredBaseFscResultByQuarter,
+} from '@/lib/fsc/load-latest-fsc-result';
 import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
 import { loadPublicConfirmedLatestDate } from '@/lib/opinet/resolve-public-confirmed-date';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
@@ -15,6 +18,7 @@ import {
   calculateDataFreshness,
 } from './dashboard-time';
 import { buildForecastChangeSummary } from './forecast-change-summary';
+import { resolveSelectedQuarter } from './quarter-selection';
 import {
   buildPublicMarketSignals,
   buildPublicMarketSummaryText,
@@ -469,17 +473,35 @@ async function loadSupportSection(): Promise<FscDashboardSupportSection> {
   };
 }
 
-export async function loadFscDashboardData(): Promise<FscDashboardData> {
+export interface FscDashboardQuarterSelection {
+  targetYear: number;
+  targetQuarter: number;
+}
+
+export async function loadFscDashboardData(
+  selection?: FscDashboardQuarterSelection,
+): Promise<FscDashboardData> {
   try {
-    const quarter = await ensureActiveQuarter();
+    const activeQuarter = await ensureActiveQuarter();
+    const quarterSettings = await db.quarterSetting.findMany({
+      orderBy: [{ targetYear: 'desc' }, { targetQuarter: 'desc' }],
+    });
+    const selectedQuarter = resolveSelectedQuarter(quarterSettings, selection ?? null, activeQuarter);
+    const isActiveQuarterSelected = selectedQuarter.id === activeQuarter.id;
+    const availableQuarters = quarterSettings.map((candidate) => toQuarterSummary(candidate));
+    const quarter = toQuarterSummary(selectedQuarter);
     const support = await loadSupportSection();
     const dataSources = buildSupportDataSources(support);
-    const result = await findLatestBaseFscResultByQuarter(quarter.targetYear, quarter.targetQuarter);
+    const result = isActiveQuarterSelected
+      ? await findLatestBaseFscResultByQuarter(selectedQuarter.targetYear, selectedQuarter.targetQuarter)
+      : await findStoredBaseFscResultByQuarter(selectedQuarter.targetYear, selectedQuarter.targetQuarter);
 
     if (result === null) {
       return {
         state: 'empty',
-        quarter: toQuarterSummary(quarter),
+        quarter,
+        availableQuarters,
+        isActiveQuarterSelected,
         support,
         dataSources,
       };
@@ -506,7 +528,9 @@ export async function loadFscDashboardData(): Promise<FscDashboardData> {
 
     return {
       state: 'available',
-      quarter: toQuarterSummary(quarter),
+      quarter,
+      availableQuarters,
+      isActiveQuarterSelected,
       support,
       dataSources,
       fsc: {

@@ -26,6 +26,13 @@ const FSC_RESULT_INCLUDE = {
   },
 };
 
+export async function findStoredBaseFscResultByQuarter(
+  targetYear: number,
+  targetQuarter: number,
+): Promise<FscResultRecord | null> {
+  return readLatestBaseFscResult(targetYear, targetQuarter);
+}
+
 async function readLatestBaseFscResult(
   targetYear: number,
   targetQuarter: number,

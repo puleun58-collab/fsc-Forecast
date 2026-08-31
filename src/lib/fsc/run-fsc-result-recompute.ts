@@ -12,8 +12,18 @@ import type { FscResultRecord } from './serialize-fsc-dto';
 const FSC_RECOMPUTE_LOCK_CLASS_ID = 17061;
 const FSC_RECOMPUTE_LOCK_OBJECT_ID = 905;
 
-export async function runFscResultRecompute(now = new Date()): Promise<FscResultRecord> {
-  const activeQuarter = await ensureActiveQuarter();
+export interface RunFscResultRecomputeOptions {
+  now?: Date;
+  quarterSettingId?: string;
+}
+
+export async function runFscResultRecompute(
+  optionsOrNow: RunFscResultRecomputeOptions | Date = {},
+): Promise<FscResultRecord> {
+  const options = optionsOrNow instanceof Date ? { now: optionsOrNow } : optionsOrNow;
+  const now = options.now ?? new Date();
+  const targetQuarterSettingId =
+    options.quarterSettingId ?? (await ensureActiveQuarter()).id;
 
   return db.$transaction(
     async (tx) => {
@@ -21,12 +31,12 @@ export async function runFscResultRecompute(now = new Date()): Promise<FscResult
 
       const quarterSetting = await tx.quarterSetting.findUnique({
         where: {
-          id: activeQuarter.id,
+          id: targetQuarterSettingId,
         },
       });
 
       if (quarterSetting === null) {
-        throw new Error('Active quarter disappeared before FSC recomputation could start.');
+        throw new Error(`Quarter setting '${targetQuarterSettingId}' disappeared before FSC recomputation could start.`);
       }
 
       const sourceData = await loadFscSourceData(tx);

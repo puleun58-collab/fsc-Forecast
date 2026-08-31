@@ -33,7 +33,7 @@ export async function FscDashboard({ data }: FscDashboardProps) {
   if (data.state === 'empty') {
     return (
       <main id="main-content" className="fsc-dashboard">
-        <DashboardHeader quarter={data.quarter} />
+        <DashboardHeader quarter={data.quarter} availableQuarters={data.availableQuarters} />
         <StatusRail />
         <section className="surface-panel dashboard-state" role="status" aria-labelledby="dashboard-empty-title">
           <h1 id="dashboard-empty-title">아직 FSC 산출 결과가 없습니다.</h1>
@@ -49,7 +49,11 @@ export async function FscDashboard({ data }: FscDashboardProps) {
 
   return (
     <main id="main-content" className="fsc-dashboard">
-      <DashboardHeader quarter={data.quarter} fsc={data.fsc} />
+      <DashboardHeader
+        quarter={data.quarter}
+        availableQuarters={data.availableQuarters}
+        fsc={data.fsc}
+      />
       <PriceScenarioSections
         key={data.fsc.resultId}
         fsc={data.fsc}
