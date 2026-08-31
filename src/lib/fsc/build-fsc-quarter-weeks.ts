@@ -441,6 +441,7 @@ function createForecastWeekDraft(
     sequenceNo,
     weekStartDate: effectiveStart,
     weekEndDate: effectiveEnd,
+    officialWeekLabel: null,
     priceKind: 'forecast',
     priceKrwPerL: roundedPrice,
     actualPriceKrwPerL: null,
@@ -464,35 +465,99 @@ function createForecastWeekDraft(
   };
 }
 
+function buildOfficialWeeklyQuarterWeeks(
+  quarterSetting: QuarterSettingInput,
+  officialWeeklyPrices: readonly FscSourceOfficialWeeklyPriceRow[],
+): { weeks: FscQuarterWeekDraft[]; previousWeek: FscSourceOfficialWeeklyPriceRow | null } | null {
+  const monthKeys = new Set(
+    getQuarterMonths(quarterSetting.targetQuarter).map(
+      (month) => `${quarterSetting.targetYear}${String(month).padStart(2, '0')}`,
+    ),
+  );
+  const sortedRows = [...officialWeeklyPrices].sort(
+    (left, right) => left.weekStartDate.getTime() - right.weekStartDate.getTime(),
+  );
+  const quarterRows = sortedRows.filter((row) => monthKeys.has(row.weekKey.slice(0, 6)));
+
+  if (quarterRows.length === 0) {
+    return null;
+  }
+
+  const firstRowIndex = sortedRows.indexOf(quarterRows[0]);
+  const basePriceKrwPerL = quarterSetting.basePriceKrwPerL;
+
+  return {
+    weeks: quarterRows.map((row, index) => {
+      const priceKrwPerL = roundPrice(row.priceKrwPerL);
+      const priceDiffKrwPerL = roundPrice(priceKrwPerL.minus(basePriceKrwPerL));
+
+      return {
+        targetYear: quarterSetting.targetYear,
+        targetQuarter: quarterSetting.targetQuarter,
+        targetMonth: Number(row.weekKey.slice(4, 6)),
+        weekNo: getIsoWeekNumber(row.weekStartDate),
+        sequenceNo: index + 1,
+        weekStartDate: toDateOnly(row.weekStartDate),
+        weekEndDate: toDateOnly(row.weekEndDate),
+        officialWeekLabel: row.weekLabel,
+        priceKind: 'actual',
+        priceKrwPerL,
+        actualPriceKrwPerL: priceKrwPerL,
+        forecastPriceKrwPerL: null,
+        forecastLowerBoundKrwPerL: null,
+        forecastUpperBoundKrwPerL: null,
+        sourcePriceDate: toDateOnly(row.weekEndDate),
+        sourceRevisionIds: null,
+        forecastPointId: null,
+        forecastSourceKind: null,
+        fallbackUsed: false,
+        basePriceKrwPerL,
+        priceDiffKrwPerL,
+        diffRatio: roundRatio(priceDiffKrwPerL.dividedBy(basePriceKrwPerL)),
+      };
+    }),
+    previousWeek: firstRowIndex > 0 ? sortedRows[firstRowIndex - 1] : null,
+  };
+}
+
 export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFscQuarterWeeksResult {
   const quarterStartDate = toDateOnly(input.quarterSetting.quarterStartDate);
   const quarterEndDate = toDateOnly(input.quarterSetting.quarterEndDate);
   const latestDailyPriceDate = resolveLatestDailyPriceDate(input.dailyPrices);
   const dailyPriceMap = new Map(input.dailyPrices.map((row) => [formatDateKey(toDateOnly(row.priceDate)), row]));
-  const previousWeekBasis = resolvePreviousWeekBasis(
-    quarterStartDate,
-    dailyPriceMap,
-    input.officialWeeklyPrices,
-  );
+  const officialQuarterWeeks = isCompletedQuarter(quarterEndDate, input.currentTruthCutoffAt)
+    ? buildOfficialWeeklyQuarterWeeks(input.quarterSetting, input.officialWeeklyPrices)
+    : null;
+  const previousWeekBasis =
+    officialQuarterWeeks === null
+      ? resolvePreviousWeekBasis(quarterStartDate, dailyPriceMap, input.officialWeeklyPrices)
+      : officialQuarterWeeks.previousWeek === null
+        ? null
+        : {
+            weekStartDate: toDateOnly(officialQuarterWeeks.previousWeek.weekStartDate),
+            weekEndDate: toDateOnly(officialQuarterWeeks.previousWeek.weekEndDate),
+            priceKrwPerL: roundPrice(officialQuarterWeeks.previousWeek.priceKrwPerL),
+            sourceKind: 'official_weekly' as const,
+          };
   const weeklyForecastSeries = buildWeeklyForecastSeries(input.forecastRun?.points ?? []);
 
-  const weeks: FscQuarterWeekDraft[] = [];
+  const weeks: FscQuarterWeekDraft[] = officialQuarterWeeks?.weeks ?? [];
   const basePriceKrwPerL = input.quarterSetting.basePriceKrwPerL;
   const sourceBreakdown = {
-    actual: 0,
+    actual: officialQuarterWeeks?.weeks.length ?? 0,
     weekly_point: 0,
     weekly_trend_extension: 0,
     forecast_pending: 0,
   };
   const actualSourceBreakdown: FscActualSourceBreakdown = {
-    officialWeekly: 0,
+    officialWeekly: officialQuarterWeeks?.weeks.length ?? 0,
     dailyAverage: 0,
   };
 
   let cursor = getOpinetWeekStart(quarterStartDate);
   let sequenceNo = 1;
 
-  while (cursor.getTime() <= quarterEndDate.getTime()) {
+  while (officialQuarterWeeks === null && cursor.getTime() <= quarterEndDate.getTime()) {
     const fullWeekStart = cursor;
     const fullWeekEnd = getOpinetWeekEnd(fullWeekStart);
     const effectiveStart = clampStart(fullWeekStart, quarterStartDate);
@@ -530,6 +595,7 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
         sequenceNo,
         weekStartDate: effectiveStart,
         weekEndDate: effectiveEnd,
+        officialWeekLabel: officialWeeklyMatch?.weekLabel ?? null,
         priceKind: 'actual',
         priceKrwPerL: actualPriceKrwPerL,
         actualPriceKrwPerL,

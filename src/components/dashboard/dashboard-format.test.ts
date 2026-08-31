@@ -17,6 +17,7 @@ const JULY_FIRST_WEEK: FscDashboardWeekItem = {
   weekNo: 27,
   weekStartDate: '2026-07-01T00:00:00.000Z',
   weekEndDate: '2026-07-02T00:00:00.000Z',
+  officialWeekLabel: null,
   priceKind: 'actual',
   priceKrwPerL: '0',
   actualPriceKrwPerL: '0',

@@ -14,6 +14,7 @@ export interface FscQuarterWeekDto {
   weekNo: number;
   weekStartDate: string;
   weekEndDate: string;
+  officialWeekLabel: string | null;
   priceKind: FscPriceKind;
   priceKrwPerL: string | null;
   actualPriceKrwPerL: string | null;
@@ -100,6 +101,7 @@ function serializeFscQuarterWeek(value: FscQuarterWeek): FscQuarterWeekDto {
     weekNo: value.weekNo,
     weekStartDate: value.weekStartDate.toISOString(),
     weekEndDate: value.weekEndDate.toISOString(),
+    officialWeekLabel: value.officialWeekLabel,
     priceKind: value.priceKind,
     priceKrwPerL: formatOptionalDecimal(value.priceKrwPerL, PRICE_SCALE),
     actualPriceKrwPerL: formatOptionalDecimal(value.actualPriceKrwPerL, PRICE_SCALE),

@@ -132,6 +132,7 @@ export async function runFscResultRecompute(
               sequenceNo: week.sequenceNo,
               weekStartDate: week.weekStartDate,
               weekEndDate: week.weekEndDate,
+              officialWeekLabel: week.officialWeekLabel,
               priceKind: week.priceKind,
               priceKrwPerL: week.priceKrwPerL,
               actualPriceKrwPerL: week.actualPriceKrwPerL,

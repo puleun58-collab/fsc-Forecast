@@ -347,6 +347,7 @@ model FscQuarterWeek {
   sequenceNo           Int
   weekStartDate        DateTime
   weekEndDate          DateTime
+  officialWeekLabel    String?
   priceKind            FscPriceKind
   priceKrwPerL         Decimal?               @db.Decimal(10, 3)
   actualPriceKrwPerL   Decimal?               @db.Decimal(10, 3)

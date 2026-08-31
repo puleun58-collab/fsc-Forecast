@@ -5,7 +5,7 @@ import {
   formatDisplayDate,
   formatSignedPriceText,
   formatSignedRatioText,
-  formatSequenceWeekLabel,
+  formatOfficialWeekName,
   formatWeekOverWeekChange,
   formatWeekRange,
   getFirstForecastIndex,
@@ -32,6 +32,14 @@ function formatOpinetWeekLabel(week: FscDashboardWeekItem): string {
   } catch {
     return `${week.targetMonth}월`;
   }
+}
+
+function formatWeekName(week: FscDashboardWeekItem, useStoredWeekRange: boolean): string {
+  if (week.officialWeekLabel !== null) {
+    return formatOfficialWeekName(week.officialWeekLabel);
+  }
+
+  return useStoredWeekRange ? `${week.targetMonth}월 주차` : formatOpinetWeekLabel(week);
 }
 
 export function WeeklyDetailTable({
@@ -138,12 +146,14 @@ function WeekTableRow({
   return (
     <tr className={`weekly-table__row weekly-table__row--${week.priceKind}`}>
       <th scope="row">
-        <strong>{formatSequenceWeekLabel(week.sequenceNo)}</strong>
-        <span>ISO {week.weekNo} · {week.targetMonth}월</span>
+        <strong>{formatWeekName(week, useStoredWeekRange)}</strong>
+        {week.officialWeekLabel === null ? (
+          <span>ISO {week.weekNo} · {week.targetMonth}월</span>
+        ) : (
+          <span>오피넷 공식 주차</span>
+        )}
       </th>
       <td className="weekly-table__period">
-        <strong>{useStoredWeekRange ? `${week.targetMonth}월 주차` : formatOpinetWeekLabel(week)}</strong>
-        <span aria-hidden="true">·</span>
         <span>{useStoredWeekRange ? formatStoredWeekRange(week) : formatWeekRange(week)}</span>
       </td>
       <td>
@@ -196,7 +206,7 @@ function WeekMobileGroup({
         <div key={week.sequenceNo} className={`weekly-mobile-item weekly-mobile-item--${week.priceKind}`}>
           <div className="weekly-mobile-item__top">
             <strong>
-              {formatSequenceWeekLabel(week.sequenceNo)} ·{' '}
+              {formatWeekName(week, useStoredWeekRange)} ·{' '}
               {useStoredWeekRange ? formatStoredWeekRange(week, true) : formatWeekRange(week, true)}
             </strong>
             <span>

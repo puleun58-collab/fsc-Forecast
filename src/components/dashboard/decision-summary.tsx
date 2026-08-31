@@ -6,6 +6,7 @@ import {
   formatRateLabel,
   formatSignedPriceText,
   formatSignedRatioText,
+  formatOfficialWeekName,
   formatWeekRange,
   formatWeekOverWeekChange,
   PriceValue,
@@ -35,16 +36,7 @@ export function DecisionSummary({
   quarter,
   isActiveQuarterSelected,
 }: DecisionSummaryProps) {
-  const quarterStartTime = new Date(quarter.quarterStartDate).getTime();
-  const quarterEndTime = new Date(quarter.quarterEndDate).getTime();
-  const actualWeeks = fsc.weeks.filter((week) => {
-    if (week.priceKind !== 'actual') return false;
-    if (isActiveQuarterSelected) return true;
-
-    const weekStartTime = new Date(week.weekStartDate).getTime();
-    const weekEndTime = new Date(week.weekEndDate).getTime();
-    return weekStartTime >= quarterStartTime && weekEndTime <= quarterEndTime;
-  });
+  const actualWeeks = fsc.weeks.filter((week) => week.priceKind === 'actual');
   const latestActualWeek = findLatestActualWeek(actualWeeks);
   const previousActualWeek = latestActualWeek
     ? actualWeeks.find((week) => week.sequenceNo === latestActualWeek.sequenceNo - 1) ?? null
@@ -62,7 +54,6 @@ export function DecisionSummary({
         previousActualWeek={previousActualWeek}
         basePriceKrwPerL={fsc.basePriceKrwPerL}
         historical={!isActiveQuarterSelected}
-        quarterEndDate={quarter.quarterEndDate}
       />
       <QuarterForecastPriceCard fsc={fsc} quarter={quarter} historical={!isActiveQuarterSelected} />
       <EstimatedFscRateCard fsc={fsc} quarter={quarter} historical={!isActiveQuarterSelected} />
@@ -84,10 +75,7 @@ function DailyDieselPriceCard({
 
   return (
     <article className="summary-card summary-card--current">
-      <SummaryCardHeader
-        eyebrow={historical ? '분기 말' : '현재'}
-        title={historical ? '분기 말 전국 평균 경유가' : '전국 평균 경유가'}
-      />
+      <SummaryCardHeader eyebrow="현재" title="전국 평균 경유가" />
       <p className="summary-card__context">
         {currentPrice.latestPriceDate === null
           ? historical
@@ -126,13 +114,11 @@ function LatestActualPriceCard({
   previousActualWeek,
   basePriceKrwPerL,
   historical,
-  quarterEndDate,
 }: {
   latestActualWeek: FscDashboardWeekItem | null;
   previousActualWeek: FscDashboardWeekItem | null;
   basePriceKrwPerL: string;
   historical: boolean;
-  quarterEndDate: string;
 }) {
   const weekOverWeekChange = latestActualWeek
     ? calculateWeekOverWeekChange(
@@ -140,8 +126,12 @@ function LatestActualPriceCard({
         previousActualWeek?.priceKrwPerL ?? null,
       )
     : null;
-  const title = historical
-    ? `${new Date(quarterEndDate).getUTCMonth() + 1}월 마지막 주 평균 유가`
+  const officialWeekName =
+    latestActualWeek?.officialWeekLabel === null || latestActualWeek?.officialWeekLabel === undefined
+      ? null
+      : formatOfficialWeekName(latestActualWeek.officialWeekLabel);
+  const title = officialWeekName
+    ? `${officialWeekName} 평균 유가`
     : latestActualWeek
       ? (() => {
           const { month, weekOfMonth } = getOpinetDisplayWeek(
@@ -154,12 +144,10 @@ function LatestActualPriceCard({
 
   return (
     <article className="summary-card summary-card--actual">
-      <SummaryCardHeader eyebrow={historical ? '분기 마지막 주' : '최근 주차'} title={title} />
+      <SummaryCardHeader eyebrow="최근 주차" title={title} />
       <p className="summary-card__context">
         {latestActualWeek
-          ? historical
-            ? `${formatDisplayDate(latestActualWeek.weekStartDate)}–${formatDisplayDate(latestActualWeek.weekEndDate)}`
-            : formatWeekRange(latestActualWeek)
+          ? `${formatDisplayDate(latestActualWeek.weekStartDate)}–${formatDisplayDate(latestActualWeek.weekEndDate)}`
           : 'Actual 데이터 없음'}
       </p>
       <PriceValue

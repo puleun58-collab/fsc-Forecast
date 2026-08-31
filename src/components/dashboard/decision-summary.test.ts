@@ -97,7 +97,7 @@ test('decision summary renders the ordered four-card flow with one shared baseli
   assert.doesNotMatch(markup, /scenario-price-input|기준유가 설정|수집 시각/);
 });
 
-test('historical summary uses only selected-quarter Actual wording and boundaries', () => {
+test('historical summary reuses the active card titles with official Opinet week data', () => {
   const fsc = {
     basePriceKrwPerL: '1500.00',
     quarterAverageKrwPerL: '1994.65',
@@ -106,25 +106,20 @@ test('historical summary uses only selected-quarter Actual wording and boundarie
     fscLowRate: '0.3000',
     weeks: [
       {
+        sequenceNo: 12,
+        priceKind: 'actual',
+        priceKrwPerL: '2004.14',
+        weekStartDate: '2026-06-14T00:00:00.000Z',
+        weekEndDate: '2026-06-18T00:00:00.000Z',
+        officialWeekLabel: '2026년06월3주',
+      },
+      {
         sequenceNo: 13,
         priceKind: 'actual',
-        priceKrwPerL: '1960.00',
+        priceKrwPerL: '2001.30',
         weekStartDate: '2026-06-21T00:00:00.000Z',
         weekEndDate: '2026-06-25T00:00:00.000Z',
-      },
-      {
-        sequenceNo: 14,
-        priceKind: 'actual',
-        priceKrwPerL: '1970.00',
-        weekStartDate: '2026-06-28T00:00:00.000Z',
-        weekEndDate: '2026-06-30T00:00:00.000Z',
-      },
-      {
-        sequenceNo: 15,
-        priceKind: 'actual',
-        priceKrwPerL: '2100.00',
-        weekStartDate: '2026-07-01T00:00:00.000Z',
-        weekEndDate: '2026-07-02T00:00:00.000Z',
+        officialWeekLabel: '2026년06월4주',
       },
     ],
   } as FscDashboardResultSection;
@@ -159,16 +154,17 @@ test('historical summary uses only selected-quarter Actual wording and boundarie
     }),
   );
 
-  assert.match(markup, /분기 말 전국 평균 경유가/);
-  assert.match(markup, /6월 마지막 주 평균 유가/);
-  assert.match(markup, /2026\.06\.28–2026\.06\.30/);
+  assert.match(markup, /전국 평균 경유가/);
+  assert.match(markup, /6월 4주차 평균 유가/);
+  assert.match(markup, /2026\.06\.21–2026\.06\.25/);
+  assert.match(markup, /2,001\.30/);
   assert.match(markup, /2분기 평균 유가/);
   assert.match(markup, /오피넷 공식 분기 평균/);
   assert.match(markup, /3분기 산출 FSC율/);
   assert.match(markup, /산출 FSC율 = 기준유가 대비 증감률/);
   assert.doesNotMatch(
     markup,
-    /현재|최근 주차|분기 평균 예상 유가|Actual과 주간 Forecast 기준|Actual 기준|다음 분기 예상 FSC율|2100\.00/,
+    /분기 말|마지막 주|분기 평균 예상 유가|Actual과 주간 Forecast 기준|Actual 기준|다음 분기 예상 FSC율/,
   );
 });
 

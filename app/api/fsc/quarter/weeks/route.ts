@@ -89,6 +89,7 @@ export async function GET(request: Request): Promise<Response> {
           weekNo: week.weekNo,
           weekStartDate: week.weekStartDate.toISOString(),
           weekEndDate: week.weekEndDate.toISOString(),
+          officialWeekLabel: week.officialWeekLabel,
           priceKind: week.priceKind,
           priceKrwPerL: week.priceKrwPerL?.toFixed(PRICE_SCALE) ?? null,
           actualPriceKrwPerL: week.actualPriceKrwPerL?.toFixed(PRICE_SCALE) ?? null,

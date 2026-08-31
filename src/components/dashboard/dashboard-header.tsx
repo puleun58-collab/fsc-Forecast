@@ -2,6 +2,7 @@ import {
   formatDisplayDateTime,
   mapApprovalStatus,
   mapFreshnessStatus,
+  mapReliabilityAdjustmentReason,
   mapReliabilityStatus,
 } from './dashboard-format';
 import { QuarterSelect } from './quarter-select';
@@ -71,13 +72,49 @@ export function StatusRail({
           recent13wWeeklyPriceMape: fsc.recent13wWeeklyPriceMape,
         });
 
+  const mape = fsc?.recent13wWeeklyPriceMape ?? null;
+  const isGradedReliability = reliability.tone !== 'neutral';
+
   return (
     <div className="status-rail" aria-label="데이터 상태">
       <span className={`status-tag status-tag--${freshness.tone}`}>{freshness.label}</span>
       <span className={`status-tag status-tag--${approval.tone}`}>{approval.label}</span>
-      <span className={`status-tag status-tag--${reliability.tone}`} title={reliability.detail}>
-        {reliability.label}
-      </span>
+      {fsc !== undefined && isGradedReliability ? (
+        <details className="reliability-detail">
+          <summary className={`status-tag status-tag--${reliability.tone} status-tag--interactive`}>
+            {reliability.label}
+            <span aria-hidden="true">ⓘ</span>
+          </summary>
+          <div className="reliability-detail__panel" role="group" aria-label="신뢰도 산정 상세">
+            <p className="reliability-detail__row">
+              최근 {fsc.reliabilityMinimumSampleCount}주 MAPE{' '}
+              <strong>{mape === null ? '산정 중' : `${Number(mape).toFixed(2)}%`}</strong>
+            </p>
+            <p className="reliability-detail__row">
+              기본 등급 <strong>{fsc.baseReliabilityGrade ?? '산정 중'}</strong>
+            </p>
+            <p className="reliability-detail__row">
+              최종 등급 <strong>{fsc.reliabilityGrade}</strong>
+            </p>
+            {fsc.reliabilityAdjustmentReasons.length === 0 ? (
+              <p className="reliability-detail__row">추가 조정 없음</p>
+            ) : (
+              <>
+                <p className="reliability-detail__row">조정 사유</p>
+                <ul className="reliability-detail__reasons">
+                  {fsc.reliabilityAdjustmentReasons.map((reason) => (
+                    <li key={reason}>{mapReliabilityAdjustmentReason(reason)}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        </details>
+      ) : (
+        <span className={`status-tag status-tag--${reliability.tone}`} title={reliability.detail}>
+          {reliability.label}
+        </span>
+      )}
     </div>
   );
 }

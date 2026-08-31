@@ -139,6 +139,7 @@ export interface FscDashboardWeekItem {
   weekNo: number;
   weekStartDate: string;
   weekEndDate: string;
+  officialWeekLabel: string | null;
   priceKind: 'actual' | 'forecast';
   priceKrwPerL: string | null;
   actualPriceKrwPerL: string | null;
@@ -164,6 +165,8 @@ export interface FscDashboardResultSection {
   reliabilityGrade: string;
   basePriceKrwPerL: string;
   appliedPriceKrwPerL: string;
+  baseReliabilityGrade: string | null;
+  reliabilityAdjustmentReasons: string[];
   quarterAverageKrwPerL: string;
   quarterAverageBasisKind: 'official_quarterly' | 'official_monthly_average' | 'weekly_actual_forecast';
   priceDiffKrwPerL: string;

@@ -155,6 +155,7 @@ export interface FscQuarterWeekDraft {
   weekNo: number;
   sequenceNo: number;
   weekStartDate: Date;
+  officialWeekLabel: string | null;
   weekEndDate: Date;
   priceKind: 'actual' | 'forecast';
   priceKrwPerL: Prisma.Decimal | null;

@@ -618,3 +618,100 @@ test('active quarter keeps the weekly actual and forecast average even when an o
   assert.equal(result.quarterAverageBasis.kind, 'weekly_actual_forecast');
   assert.equal(result.quarterAverageKrwPerL.toFixed(3), '1853.333');
 });
+
+function createOfficialWeek(
+  weekKey: string,
+  weekLabel: string,
+  weekStartDate: string,
+  weekEndDate: string,
+  price: string,
+): FscSourceOfficialWeeklyPriceRow {
+  return {
+    weekKey,
+    weekLabel,
+    weekStartDate: new Date(`${weekStartDate}T00:00:00.000Z`),
+    weekEndDate: new Date(`${weekEndDate}T00:00:00.000Z`),
+    priceKrwPerL: new Prisma.Decimal(price),
+    fetchedAt: new Date('2026-08-31T00:00:00.000Z'),
+  };
+}
+
+const OFFICIAL_Q2_WEEKS: FscSourceOfficialWeeklyPriceRow[] = [
+  createOfficialWeek('2026035', '2026년03월5주', '2026-03-22', '2026-03-26', '1827.96'),
+  createOfficialWeek('2026041', '2026년04월1주', '2026-03-29', '2026-04-02', '1886.36'),
+  createOfficialWeek('2026042', '2026년04월2주', '2026-04-05', '2026-04-09', '1959.12'),
+  createOfficialWeek('2026071', '2026년07월1주', '2026-06-28', '2026-07-02', '1942.39'),
+];
+
+test('completed quarter weeks mirror the official Opinet weekly rows without clipping', () => {
+  const input = createCompletedQuarterInput();
+  input.officialWeeklyPrices = OFFICIAL_Q2_WEEKS;
+  input.officialQuarterlyPrices = [
+    {
+      quarterKey: '2026Q2',
+      quarterLabel: '2026년2분기',
+      quarterStartDate: new Date('2026-04-01T00:00:00.000Z'),
+      quarterEndDate: new Date('2026-06-30T00:00:00.000Z'),
+      priceKrwPerL: new Prisma.Decimal('1994.65'),
+      fetchedAt: new Date('2026-08-31T00:00:00.000Z'),
+    },
+  ];
+
+  const result = buildFscQuarterWeeks(input);
+  const payload = result.calculationPayload as {
+    previousWeekBasis: { priceKrwPerL: string; sourceKind: string } | null;
+  };
+
+  assert.deepEqual(
+    result.weeks.map((week) => [
+      week.officialWeekLabel,
+      week.weekStartDate.toISOString().slice(0, 10),
+      week.weekEndDate.toISOString().slice(0, 10),
+      week.priceKrwPerL?.toFixed(2),
+      week.priceKind,
+    ]),
+    [
+      ['2026년04월1주', '2026-03-29', '2026-04-02', '1886.36', 'actual'],
+      ['2026년04월2주', '2026-04-05', '2026-04-09', '1959.12', 'actual'],
+    ],
+  );
+  assert.equal(result.actualWeekCount, 2);
+  assert.equal(result.forecastWeekCount, 0);
+  assert.equal(payload.previousWeekBasis?.priceKrwPerL, '1827.960');
+  assert.equal(payload.previousWeekBasis?.sourceKind, 'official_weekly');
+});
+
+test('completed quarter weeks exclude official weeks from other quarters', () => {
+  const input = createCompletedQuarterInput();
+  input.officialWeeklyPrices = OFFICIAL_Q2_WEEKS;
+  input.officialQuarterlyPrices = [
+    {
+      quarterKey: '2026Q2',
+      quarterLabel: '2026년2분기',
+      quarterStartDate: new Date('2026-04-01T00:00:00.000Z'),
+      quarterEndDate: new Date('2026-06-30T00:00:00.000Z'),
+      priceKrwPerL: new Prisma.Decimal('1994.65'),
+      fetchedAt: new Date('2026-08-31T00:00:00.000Z'),
+    },
+  ];
+
+  const labels = buildFscQuarterWeeks(input).weeks.map((week) => week.officialWeekLabel);
+
+  assert.ok(!labels.includes('2026년07월1주'));
+  assert.ok(!labels.includes('2026년03월5주'));
+});
+
+test('active quarter weeks keep quarter-clipped slots and daily or forecast sources', () => {
+  const input = createInput([
+    createDailyRow('2026-07-01', 1900),
+    createDailyRow('2026-07-02', 1900),
+  ]);
+  input.quarterSetting.quarterEndDate = new Date('2026-07-16T00:00:00.000Z');
+  input.forecastRun = createForecastRun([['2026-07-09', '1840.000'], ['2026-07-16', '1820.000']]);
+
+  const result = buildFscQuarterWeeks(input);
+
+  assert.equal(result.weeks[0]?.weekStartDate.toISOString().slice(0, 10), '2026-07-01');
+  assert.equal(result.weeks[0]?.officialWeekLabel, null);
+  assert.equal(result.forecastWeekCount, 2);
+});
