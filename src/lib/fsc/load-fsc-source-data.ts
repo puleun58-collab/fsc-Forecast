@@ -27,6 +27,8 @@ function toForecastRunRecord(run: {
     horizonIndex: number;
     targetDate: Date;
     pointKrwPerL: Prisma.Decimal;
+    lowerBoundKrwPerL: Prisma.Decimal | null;
+    upperBoundKrwPerL: Prisma.Decimal | null;
   }>;
 }): FscSourceForecastRunRecord {
   return {
@@ -43,6 +45,8 @@ function toForecastRunRecord(run: {
       horizonIndex: point.horizonIndex,
       targetDate: point.targetDate,
       pointKrwPerL: point.pointKrwPerL,
+      lowerBoundKrwPerL: point.lowerBoundKrwPerL,
+      upperBoundKrwPerL: point.upperBoundKrwPerL,
     })),
   };
 }
@@ -171,6 +175,8 @@ export async function loadFscSourceData(
             horizonIndex: true,
             targetDate: true,
             pointKrwPerL: true,
+            lowerBoundKrwPerL: true,
+            upperBoundKrwPerL: true,
           },
         },
       },

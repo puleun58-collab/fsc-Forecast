@@ -143,6 +143,8 @@ export interface FscDashboardWeekItem {
   priceKrwPerL: string | null;
   actualPriceKrwPerL: string | null;
   forecastPriceKrwPerL: string | null;
+  forecastLowerBoundKrwPerL: string | null;
+  forecastUpperBoundKrwPerL: string | null;
   forecastSourceKind: 'weekly_point' | 'weekly_trend_extension' | null;
   fallbackUsed: boolean;
   priceDiffKrwPerL: string | null;

@@ -93,6 +93,8 @@ export async function GET(request: Request): Promise<Response> {
           priceKrwPerL: week.priceKrwPerL?.toFixed(PRICE_SCALE) ?? null,
           actualPriceKrwPerL: week.actualPriceKrwPerL?.toFixed(PRICE_SCALE) ?? null,
           forecastPriceKrwPerL: week.forecastPriceKrwPerL?.toFixed(PRICE_SCALE) ?? null,
+          forecastLowerBoundKrwPerL: week.forecastLowerBoundKrwPerL?.toFixed(PRICE_SCALE) ?? null,
+          forecastUpperBoundKrwPerL: week.forecastUpperBoundKrwPerL?.toFixed(PRICE_SCALE) ?? null,
           sourcePriceDate: week.sourcePriceDate?.toISOString() ?? null,
           forecastSourceKind: week.forecastSourceKind ?? null,
           fallbackUsed: week.fallbackUsed,

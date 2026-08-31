@@ -61,6 +61,8 @@ export interface FscSourceForecastPointRow {
   horizonIndex: number;
   targetDate: Date;
   pointKrwPerL: Prisma.Decimal;
+  lowerBoundKrwPerL: Prisma.Decimal | null;
+  upperBoundKrwPerL: Prisma.Decimal | null;
 }
 
 export interface FscSourceSnapshotRecord {
@@ -136,6 +138,8 @@ export interface FscQuarterWeekDraft {
   priceKrwPerL: Prisma.Decimal | null;
   actualPriceKrwPerL: Prisma.Decimal | null;
   forecastPriceKrwPerL: Prisma.Decimal | null;
+  forecastLowerBoundKrwPerL: Prisma.Decimal | null;
+  forecastUpperBoundKrwPerL: Prisma.Decimal | null;
   sourcePriceDate: Date | null;
   sourceRevisionIds: Prisma.JsonValue | null;
   forecastPointId: string | null;

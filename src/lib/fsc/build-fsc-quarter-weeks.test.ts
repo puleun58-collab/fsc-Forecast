@@ -26,6 +26,8 @@ function createMonthlyForecastRun() {
       horizonIndex: index + 1,
       targetDate: new Date(`${targetDate}T00:00:00.000Z`),
       pointKrwPerL: new Prisma.Decimal(price),
+      lowerBoundKrwPerL: null,
+      upperBoundKrwPerL: null,
     })),
   };
 }
@@ -74,6 +76,8 @@ function createWeeklyForecastRun(targetDate: string, price: string) {
         horizonIndex: 1,
         targetDate: new Date(`${targetDate}T00:00:00.000Z`),
         pointKrwPerL: new Prisma.Decimal(price),
+        lowerBoundKrwPerL: new Prisma.Decimal(price).minus(20),
+        upperBoundKrwPerL: new Prisma.Decimal(price).plus(20),
       },
     ],
   };
@@ -97,6 +101,8 @@ function createForecastRun(
         horizonIndex: index + 1,
         targetDate: new Date(`${targetDate}T00:00:00.000Z`),
         pointKrwPerL: new Prisma.Decimal(price),
+        lowerBoundKrwPerL: new Prisma.Decimal(price).minus(15),
+        upperBoundKrwPerL: new Prisma.Decimal(price).plus(15),
       })),
       ...monthlyPoints.map(([targetDate, price], index) => ({
         id: `monthly-point-${targetDate}`,
@@ -104,6 +110,8 @@ function createForecastRun(
         horizonIndex: index + 1,
         targetDate: new Date(`${targetDate}T00:00:00.000Z`),
         pointKrwPerL: new Prisma.Decimal(price),
+        lowerBoundKrwPerL: null,
+        upperBoundKrwPerL: null,
       })),
     ],
   };
@@ -478,4 +486,30 @@ test('quarter average and FSC calculation include only valid actual and weekly f
   assert.equal(calculation.quarterAverageKrwPerL.toFixed(3), '1850.000');
   assert.equal(calculation.fscLowKrwPerL.toFixed(3), '1979.500');
   assert.equal(calculation.fscHighKrwPerL.toFixed(3), '2152.166');
+});
+
+test('weekly forecast weeks carry the backtest-derived expected range', () => {
+  const input = createInput([
+    createDailyRow('2026-07-01', 1900),
+    createDailyRow('2026-07-02', 1900),
+  ]);
+  input.quarterSetting.quarterEndDate = new Date('2026-07-23T00:00:00.000Z');
+  input.forecastRun = createForecastRun([
+    ['2026-07-09', '1840.000'],
+    ['2026-07-16', '1825.000'],
+  ]);
+
+  const result = buildFscQuarterWeeks(input);
+  const weeklyPointWeek = result.weeks.find((week) => week.forecastSourceKind === 'weekly_point');
+  const trendExtensionWeek = result.weeks.find(
+    (week) => week.forecastSourceKind === 'weekly_trend_extension',
+  );
+  const actualWeek = result.weeks.find((week) => week.priceKind === 'actual');
+
+  assert.equal(weeklyPointWeek?.forecastLowerBoundKrwPerL?.toFixed(3), '1825.000');
+  assert.equal(weeklyPointWeek?.forecastUpperBoundKrwPerL?.toFixed(3), '1855.000');
+  assert.equal(trendExtensionWeek?.forecastLowerBoundKrwPerL, null);
+  assert.equal(trendExtensionWeek?.forecastUpperBoundKrwPerL, null);
+  assert.equal(actualWeek?.forecastLowerBoundKrwPerL, null);
+  assert.equal(actualWeek?.forecastUpperBoundKrwPerL, null);
 });

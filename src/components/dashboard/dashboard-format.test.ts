@@ -21,6 +21,8 @@ const JULY_FIRST_WEEK: FscDashboardWeekItem = {
   priceKrwPerL: '0',
   actualPriceKrwPerL: '0',
   forecastPriceKrwPerL: null,
+  forecastLowerBoundKrwPerL: null,
+  forecastUpperBoundKrwPerL: null,
   forecastSourceKind: null,
   fallbackUsed: false,
   priceDiffKrwPerL: '0',

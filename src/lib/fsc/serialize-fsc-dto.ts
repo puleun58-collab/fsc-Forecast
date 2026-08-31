@@ -18,6 +18,8 @@ export interface FscQuarterWeekDto {
   priceKrwPerL: string | null;
   actualPriceKrwPerL: string | null;
   forecastPriceKrwPerL: string | null;
+  forecastLowerBoundKrwPerL: string | null;
+  forecastUpperBoundKrwPerL: string | null;
   sourcePriceDate: string | null;
   forecastSourceKind: 'weekly_point' | 'weekly_trend_extension' | null;
   fallbackUsed: boolean;
@@ -102,6 +104,8 @@ function serializeFscQuarterWeek(value: FscQuarterWeek): FscQuarterWeekDto {
     priceKrwPerL: formatOptionalDecimal(value.priceKrwPerL, PRICE_SCALE),
     actualPriceKrwPerL: formatOptionalDecimal(value.actualPriceKrwPerL, PRICE_SCALE),
     forecastPriceKrwPerL: formatOptionalDecimal(value.forecastPriceKrwPerL, PRICE_SCALE),
+    forecastLowerBoundKrwPerL: formatOptionalDecimal(value.forecastLowerBoundKrwPerL, PRICE_SCALE),
+    forecastUpperBoundKrwPerL: formatOptionalDecimal(value.forecastUpperBoundKrwPerL, PRICE_SCALE),
     sourcePriceDate: value.sourcePriceDate?.toISOString() ?? null,
     forecastSourceKind,
     fallbackUsed: value.fallbackUsed,

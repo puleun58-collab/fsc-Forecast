@@ -11,7 +11,7 @@ export const FORECAST_DATASET_KEY = "national-average-opinet-diesel";
 export const FORECAST_BACKTEST_WEEKS = 26;
 export const FORECAST_MISSING_VALUE = null;
 export const FORECAST_MAPE_THRESHOLD_PCT = 5;
-export const FORECAST_WEEKLY_HORIZON_COUNT = 4;
+export const FORECAST_WEEKLY_HORIZON_COUNT = 13;
 export const FORECAST_MONTHLY_HORIZON_COUNT = 3;
 
 export interface ForecastDailyPriceRow {

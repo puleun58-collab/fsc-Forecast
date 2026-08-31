@@ -113,6 +113,8 @@ export async function runFscResultRecompute(now = new Date()): Promise<FscResult
               priceKrwPerL: week.priceKrwPerL,
               actualPriceKrwPerL: week.actualPriceKrwPerL,
               forecastPriceKrwPerL: week.forecastPriceKrwPerL,
+              forecastLowerBoundKrwPerL: week.forecastLowerBoundKrwPerL,
+              forecastUpperBoundKrwPerL: week.forecastUpperBoundKrwPerL,
               sourcePriceDate: week.sourcePriceDate,
               sourceRevisionIds: week.sourceRevisionIds ?? Prisma.JsonNull,
               forecastPointId: week.forecastPointId,

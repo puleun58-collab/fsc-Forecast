@@ -351,6 +351,8 @@ model FscQuarterWeek {
   priceKrwPerL         Decimal?               @db.Decimal(10, 3)
   actualPriceKrwPerL   Decimal?               @db.Decimal(10, 3)
   forecastPriceKrwPerL Decimal?               @db.Decimal(10, 3)
+  forecastLowerBoundKrwPerL Decimal?          @db.Decimal(10, 3)
+  forecastUpperBoundKrwPerL Decimal?          @db.Decimal(10, 3)
   sourcePriceDate      DateTime?
   sourceRevisionIds    Json?
   forecastPointId      String?

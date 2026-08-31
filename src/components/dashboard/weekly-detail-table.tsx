@@ -15,7 +15,7 @@ import {
 } from './dashboard-format';
 
 import type { FscDashboardWeekItem } from '@/lib/dashboard/fsc-types';
-import { getChangeDirection } from '@/lib/dashboard/display-format';
+import { formatPriceNumber, getChangeDirection } from '@/lib/dashboard/display-format';
 import { getOpinetDisplayWeek } from '@/lib/opinet/weekly-period';
 
 type WeeklyDetailTableProps = {
@@ -47,7 +47,7 @@ export function WeeklyDetailTable({ weeks, previousWeekPriceKrwPerL }: WeeklyDet
     <section className="weekly-detail surface-panel" aria-labelledby="weekly-detail-title">
       <div className="panel-header">
         <h2 id="weekly-detail-title">주차별 상세 데이터</h2>
-        <p>가격, 전주·기준유가 대비 차이, 산출 방식을 주차 단위로 확인합니다.</p>
+        <p>가격, 90% 예상 범위, 전주·기준유가 대비 차이, 산출 방식을 주차 단위로 확인합니다.</p>
       </div>
       <div className="weekly-table-wrap">
         <table className="weekly-table">
@@ -57,6 +57,7 @@ export function WeeklyDetailTable({ weeks, previousWeekPriceKrwPerL }: WeeklyDet
               <th scope="col">기간</th>
               <th scope="col">상태</th>
               <th scope="col">가격</th>
+              <th scope="col">90% 예상 범위</th>
               <th scope="col">전주 대비</th>
               <th scope="col">기준유가 대비</th>
               <th scope="col">산출 방식</th>
@@ -67,7 +68,7 @@ export function WeeklyDetailTable({ weeks, previousWeekPriceKrwPerL }: WeeklyDet
               <Fragment key={week.sequenceNo}>
                 {week.sequenceNo === firstForecastSequenceNo ? (
                   <tr className="weekly-table__boundary">
-                    <td colSpan={7}>예측 시작</td>
+                    <td colSpan={8}>예측 시작</td>
                   </tr>
                 ) : null}
                 <WeekTableRow
@@ -101,6 +102,14 @@ function formatWeekChange(currentWeek: FscDashboardWeekItem, previousPriceKrwPer
   return change === null ? '비교 기준 없음' : formatWeekOverWeekChange(change);
 }
 
+
+function formatExpectedRange(week: FscDashboardWeekItem): string {
+  if (week.forecastLowerBoundKrwPerL === null || week.forecastUpperBoundKrwPerL === null) {
+    return '-';
+  }
+
+  return `${formatPriceNumber(week.forecastLowerBoundKrwPerL)} ~ ${formatPriceNumber(week.forecastUpperBoundKrwPerL)}원/L`;
+}
 function WeekTableRow({
   week,
   previousPriceKrwPerL,
@@ -131,6 +140,7 @@ function WeekTableRow({
       <td className="numeric-cell">
         <PriceValue value={week.priceKrwPerL} fallback="-" size="compact" />
       </td>
+      <td className="numeric-cell">{formatExpectedRange(week)}</td>
       <td
         className={`numeric-cell directional-value directional-value--${getChangeDirection(
           calculateWeekOverWeekChange(week.priceKrwPerL, previousPriceKrwPerL)?.amountKrwPerL ?? null,
@@ -202,6 +212,7 @@ function WeekMobileGroup({
               ? '기준 대비 -'
               : `기준 대비 ${formatSignedPriceText(week.priceDiffKrwPerL)} · ${formatSignedRatioText(week.diffRatio)}`}
           </p>
+          <p className="weekly-mobile-item__range">90% 예상 범위 {formatExpectedRange(week)}</p>
         </div>
       ))}
     </div>

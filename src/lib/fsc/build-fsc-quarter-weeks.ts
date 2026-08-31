@@ -368,6 +368,14 @@ function createForecastWeekDraft(
     priceKrwPerL: roundedPrice,
     actualPriceKrwPerL: null,
     forecastPriceKrwPerL: roundedPrice,
+    forecastLowerBoundKrwPerL:
+      weeklyMatch?.lowerBoundKrwPerL === null || weeklyMatch?.lowerBoundKrwPerL === undefined
+        ? null
+        : roundPrice(weeklyMatch.lowerBoundKrwPerL),
+    forecastUpperBoundKrwPerL:
+      weeklyMatch?.upperBoundKrwPerL === null || weeklyMatch?.upperBoundKrwPerL === undefined
+        ? null
+        : roundPrice(weeklyMatch.upperBoundKrwPerL),
     sourcePriceDate,
     sourceRevisionIds: null,
     forecastPointId: sourcePoint?.id ?? null,
@@ -449,6 +457,8 @@ export function buildFscQuarterWeeks(input: BuildFscQuarterWeeksInput): BuildFsc
         priceKrwPerL: actualPriceKrwPerL,
         actualPriceKrwPerL,
         forecastPriceKrwPerL: null,
+        forecastLowerBoundKrwPerL: null,
+        forecastUpperBoundKrwPerL: null,
         sourcePriceDate: officialWeeklyMatch?.weekEndDate ?? slotRows[slotRows.length - 1]?.priceDate ?? null,
         sourceRevisionIds: slotRows.map((row) => row.currentRevisionId),
         forecastPointId: null,
