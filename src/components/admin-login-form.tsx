@@ -5,7 +5,6 @@ import { useId, useState } from 'react';
 import { readActionResponseMessage } from './action-response';
 
 export function AdminLoginForm() {
-  const passwordHelpId = useId();
   const messageId = useId();
   const [password, setPassword] = useState('');
   const [pending, setPending] = useState(false);
@@ -52,6 +51,7 @@ export function AdminLoginForm() {
           type="password"
           name="password"
           autoComplete="current-password"
+          placeholder="비밀번호 입력"
           value={password}
           onChange={(event) => {
             setPassword(event.target.value);
@@ -59,11 +59,8 @@ export function AdminLoginForm() {
           required
           disabled={pending}
           className="input"
-          aria-describedby={[passwordHelpId, message ? messageId : null].filter(Boolean).join(' ')}
+          aria-describedby={message ? messageId : undefined}
         />
-        <span id={passwordHelpId} className="dashboard-shell__metric-caption">
-          인증 후 quarter 운영과 FSC 재계산 기능이 열립니다.
-        </span>
       </label>
       <div className="form-actions">
         <button type="submit" disabled={pending} className="button button--primary">
