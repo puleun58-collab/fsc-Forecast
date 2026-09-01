@@ -478,7 +478,7 @@ test('quarter average and FSC calculation include only valid actual and weekly f
     basePriceKrwPerL: input.quarterSetting.basePriceKrwPerL,
     appliedPriceKrwPerL: input.quarterSetting.appliedPriceKrwPerL,
     quarterAverageKrwPerL: result.quarterAverageKrwPerL,
-    fscLowRate: '0.3000',
+    oilWeightRate: '0.3000',
   });
 
   assert.equal(result.actualWeekCount, 1);
@@ -488,7 +488,7 @@ test('quarter average and FSC calculation include only valid actual and weekly f
   assert.equal(
     calculateEstimatedFscRate({
       diffRatio: calculation.diffRatio.toFixed(6),
-      oilWeightRate: calculation.fscLowRate.toFixed(4),
+      oilWeightRate: calculation.oilWeightRate.toFixed(4),
     }),
     '0.070000',
   );
@@ -569,7 +569,7 @@ test('completed quarter uses the official Opinet quarterly average instead of th
     basePriceKrwPerL: input.quarterSetting.basePriceKrwPerL,
     appliedPriceKrwPerL: input.quarterSetting.appliedPriceKrwPerL,
     quarterAverageKrwPerL: result.quarterAverageKrwPerL,
-    fscLowRate: '0.3000',
+    oilWeightRate: '0.3000',
   });
 
   assert.equal(result.quarterAverageKrwPerL.toFixed(3), '1994.650');

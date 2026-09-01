@@ -6,8 +6,7 @@ export interface CalculateFscResultInput {
   basePriceKrwPerL: DecimalLike;
   appliedPriceKrwPerL: DecimalLike;
   quarterAverageKrwPerL: DecimalLike;
-  // TODO: 실제 의미는 유가 비중(현재 30%)이므로 후속 리팩터링에서 oilWeightRate로 rename한다.
-  fscLowRate: DecimalLike;
+  oilWeightRate: DecimalLike;
 }
 
 export interface CalculateFscResultOutput {
@@ -17,7 +16,7 @@ export interface CalculateFscResultOutput {
   quarterAverageKrwPerL: Prisma.Decimal;
   priceDiffKrwPerL: Prisma.Decimal;
   diffRatio: Prisma.Decimal;
-  fscLowRate: Prisma.Decimal;
+  oilWeightRate: Prisma.Decimal;
 }
 
 export interface FscRegressionFixture {
@@ -34,7 +33,7 @@ export const FSC_EXCEL_REGRESSION_FIXTURE: FscRegressionFixture = {
     basePriceKrwPerL: '1500.000',
     appliedPriceKrwPerL: '1500.000',
     quarterAverageKrwPerL: '1990.364',
-    fscLowRate: '0.3000',
+    oilWeightRate: '0.3000',
   },
   expected: {
     priceDiffKrwPerL: '490.364',

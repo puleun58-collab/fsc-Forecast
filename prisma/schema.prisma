@@ -269,7 +269,7 @@ model QuarterSetting {
   quarterEndDate      DateTime
   basePriceKrwPerL    Decimal       @db.Decimal(10, 3)
   appliedPriceKrwPerL Decimal       @db.Decimal(10, 3)
-  fscLowRate          Decimal       @db.Decimal(5, 4)
+  oilWeightRate       Decimal       @map("fscLowRate") @db.Decimal(5, 4)
   status              QuarterStatus @default(draft)
   isActive            Boolean       @default(false)
   activeKey           String?       @unique
@@ -301,7 +301,7 @@ model FscResult {
   quarterAverageKrwPerL           Decimal                @db.Decimal(10, 3)
   priceDiffKrwPerL                Decimal                @db.Decimal(10, 3)
   diffRatio                       Decimal                @db.Decimal(10, 6)
-  fscLowRate                      Decimal                @db.Decimal(5, 4)
+  oilWeightRate                   Decimal                @map("fscLowRate") @db.Decimal(5, 4)
   actualWeekCount                 Int
   forecastWeekCount               Int
   recent13wWeeklyPriceMae         Decimal?               @db.Decimal(10, 3)

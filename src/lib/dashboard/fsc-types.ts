@@ -178,7 +178,7 @@ export interface FscDashboardResultSection {
   quarterAverageBasisKind: 'official_quarterly' | 'official_monthly_average' | 'weekly_actual_forecast';
   priceDiffKrwPerL: string;
   diffRatio: string;
-  fscLowRate: string;
+  oilWeightRate: string;
   actualWeekCount: number;
   forecastWeekCount: number;
   reliabilitySampleCount: number;

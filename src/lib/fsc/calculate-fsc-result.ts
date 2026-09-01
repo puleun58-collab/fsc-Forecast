@@ -48,11 +48,11 @@ export function calculateFscResult(input: CalculateFscResultInput): CalculateFsc
   const basePriceKrwPerL = roundPrice(toDecimal(input.basePriceKrwPerL, 'basePriceKrwPerL'));
   const appliedPriceKrwPerL = roundPrice(toDecimal(input.appliedPriceKrwPerL, 'appliedPriceKrwPerL'));
   const quarterAverageKrwPerL = roundPrice(toDecimal(input.quarterAverageKrwPerL, 'quarterAverageKrwPerL'));
-  const fscLowRate = roundRate(toDecimal(input.fscLowRate, 'fscLowRate'));
+  const oilWeightRate = roundRate(toDecimal(input.oilWeightRate, 'oilWeightRate'));
 
   assertPositive(basePriceKrwPerL, 'basePriceKrwPerL');
   assertPositive(quarterAverageKrwPerL, 'quarterAverageKrwPerL');
-  assertRate(fscLowRate, 'fscLowRate');
+  assertRate(oilWeightRate, 'oilWeightRate');
 
   const priceDiffKrwPerL = roundPrice(quarterAverageKrwPerL.minus(basePriceKrwPerL));
   const diffRatio = roundRatio(priceDiffKrwPerL.dividedBy(basePriceKrwPerL));
@@ -64,7 +64,7 @@ export function calculateFscResult(input: CalculateFscResultInput): CalculateFsc
     quarterAverageKrwPerL,
     priceDiffKrwPerL,
     diffRatio,
-    fscLowRate,
+    oilWeightRate,
   };
 }
 
@@ -72,7 +72,7 @@ export function verifyFscExcelRegressionFixture(): boolean {
   const result = calculateFscResult(FSC_EXCEL_REGRESSION_FIXTURE.input);
   const estimatedFscRate = calculateEstimatedFscRate({
     diffRatio: result.diffRatio.toFixed(6),
-    oilWeightRate: result.fscLowRate.toFixed(4),
+    oilWeightRate: result.oilWeightRate.toFixed(4),
   });
 
   return (

@@ -33,7 +33,7 @@ async function createInitialActiveQuarter(tx: Prisma.TransactionClient): Promise
       quarterEndDate: range.endDate,
       basePriceKrwPerL: toDecimal('1500.000'),
       appliedPriceKrwPerL: toDecimal('1500.000'),
-      fscLowRate: toDecimal('0.3000'),
+      oilWeightRate: toDecimal('0.3000'),
       status: QuarterStatus.active,
       isActive: true,
       activeKey: 'ACTIVE',

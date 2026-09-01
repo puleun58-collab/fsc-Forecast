@@ -15,7 +15,7 @@ test('estimated FSC card presents only the 30 percent oil-weighted rate', () => 
     createElement(EstimatedFscRateCard, {
       fsc: {
         diffRatio: '0.232000',
-        fscLowRate: '0.3000',
+        oilWeightRate: '0.3000',
       },
     }),
   );
@@ -33,7 +33,7 @@ test('decision summary renders the ordered four-card flow with one shared baseli
     basePriceKrwPerL: '1500.00',
     quarterAverageKrwPerL: '1845.24',
     diffRatio: '0.230157',
-    fscLowRate: '0.3000',
+    oilWeightRate: '0.3000',
     weeks: [
       {
         sequenceNo: 8,
@@ -103,7 +103,7 @@ test('historical summary reuses the active card titles with official Opinet week
     quarterAverageKrwPerL: '1994.65',
     quarterAverageBasisKind: 'official_quarterly',
     diffRatio: '0.329767',
-    fscLowRate: '0.3000',
+    oilWeightRate: '0.3000',
     weeks: [
       {
         sequenceNo: 12,

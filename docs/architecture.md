@@ -70,11 +70,11 @@ actual이 아니면 forecast 행을 만들며 가격 출처의 우선순위는 �
 <a id="fsc-formula"></a>
 ## FSC 계산식과 formula version
 
-현재 formula version은 `fsc-v1`이다. 모든 가격은 소수 셋째 자리, 비율은 소수 여섯째 자리, 유가 비중은 소수 넷째 자리에서 half-up 반올림한다. 기준유가와 분기 평균 예상 유가는 0보다 커야 하며, 유가 비중(`fscLowRate`, 현재 0.3000)은 0~1이어야 한다.
+현재 formula version은 `fsc-v1`이다. 모든 가격은 소수 셋째 자리, 비율은 소수 여섯째 자리, 유가 비중은 소수 넷째 자리에서 half-up 반올림한다. 기준유가와 분기 평균 예상 유가는 0보다 커야 하며, 유가 비중(`oilWeightRate`, 현재 0.3000)은 0~1이어야 한다. DB 물리 컬럼은 과거 이름인 `fscLowRate`를 유지하고 Prisma `@map`으로 연결한다.
 
 - `priceDiff = quarterAverage - basePrice`
 - `diffRatio = priceDiff / basePrice`
-- `estimatedFscRate = diffRatio × fscLowRate`
+- `estimatedFscRate = diffRatio × oilWeightRate`
 
 `estimatedFscRate`는 화면에서 계산해 표시하며 파생 가격으로 저장하지 않는다.
 

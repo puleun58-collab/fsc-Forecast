@@ -62,7 +62,7 @@ export async function ensureHistoricalQuarterSetting(
       quarterEndDate: range.endDate,
       basePriceKrwPerL: activeQuarter.basePriceKrwPerL,
       appliedPriceKrwPerL: activeQuarter.appliedPriceKrwPerL,
-      fscLowRate: activeQuarter.fscLowRate,
+      oilWeightRate: activeQuarter.oilWeightRate,
       status: QuarterStatus.closed,
       isActive: false,
       activeKey: null,

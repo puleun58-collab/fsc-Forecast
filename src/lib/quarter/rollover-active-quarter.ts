@@ -27,7 +27,7 @@ async function createNextQuarterFromPrevious(
       quarterEndDate: range.endDate,
       basePriceKrwPerL: toDecimal(previousQuarter.basePriceKrwPerL),
       appliedPriceKrwPerL: toDecimal(previousQuarter.appliedPriceKrwPerL),
-      fscLowRate: toDecimal(previousQuarter.fscLowRate),
+      oilWeightRate: toDecimal(previousQuarter.oilWeightRate),
       status: QuarterStatus.draft,
       isActive: false,
       activeKey: null,

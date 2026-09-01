@@ -251,7 +251,7 @@ function directionIcon(direction: 'up' | 'down' | 'flat'): '↑' | '↓' | '→'
 }
 
 type EstimatedFscRateCardProps = {
-  fsc: Pick<FscDashboardResultSection, 'diffRatio' | 'fscLowRate'>;
+  fsc: Pick<FscDashboardResultSection, 'diffRatio' | 'oilWeightRate'>;
   quarter?: Pick<FscDashboardQuarterSummary, 'targetQuarter'>;
   historical?: boolean;
 };
@@ -261,9 +261,9 @@ export function EstimatedFscRateCard({
   quarter,
   historical = false,
 }: EstimatedFscRateCardProps) {
-  const oilWeightLabel = formatRateLabel(fsc.fscLowRate);
+  const oilWeightLabel = formatRateLabel(fsc.oilWeightRate);
   const estimatedFscRateLabel = formatSignedRatioText(
-    calculateEstimatedFscRate({ diffRatio: fsc.diffRatio, oilWeightRate: fsc.fscLowRate }),
+    calculateEstimatedFscRate({ diffRatio: fsc.diffRatio, oilWeightRate: fsc.oilWeightRate }),
   );
   const nextQuarter = quarter ? (quarter.targetQuarter === 4 ? 1 : quarter.targetQuarter + 1) : null;
 

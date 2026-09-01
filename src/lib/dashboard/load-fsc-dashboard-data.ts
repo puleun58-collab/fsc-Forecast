@@ -660,7 +660,7 @@ export async function loadFscDashboardData(
         quarterAverageBasisKind: readQuarterAverageBasisKind(result.calculationPayload),
         priceDiffKrwPerL: fsc.priceDiffKrwPerL,
         diffRatio: fsc.diffRatio,
-        fscLowRate: fsc.fscLowRate,
+        oilWeightRate: fsc.oilWeightRate,
         actualWeekCount: fsc.actualWeekCount,
         forecastWeekCount: fsc.forecastWeekCount,
         reliabilitySampleCount: fsc.reliabilitySampleCount,
