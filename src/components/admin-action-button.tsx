@@ -10,6 +10,7 @@ type AdminActionButtonProps = {
   payload?: Record<string, unknown>;
   confirmMessage: string;
   reloadOnSuccess?: boolean;
+  variant?: 'secondary' | 'danger';
 };
 
 export function AdminActionButton({
@@ -18,6 +19,7 @@ export function AdminActionButton({
   payload,
   confirmMessage,
   reloadOnSuccess = true,
+  variant = 'secondary',
 }: AdminActionButtonProps) {
   const messageId = useId();
   const [pending, setPending] = useState(false);
@@ -78,7 +80,13 @@ export function AdminActionButton({
           void handleClick();
         }}
         disabled={pending}
-        className={confirming ? 'button button--primary' : 'button button--secondary'}
+        className={
+          variant === 'danger'
+            ? 'button button--danger'
+            : confirming
+              ? 'button button--primary'
+              : 'button button--secondary'
+        }
         aria-describedby={message ? messageId : undefined}
       >
         {pending ? '처리 중...' : confirming ? '계속 실행' : label}

@@ -4,16 +4,18 @@ import { AdminActionButton } from '@/components/admin-action-button';
 import { AdminDataHealthPanel } from '@/components/admin-data-health-panel';
 import { AdminForecastDiagnostics, type ForecastRunHistoryEntry } from '@/components/admin-forecast-diagnostics';
 import { AdminLogoutButton } from '@/components/admin-logout-button';
+import { AdminOperationHistory } from '@/components/admin-operation-history';
+import { AdminQuarterCard } from '@/components/admin-quarter-card';
+import { AdminWeekComposition } from '@/components/admin-week-composition';
 import { SectionCard } from '@/components/section-card';
 import { getAdminSession } from '@/lib/auth/admin';
 import { db } from '@/lib/db';
 import { loadAdminDataHealth } from '@/lib/data-health/load-admin-data-health';
+import { loadAdminOperationHistory } from '@/lib/admin-operation-history/load-admin-operation-history';
 
 import { findLatestBaseFscResultByQuarter } from '@/lib/fsc/load-latest-fsc-result';
 import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
-import { readFscReliabilityTrail } from '@/lib/fsc/reliability-trail';
 import { readForecastModelDiagnostics } from '@/lib/forecast/forecast-diagnostics';
-import { mapReliabilityStatus } from '@/components/dashboard/dashboard-format';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
 
 
@@ -24,22 +26,8 @@ function quarterLabel(year: number, quarter: number): string {
   return `${year}년 ${quarter}분기`;
 }
 
-function formatDiff(current: string, previous: string | null): string {
-  if (previous === null) {
-    return '직전 결과 없음';
-  }
-
-  const diff = Number(current) - Number(previous);
-  return `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}`;
-}
-
-function formatMapeSummary(value: string | null): string {
-  if (value === null) {
-    return '기록 없음';
-  }
-
-  const numericValue = Number(value);
-  return Number.isFinite(numericValue) ? `${numericValue.toFixed(1)}%` : '기록 없음';
+function formatQuarterPeriod(start: Date, end: Date): string {
+  return `${start.toISOString().slice(0, 10).replaceAll('-', '.')} ~ ${end.toISOString().slice(0, 10).replaceAll('-', '.')}`;
 }
 
 export default async function AdminPage() {
@@ -49,7 +37,7 @@ export default async function AdminPage() {
 
 
   const activeQuarter = await ensureActiveQuarter();
-  const [quarters, activeResult, activeResultHistory, forecastRuns, dataHealth] = await Promise.all([
+  const [quarters, activeResult, activeResultHistory, forecastRuns, dataHealth, operationHistory] = await Promise.all([
     db.quarterSetting.findMany({
       orderBy: [{ targetYear: 'desc' }, { targetQuarter: 'desc' }],
     }),
@@ -87,28 +75,11 @@ export default async function AdminPage() {
       select: { id: true, completedAt: true, createdAt: true, metadata: true },
     }),
     loadAdminDataHealth(),
+    loadAdminOperationHistory(),
   ]);
 
   const activeResultDto = activeResult ? serializeFscResultDto(activeResult) : null;
   const previousResultDto = activeResultHistory[1] ? serializeFscResultDto(activeResultHistory[1]) : null;
-  const reliabilityStatus = activeResultDto
-    ? mapReliabilityStatus({
-        grade: activeResultDto.reliabilityGrade,
-        sampleCount: activeResultDto.reliabilitySampleCount,
-        minimumSampleCount: activeResultDto.reliabilityMinimumSampleCount,
-        recent13wWeeklyPriceMape: activeResultDto.qualityMetrics.recent13wWeeklyPriceMape,
-      })
-    : null;
-  const remainingSampleCount = activeResultDto
-    ? Math.max(activeResultDto.reliabilityMinimumSampleCount - activeResultDto.reliabilitySampleCount, 0)
-    : 0;
-  const reliabilityTrail = readFscReliabilityTrail(activeResult?.calculationPayload ?? null);
-  const guardrailDecisionPath =
-    reliabilityTrail.baseGrade === null
-      ? '기록 없음'
-      : reliabilityTrail.adjustmentReasons.length === 0
-        ? `기본 ${reliabilityTrail.baseGrade} → guardrail 미적용 → 최종 ${reliabilityTrail.finalGrade ?? reliabilityTrail.baseGrade}`
-        : `기본 ${reliabilityTrail.baseGrade} → guardrail ${reliabilityTrail.adjustmentReasons.length}건 적용 → 최종 ${reliabilityTrail.finalGrade ?? reliabilityTrail.baseGrade}`;
   const nextDraft = quarters.find(
     (quarter) => quarter.status === 'draft' && (quarter.targetYear > activeQuarter.targetYear || (quarter.targetYear === activeQuarter.targetYear && quarter.targetQuarter > activeQuarter.targetQuarter)),
   );
@@ -164,124 +135,37 @@ export default async function AdminPage() {
           }
         />
 
-        <SectionCard
-          title="현재 active quarter"
-          badge={quarterLabel(activeQuarter.targetYear, activeQuarter.targetQuarter)}
-          description="현재 활성 분기와 최신 FSC 상태입니다."
-          highlights={[
-            `참조 분기 ${quarterLabel(activeQuarter.referenceYear, activeQuarter.referenceQuarter)}`,
-            `기간 ${activeQuarter.quarterStartDate.toISOString().slice(0, 10)} ~ ${activeQuarter.quarterEndDate.toISOString().slice(0, 10)}`,
-            `상태 ${activeQuarter.status}`,
-          ]}
-          highlight
-        >
-          <div className="admin-detail-stack">
-            <div className="admin-action">
-              <AdminActionButton label="FSC 재계산" endpoint="/api/fsc/recompute" confirmMessage="새 immutable FSC 결과를 생성합니다. 계속할까요?" />
-              {activeResultDto ? (
-                <AdminActionButton
-                  label="기준 시나리오 승인"
-                  endpoint="/api/fsc/approve"
-                  payload={{ resultId: activeResultDto.id }}
-                  confirmMessage={`결과 ${activeResultDto.id}를 승인합니다. 계속할까요?`}
-                />
-              ) : null}
-              <AdminActionButton
-                label="수동 rollover"
-                endpoint="/api/fsc/quarter/rollover"
-                payload={{ force: true }}
-                confirmMessage="현재 active quarter를 강제로 다음 분기로 넘깁니다. 계속할까요?"
-              />
+        <AdminQuarterCard
+          quarterLabel={quarterLabel(activeQuarter.targetYear, activeQuarter.targetQuarter)}
+          referenceQuarterLabel={quarterLabel(activeQuarter.referenceYear, activeQuarter.referenceQuarter)}
+          periodLabel={formatQuarterPeriod(activeQuarter.quarterStartDate, activeQuarter.quarterEndDate)}
+          result={
+            activeResultDto === null
+              ? null
+              : {
+                  id: activeResultDto.id,
+                  approvalStatus: activeResultDto.approvalStatus,
+                  dataFreshnessStatus: activeResultDto.dataFreshnessStatus,
+                  reliabilityGrade: activeResultDto.reliabilityGrade,
+                  reliabilitySampleCount: activeResultDto.reliabilitySampleCount,
+                  reliabilityMinimumSampleCount: activeResultDto.reliabilityMinimumSampleCount,
+                  recent13wWeeklyPriceMape: activeResultDto.qualityMetrics.recent13wWeeklyPriceMape,
+                  actualWeekCount: activeResultDto.actualWeekCount,
+                  forecastWeekCount: activeResultDto.forecastWeekCount,
+                  quarterAverageKrwPerL: activeResultDto.quarterAverageKrwPerL,
+                  previousQuarterAverageKrwPerL: previousResultDto?.quarterAverageKrwPerL ?? null,
+                }
+          }
+        />
 
-            </div>
-            {activeResultDto ? (
-              <div className="admin-detail-stack">
-                <div className="admin-metric-grid">
-                  {[
-                    ['approval', activeResultDto.approvalStatus],
-                    ['freshness', activeResultDto.dataFreshnessStatus],
-                    ['reliability', reliabilityStatus?.label ?? activeResultDto.reliabilityGrade],
-                    ['actual weeks', String(activeResultDto.actualWeekCount)],
-                    ['forecast weeks', String(activeResultDto.forecastWeekCount)],
-                    ['quarter average', activeResultDto.quarterAverageKrwPerL],
-                  ].map(([label, value]) => (
-                    <div key={label} className="admin-metric">
-                      <span className="dashboard-shell__metric-label">{label}</span>
-                      <strong>{value}</strong>
-                    </div>
-                  ))}
-                </div>
-                <div className="admin-panel">
-                  <strong>직전 결과 대비</strong>
-                  <span>quarter average 변화: {formatDiff(activeResultDto.quarterAverageKrwPerL, previousResultDto?.quarterAverageKrwPerL ?? null)}</span>
-                </div>
-                <div className="admin-panel">
-                  <strong>Reliability 상세</strong>
-                  <span>유효 백테스트 수: {activeResultDto.reliabilitySampleCount}</span>
-                  <span>최소 필요 백테스트 수: {activeResultDto.reliabilityMinimumSampleCount}</span>
-                  <span>추가로 필요한 백테스트 수: {remainingSampleCount}</span>
-                  {remainingSampleCount > 0 || activeResultDto.reliabilityGrade === 'U' || activeResultDto.qualityMetrics.recent13wWeeklyPriceMape === null ? (
-                    <>
-                      <span>공식 등급 미산정</span>
-                      <span>주간 백테스트 {activeResultDto.reliabilitySampleCount}/{activeResultDto.reliabilityMinimumSampleCount}개 확보</span>
-                      <span>{remainingSampleCount}개가 추가로 필요합니다.</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>공식 신뢰도 {activeResultDto.reliabilityGrade}</span>
-                      <span>최근 13개 백테스트 MAPE {formatMapeSummary(activeResultDto.qualityMetrics.recent13wWeeklyPriceMape)}</span>
-                    </>
-                  )}
-                  <span>4주 MAE: {activeResultDto.qualityMetrics.recent4wWeeklyPriceMae ?? '기록 없음'}</span>
-                  <span>13주 MAE: {activeResultDto.qualityMetrics.recent13wWeeklyPriceMae ?? '기록 없음'}</span>
-                  <span>13주 MAPE: {activeResultDto.qualityMetrics.recent13wWeeklyPriceMape ?? '기록 없음'}</span>
-                  <span>13주 방향 정확도: {activeResultDto.qualityMetrics.recent13wDirectionAccuracy ?? '기록 없음'}</span>
-                  <span>26주 MAE: {activeResultDto.qualityMetrics.recent26wWeeklyPriceMae ?? '기록 없음'}</span>
-                  <span>4주 bias: {activeResultDto.qualityMetrics.forecastBias4w ?? '기록 없음'}</span>
-                  <span>13주 bias: {activeResultDto.qualityMetrics.forecastBias13w ?? '기록 없음'}</span>
-                  <span>기본 등급: {reliabilityTrail.baseGrade ?? '기록 없음'}</span>
-                  <span>최종 등급: {reliabilityTrail.finalGrade ?? activeResultDto.reliabilityGrade}</span>
-                  <span>guardrail 판정: {guardrailDecisionPath}</span>
-                  <span>
-                    조정 사유 코드:{' '}
-                    {reliabilityTrail.adjustmentReasons.length === 0
-                      ? '없음'
-                      : reliabilityTrail.adjustmentReasons.join(', ')}
-                  </span>
-                  <span>4주 오차 추세: {reliabilityTrail.recent4wErrorTrend ?? '기록 없음'}</span>
-                  <span>데이터 최신성: {reliabilityTrail.dataFreshnessStatus ?? activeResultDto.dataFreshnessStatus}</span>
-                </div>
-              </div>
-            ) : (
-              <div className="section-card__placeholder">
-                <span className="section-card__placeholder-title">아직 active quarter FSC 결과가 없습니다.</span>
-                <span className="section-card__placeholder-copy">FSC 재계산을 실행하면 최신 기준 시나리오가 표시됩니다.</span>
-              </div>
-            )}
-          </div>
-        </SectionCard>
+        <AdminOperationHistory events={operationHistory} />
 
-        <SectionCard
-          title="actual/forecast 주차"
-          badge={activeResultDto ? `${activeResultDto.weeks.length}개 주차` : '결과 없음'}
-          description="actual과 주간 기반 forecast 산출 방식을 개발용 상세로 확인합니다."
-        >
-          {activeResultDto ? (
-            <ul className="admin-list">
-              {activeResultDto.weeks.map((week) => (
-                <li key={week.sequenceNo} className="admin-panel">
-                  <strong>
-                    {week.sequenceNo}주차 · {week.weekStartDate.slice(0, 10)} ~ {week.weekEndDate.slice(0, 10)}
-                  </strong>
-                  <span>
-                    {week.priceKind} · {week.priceKrwPerL === null ? '산정 중' : `${week.priceKrwPerL}원/L`} · source{' '}
-                    {week.forecastSourceKind ?? (week.priceKind === 'actual' ? 'actual' : 'pending')}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </SectionCard>
+        <AdminWeekComposition
+          actualWeekCount={activeResultDto?.actualWeekCount ?? 0}
+          forecastWeekCount={activeResultDto?.forecastWeekCount ?? 0}
+          quarterAverageKrwPerL={activeResultDto?.quarterAverageKrwPerL ?? null}
+          weeks={activeResultDto?.weeks ?? []}
+        />
 
 
         <SectionCard

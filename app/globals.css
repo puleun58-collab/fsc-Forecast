@@ -1101,6 +1101,12 @@ main {
   gap: var(--space-6);
 }
 
+/* 관리자 카드는 세로로 쌓이므로 카드 사이 간격을 명시한다. */
+.dashboard-shell__grid {
+  display: grid;
+  gap: var(--space-5);
+}
+
 .admin-metric-grid {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: var(--space-3);
@@ -1260,6 +1266,181 @@ main {
   }
 }
 
+.operation-history-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.operation-history-row {
+  display: grid;
+  grid-template-columns: minmax(150px, auto) minmax(110px, auto) auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 11px 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.operation-history-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.operation-history-row:last-child {
+  padding-bottom: 0;
+}
+
+.operation-history-row__time {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.operation-history-row__label {
+  font-size: 0.86rem;
+}
+
+.operation-history-row__summary {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.operation-history-row__detail {
+  justify-self: end;
+  font-size: 0.78rem;
+}
+
+.operation-history-row__detail summary {
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.operation-history-row__detail-list {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+}
+
+.operation-history-row__detail-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.operation-history-row__detail-list dt {
+  color: var(--text-secondary);
+}
+
+.operation-history-row__detail-list dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.operation-history-row__error {
+  margin: 8px 0 0;
+  color: var(--critical);
+}
+
+@media (max-width: 700px) {
+  .operation-history-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 12px;
+  }
+
+  .operation-history-row__time {
+    grid-column: 1 / -1;
+  }
+
+  .operation-history-row__summary,
+  .operation-history-row__detail {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+.week-composition-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.week-composition-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(110px, auto) auto;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 10px 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.week-composition-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.week-composition-row:last-child {
+  padding-bottom: 0;
+}
+
+.week-composition-row__week {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.week-composition-row__week > strong {
+  font-size: 0.86rem;
+}
+
+.week-composition-row__week > span {
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.week-composition-row__price {
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.week-composition-row__source {
+  justify-self: end;
+  font-size: 0.78rem;
+}
+
+.week-composition-row__source summary {
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.week-composition-row__source p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 700px) {
+  .week-composition-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .week-composition-row__price {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+
+  .week-composition-row__source {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
 .admin-decision {
   gap: 14px;
 }
@@ -1327,21 +1508,20 @@ main {
 .admin-reliability {
   border-color: var(--border-strong);
   background: var(--bg-card);
-  box-shadow: inset 3px 0 0 var(--brand);
 }
 
 .admin-reliability__metrics {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.admin-horizon {
+.admin-disclosure {
   display: block;
   overflow: hidden;
   padding: 0;
   background: transparent;
 }
 
-.admin-horizon__summary {
+.admin-disclosure__summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1352,57 +1532,57 @@ main {
   list-style: none;
 }
 
-.admin-horizon__summary::-webkit-details-marker {
+.admin-disclosure__summary::-webkit-details-marker {
   display: none;
 }
 
-.admin-horizon__summary strong {
+.admin-disclosure__summary strong {
   color: var(--text-primary);
   font-size: 0.86rem;
 }
 
-.admin-horizon__summary:hover {
+.admin-disclosure__summary:hover {
   background: var(--bg-muted);
 }
 
-.admin-horizon__toggle {
+.admin-disclosure__toggle {
   flex: 0 0 auto;
   color: var(--text-secondary);
   font-size: 0.76rem;
   font-weight: 700;
 }
 
-.admin-horizon__toggle-open {
+.admin-disclosure__toggle-open {
   display: none;
 }
 
-.admin-horizon[open] .admin-horizon__summary {
+.admin-disclosure[open] .admin-disclosure__summary {
   border-bottom: 1px solid var(--border-default);
 }
 
-.admin-horizon[open] .admin-horizon__toggle-closed {
+.admin-disclosure[open] .admin-disclosure__toggle-closed {
   display: none;
 }
 
-.admin-horizon[open] .admin-horizon__toggle-open {
+.admin-disclosure[open] .admin-disclosure__toggle-open {
   display: inline;
 }
 
-.admin-horizon__body {
+.admin-disclosure__body {
   display: grid;
   gap: 12px;
   padding: var(--space-4);
 }
 
-.admin-horizon__metrics {
+.admin-disclosure__metrics {
   gap: 12px;
 }
 
-.admin-horizon__metrics .admin-decision__metric > span {
+.admin-disclosure__metrics .admin-decision__metric > span {
   font-size: 0.74rem;
 }
 
-.admin-horizon__metrics .admin-decision__metric > strong {
+.admin-disclosure__metrics .admin-decision__metric > strong {
   color: var(--text-secondary);
   font-size: 0.84rem;
 }
@@ -1464,11 +1644,11 @@ main {
   }
 
   .admin-reliability__metrics,
-  .admin-horizon__metrics {
+  .admin-disclosure__metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .admin-horizon__summary {
+  .admin-disclosure__summary {
     align-items: flex-start;
   }
 

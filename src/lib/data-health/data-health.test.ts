@@ -36,7 +36,7 @@ test('all current sources produce the healthy aggregate state', () => {
   ]);
 
   assert.equal(summary.status, 'healthy');
-  assert.equal(summary.label, '전체 정상');
+  assert.equal(summary.label, '모두 최신');
 });
 
 test('one delayed source is counted without escalating to an error', () => {
@@ -88,7 +88,7 @@ test('a source without an observation is marked missing', () => {
 
   assert.equal(missing.status, 'missing');
   assert.equal(missing.latestDataAt, null);
-  assert.equal(summary.label, '1개 데이터 없음');
+  assert.equal(summary.label, '데이터 없음');
 });
 
 test('weekends do not make Friday USD/KRW data look delayed on Monday', () => {

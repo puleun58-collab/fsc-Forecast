@@ -14,6 +14,7 @@ export type ReliabilityStatusInput = {
 
 export type ReliabilityStatusView = {
   label: string;
+  shortLabel: string;
   detail: string;
   tone: StatusTone;
 };
@@ -264,17 +265,17 @@ export function mapApprovalStatus(value: string): { label: string; tone: StatusT
   }
 }
 
-export function mapFreshnessStatus(value: string): { label: string; tone: StatusTone } {
+export function mapFreshnessStatus(value: string): { label: string; shortLabel: string; tone: StatusTone } {
   switch (value) {
     case 'fresh':
-      return { label: '데이터 최신', tone: 'ok' };
+      return { label: '데이터 최신', shortLabel: '최신', tone: 'ok' };
     case 'delayed':
-      return { label: '데이터 지연', tone: 'warning' };
+      return { label: '데이터 지연', shortLabel: '지연', tone: 'warning' };
     case 'stale':
-      return { label: '데이터 오래됨', tone: 'critical' };
+      return { label: '데이터 오래됨', shortLabel: '오래됨', tone: 'critical' };
     case 'unavailable':
     default:
-      return { label: '데이터 확인 필요', tone: 'critical' };
+      return { label: '데이터 확인 필요', shortLabel: '확인 필요', tone: 'critical' };
   }
 }
 
@@ -301,6 +302,7 @@ export function mapReliabilityStatus(input: ReliabilityStatusInput): Reliability
   if (sampleCount === 0) {
     return {
       label: '신뢰도 산정 전',
+      shortLabel: '산정 전',
       detail: '비교 가능한 완료 예측이 아직 없습니다.',
       tone: 'neutral',
     };
@@ -309,6 +311,7 @@ export function mapReliabilityStatus(input: ReliabilityStatusInput): Reliability
   if (sampleCount < minimumSampleCount || grade === 'U' || recent13wWeeklyPriceMape === null) {
     return {
       label: `신뢰도 산정 중 · ${sampleCount}/${minimumSampleCount}`,
+      shortLabel: `산정 중 · ${sampleCount}/${minimumSampleCount}`,
       detail: `공식 신뢰도 등급은 주간 백테스트 ${minimumSampleCount}개가 확보된 후 산정합니다. 현재 ${sampleCount}개가 확보되었습니다.`,
       tone: 'neutral',
     };
@@ -319,6 +322,7 @@ export function mapReliabilityStatus(input: ReliabilityStatusInput): Reliability
   if (mape === null) {
     return {
       label: `신뢰도 산정 중 · ${sampleCount}/${minimumSampleCount}`,
+      shortLabel: `산정 중 · ${sampleCount}/${minimumSampleCount}`,
       detail: `공식 신뢰도 등급은 주간 백테스트 ${minimumSampleCount}개가 확보된 후 산정합니다.`,
       tone: 'neutral',
     };
@@ -326,6 +330,7 @@ export function mapReliabilityStatus(input: ReliabilityStatusInput): Reliability
 
   return {
     label: `신뢰도 ${grade} · MAPE ${mape.toFixed(1)}%`,
+    shortLabel: `${grade} · MAPE ${mape.toFixed(1)}%`,
     detail: `최근 ${minimumSampleCount}주 MAPE 기본 등급에 최근 4주 오차 추세, 최근 26주 안정성, 데이터 최신성을 반영한 등급입니다.`,
     tone: mapReliabilityTone(grade),
   };

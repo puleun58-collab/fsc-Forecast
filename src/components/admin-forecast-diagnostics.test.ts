@@ -169,7 +169,7 @@ test('performance blocks separate the reliability basis from the full-horizon ba
   );
   const reliabilityStart = markup.indexOf('admin-panel admin-decision admin-reliability');
   const judgmentStart = markup.indexOf('<div class="admin-panel admin-decision">', reliabilityStart);
-  const horizonStart = markup.indexOf('<details class="admin-panel admin-horizon">');
+  const horizonStart = markup.indexOf('<details class="admin-panel admin-disclosure">');
   const horizonEnd = markup.indexOf('</details>', horizonStart);
   const candidatesStart = markup.indexOf('후보 모델 비교');
   const reliabilityBlock = markup.slice(reliabilityStart, judgmentStart);
@@ -183,7 +183,7 @@ test('performance blocks separate the reliability basis from the full-horizon ba
   assert.match(reliabilityBlock, /<span>평가 표본<\/span><strong>13주<\/strong>/);
   assert.doesNotMatch(reliabilityBlock, /9\.38%|179\.35원\/L/);
 
-  assert.match(markup.slice(horizonStart, horizonStart + 60), /<details class="admin-panel admin-horizon">/);
+  assert.match(markup.slice(horizonStart, horizonStart + 60), /<details class="admin-panel admin-disclosure">/);
   assert.doesNotMatch(markup.slice(horizonStart, horizonStart + 80), /\sopen(?:=|>|\s)/);
   assert.match(horizonBlock, /전체 Horizon 성능 · 참고/);
   assert.match(horizonBlock, /<span>MAPE<\/span><strong>9\.38%<\/strong>/);

@@ -69,6 +69,13 @@ test('data health panel renders compact source rows and sanitized error details'
 
   assert.match(markup, /데이터 상태/);
   assert.match(markup, /확인 필요/);
+  assert.match(markup, /Forecast 입력 데이터의 최신 상태를 확인합니다/);
+  assert.match(markup, /<span class="status-tag status-tag--ok">최신<\/span>/);
+  assert.match(markup, /<span class="status-tag status-tag--warning">지연<\/span>/);
+  assert.match(markup, /<span class="status-tag status-tag--critical">오류<\/span>/);
+  assert.match(markup, /<span class="status-tag">데이터 없음<\/span>/);
+  assert.equal(markup.match(/최근 성공 수집/g)?.length, 4);
+  assert.doesNotMatch(markup, /정상/);
   assert.match(markup, /오피넷 일별 경유가/);
   assert.match(markup, /오피넷 주간 경유가/);
   assert.match(markup, /Dubai/);

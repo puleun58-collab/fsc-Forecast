@@ -84,15 +84,17 @@ function isBusinessDate(dateKey: string, closedDates: ReadonlySet<string>): bool
   return weekday !== 0 && weekday !== 6 && !closedDates.has(dateKey);
 }
 
+const KST_PARTS_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Asia/Seoul',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  hourCycle: 'h23',
+});
+
 function getKstNowParts(now: Date): { dateKey: string; hour: number } {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Seoul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(now);
+  const parts = KST_PARTS_FORMATTER.formatToParts(now);
   const values = new Map(parts.map((part) => [part.type, part.value]));
 
   return {
@@ -282,8 +284,8 @@ export function summarizeDataHealth(items: readonly DataHealthItem[]): DataHealt
   }
 
   if (missingCount > 0) {
-    return { status: 'missing', label: `${missingCount}개 데이터 없음`, items };
+    return { status: 'missing', label: '데이터 없음', items };
   }
 
-  return { status: 'healthy', label: '전체 정상', items };
+  return { status: 'healthy', label: '모두 최신', items };
 }

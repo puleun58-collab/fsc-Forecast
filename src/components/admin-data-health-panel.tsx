@@ -4,7 +4,7 @@ import { formatDashboardDate, formatDashboardDateTime } from '@/lib/dashboard/da
 import type { DataHealthStatus, DataHealthSummary } from '@/lib/data-health/data-health';
 
 const STATUS_VIEW: Record<DataHealthStatus, { label: string; className: string }> = {
-  healthy: { label: '정상', className: 'status-tag--ok' },
+  healthy: { label: '최신', className: 'status-tag--ok' },
   delayed: { label: '지연', className: 'status-tag--warning' },
   error: { label: '오류', className: 'status-tag--critical' },
   missing: { label: '데이터 없음', className: '' },
@@ -19,7 +19,7 @@ export function AdminDataHealthPanel({ summary }: { summary: DataHealthSummary }
       badge={
         <span className={`status-tag ${summaryView.className}`.trim()}>{summary.label}</span>
       }
-      description="Forecast 입력 데이터의 최신 수집 상태를 확인합니다. 상태 표시는 예측 실행을 차단하지 않습니다."
+      description="Forecast 입력 데이터의 최신 상태를 확인합니다. 상태 표시는 예측 실행을 차단하지 않습니다."
       className="admin-data-health"
     >
       <ul className="data-health-list">
@@ -38,7 +38,7 @@ export function AdminDataHealthPanel({ summary }: { summary: DataHealthSummary }
                 <strong>{latestDataText}</strong>
               </span>
               <span className="data-health-row__metric">
-                <span>최근 정상 수집</span>
+                <span>최근 성공 수집</span>
                 <strong>{formatDashboardDateTime(item.lastCollectedAt)}</strong>
               </span>
               {item.delayLabel ? <span className="data-health-row__delay">{item.delayLabel}</span> : null}

@@ -45,6 +45,7 @@ test('mapReliabilityStatus distinguishes pre-sample, in-progress, and graded sta
     }),
     {
       label: '신뢰도 산정 전',
+      shortLabel: '산정 전',
       detail: '비교 가능한 완료 예측이 아직 없습니다.',
       tone: 'neutral',
     },
@@ -59,6 +60,7 @@ test('mapReliabilityStatus distinguishes pre-sample, in-progress, and graded sta
     }),
     {
       label: '신뢰도 산정 중 · 1/13',
+      shortLabel: '산정 중 · 1/13',
       detail: '공식 신뢰도 등급은 주간 백테스트 13개가 확보된 후 산정합니다. 현재 1개가 확보되었습니다.',
       tone: 'neutral',
     },
@@ -73,6 +75,7 @@ test('mapReliabilityStatus distinguishes pre-sample, in-progress, and graded sta
     }),
     {
       label: '신뢰도 산정 중 · 12/13',
+      shortLabel: '산정 중 · 12/13',
       detail: '공식 신뢰도 등급은 주간 백테스트 13개가 확보된 후 산정합니다. 현재 12개가 확보되었습니다.',
       tone: 'neutral',
     },
@@ -87,6 +90,7 @@ test('mapReliabilityStatus distinguishes pre-sample, in-progress, and graded sta
     }),
     {
       label: '신뢰도 B · MAPE 4.2%',
+      shortLabel: 'B · MAPE 4.2%',
       detail: '최근 13주 MAPE 기본 등급에 최근 4주 오차 추세, 최근 26주 안정성, 데이터 최신성을 반영한 등급입니다.',
       tone: 'ok',
     },
@@ -125,6 +129,7 @@ test('mapReliabilityStatus renders the top grade with its MAPE', () => {
     }),
     {
       label: '신뢰도 A+ · MAPE 0.8%',
+      shortLabel: 'A+ · MAPE 0.8%',
       detail: '최근 13주 MAPE 기본 등급에 최근 4주 오차 추세, 최근 26주 안정성, 데이터 최신성을 반영한 등급입니다.',
       tone: 'ok',
     },

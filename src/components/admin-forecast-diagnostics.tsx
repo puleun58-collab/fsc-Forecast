@@ -261,16 +261,16 @@ export function AdminForecastDiagnostics({
           </div>
         </div>
 
-        <details className="admin-panel admin-horizon">
-          <summary className="admin-horizon__summary">
+        <details className="admin-panel admin-disclosure">
+          <summary className="admin-disclosure__summary">
             <strong>전체 Horizon 성능 · 참고</strong>
-            <span className="admin-horizon__toggle" aria-hidden="true">
-              <span className="admin-horizon__toggle-closed">펼쳐보기 ▾</span>
-              <span className="admin-horizon__toggle-open">접기 ▴</span>
+            <span className="admin-disclosure__toggle" aria-hidden="true">
+              <span className="admin-disclosure__toggle-closed">펼쳐보기 ▾</span>
+              <span className="admin-disclosure__toggle-open">접기 ▴</span>
             </span>
           </summary>
-          <div className="admin-horizon__body">
-            <div className="admin-decision__metrics admin-decision__metrics--wide admin-horizon__metrics">
+          <div className="admin-disclosure__body">
+            <div className="admin-decision__metrics admin-decision__metrics--wide admin-disclosure__metrics">
               <DiagnosticMetric label="MAPE" value={formatPercent(diagnostics.recent?.mapePct ?? null)} />
               <DiagnosticMetric label="MAE" value={formatMetric(diagnostics.recent?.maeKrwPerL ?? null, 2, '원/L')} />
               <DiagnosticMetric
