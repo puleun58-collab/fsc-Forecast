@@ -28,7 +28,6 @@ async function createNextQuarterFromPrevious(
       basePriceKrwPerL: toDecimal(previousQuarter.basePriceKrwPerL),
       appliedPriceKrwPerL: toDecimal(previousQuarter.appliedPriceKrwPerL),
       fscLowRate: toDecimal(previousQuarter.fscLowRate),
-      fscHighRate: toDecimal(previousQuarter.fscHighRate),
       status: QuarterStatus.draft,
       isActive: false,
       activeKey: null,

@@ -11,7 +11,6 @@ export interface QuarterSettingDto {
   basePriceKrwPerL: string;
   appliedPriceKrwPerL: string;
   fscLowRate: string;
-  fscHighRate: string;
   status: string;
   isActive: boolean;
   createdAt: string;
@@ -32,7 +31,6 @@ export function serializeQuarterSetting(value: QuarterSetting): QuarterSettingDt
     basePriceKrwPerL: value.basePriceKrwPerL.toFixed(PRICE_SCALE),
     appliedPriceKrwPerL: value.appliedPriceKrwPerL.toFixed(PRICE_SCALE),
     fscLowRate: value.fscLowRate.toFixed(4),
-    fscHighRate: value.fscHighRate.toFixed(4),
     status: value.status,
     isActive: value.isActive,
     createdAt: value.createdAt.toISOString(),

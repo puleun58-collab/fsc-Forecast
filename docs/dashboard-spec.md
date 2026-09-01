@@ -1,6 +1,6 @@
 # 대시보드 명세
 
-홈 대시보드는 랜딩 페이지형 hero나 반복 KPI 카드가 아니라 `Fuel Operations Ledger` 콘셉트의 의사결정 화면이다. 분기 평균 예상 유가를 먼저 제시하고, FSC 30%·70% 등 설정된 비율의 파생 결과와 actual/forecast 경계를 같은 흐름에서 읽게 한다.
+홈 대시보드는 랜딩 페이지형 hero나 반복 KPI 카드가 아니라 `Fuel Operations Ledger` 콘셉트의 의사결정 화면이다. 분기 평균 예상 유가를 먼저 제시하고, 유가 비중을 적용한 다음 분기 예상 FSC율과 actual/forecast 경계를 같은 흐름에서 읽게 한다.
 
 <a id="screen-states"></a>
 ## 화면 상태

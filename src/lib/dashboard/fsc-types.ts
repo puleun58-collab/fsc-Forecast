@@ -179,9 +179,6 @@ export interface FscDashboardResultSection {
   priceDiffKrwPerL: string;
   diffRatio: string;
   fscLowRate: string;
-  fscHighRate: string;
-  fscLowKrwPerL: string;
-  fscHighKrwPerL: string;
   actualWeekCount: number;
   forecastWeekCount: number;
   reliabilitySampleCount: number;

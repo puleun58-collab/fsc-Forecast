@@ -32,8 +32,8 @@ async function main(): Promise<void> {
         quarterAverageKrwPerL: result.quarterAverageKrwPerL.toFixed(3),
         basePriceKrwPerL: result.basePriceKrwPerL.toFixed(3),
         diffRatio: result.diffRatio.toFixed(6),
-        fscLowKrwPerL: result.fscLowKrwPerL.toFixed(3),
-        fscHighKrwPerL: result.fscHighKrwPerL.toFixed(3),
+        fscLowRate: result.fscLowRate.toFixed(4),
+        estimatedFscRate: result.diffRatio.mul(result.fscLowRate).toFixed(6),
         weeks: result.weeks.map((week) => ({
           sequenceNo: week.sequenceNo,
           weekStartDate: week.weekStartDate.toISOString().slice(0, 10),

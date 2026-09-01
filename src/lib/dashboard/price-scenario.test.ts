@@ -16,14 +16,10 @@ test('scenario FSC values follow the existing fsc-v1 formula', () => {
   const result = calculateScenarioFscValues({
     scenarioPriceKrwPerL: 1650,
     quarterAverageKrwPerL: 1850.049,
-    fscLowRate: 0.3,
-    fscHighRate: 0.7,
   });
 
   assert.deepEqual(result, {
     priceDiffKrwPerL: 200.049,
     diffRatio: 0.121242,
-    fscLowKrwPerL: 1917.34,
-    fscHighKrwPerL: 2007.062,
   });
 });

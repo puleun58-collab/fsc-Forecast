@@ -54,7 +54,6 @@ export async function runFscResultRecompute(
         appliedPriceKrwPerL: quarterSetting.appliedPriceKrwPerL,
         quarterAverageKrwPerL: quarterWeeks.quarterAverageKrwPerL,
         fscLowRate: quarterSetting.fscLowRate,
-        fscHighRate: quarterSetting.fscHighRate,
       });
       const reliability = calculateFscReliability({
         forecastRun: sourceData.forecastRun,
@@ -78,9 +77,6 @@ export async function runFscResultRecompute(
           priceDiffKrwPerL: calculation.priceDiffKrwPerL,
           diffRatio: calculation.diffRatio,
           fscLowRate: calculation.fscLowRate,
-          fscHighRate: calculation.fscHighRate,
-          fscLowKrwPerL: calculation.fscLowKrwPerL,
-          fscHighKrwPerL: calculation.fscHighKrwPerL,
           actualWeekCount: quarterWeeks.actualWeekCount,
           forecastWeekCount: quarterWeeks.forecastWeekCount,
           recent13wWeeklyPriceMae: reliability.recent13wWeeklyPriceMae,

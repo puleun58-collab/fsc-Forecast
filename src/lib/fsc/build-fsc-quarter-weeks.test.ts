@@ -478,15 +478,13 @@ test('quarter average and FSC calculation include only valid actual and weekly f
     appliedPriceKrwPerL: input.quarterSetting.appliedPriceKrwPerL,
     quarterAverageKrwPerL: result.quarterAverageKrwPerL,
     fscLowRate: '0.3000',
-    fscHighRate: '0.7000',
   });
 
   assert.equal(result.actualWeekCount, 1);
   assert.equal(result.forecastWeekCount, 1);
   assert.equal(result.quarterAverageKrwPerL.toFixed(3), '1850.000');
   assert.equal(calculation.quarterAverageKrwPerL.toFixed(3), '1850.000');
-  assert.equal(calculation.fscLowKrwPerL.toFixed(3), '1979.500');
-  assert.equal(calculation.fscHighKrwPerL.toFixed(3), '2152.166');
+  assert.equal(calculation.diffRatio.mul(calculation.fscLowRate).toFixed(6), '0.070000');
 });
 
 test('weekly forecast weeks carry the backtest-derived expected range', () => {
@@ -565,7 +563,6 @@ test('completed quarter uses the official Opinet quarterly average instead of th
     appliedPriceKrwPerL: input.quarterSetting.appliedPriceKrwPerL,
     quarterAverageKrwPerL: result.quarterAverageKrwPerL,
     fscLowRate: '0.3000',
-    fscHighRate: '0.7000',
   });
 
   assert.equal(result.quarterAverageKrwPerL.toFixed(3), '1994.650');

@@ -16,7 +16,7 @@ Allowed motion is limited to hover background shifts, button press feedback, dis
 
 1. Quarter average forecast fuel price
 2. Difference amount and percent versus base price
-3. FSC 30% and 70% derived outputs
+3. Estimated FSC rate for the next quarter (diffRatio × oil weight rate)
 4. Completed-month actual oil-price history
 5. Actual / forecast weekly trend
 6. Base price and applied price
@@ -24,7 +24,7 @@ Allowed motion is limited to hover background shifts, button press feedback, dis
 8. Freshness, approval, reliability
 9. Opinet market reference
 
-FSC 30% and 70% values are derived from the quarter average forecast fuel price. They must remain in the same Decision Summary surface, not separate KPI cards.
+The estimated FSC rate is derived from the quarter average forecast fuel price and the oil weight rate. It must remain in the same Decision Summary surface, not a separate KPI card.
 
 ## Tokens
 

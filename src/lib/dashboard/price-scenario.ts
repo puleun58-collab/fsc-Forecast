@@ -28,26 +28,15 @@ export function parseScenarioPrice(value: string): number | null {
 export function calculateScenarioFscValues(input: {
   scenarioPriceKrwPerL: number;
   quarterAverageKrwPerL: number;
-  fscLowRate: number;
-  fscHighRate: number;
 }) {
   const priceDiffKrwPerL = round(
     input.quarterAverageKrwPerL - input.scenarioPriceKrwPerL,
     PRICE_SCALE,
   );
-  const diffRatio = round(priceDiffKrwPerL / input.scenarioPriceKrwPerL, RATIO_SCALE);
 
   return {
     priceDiffKrwPerL,
-    diffRatio,
-    fscLowKrwPerL: round(
-      input.quarterAverageKrwPerL * (1 + diffRatio * input.fscLowRate),
-      PRICE_SCALE,
-    ),
-    fscHighKrwPerL: round(
-      input.quarterAverageKrwPerL * (1 + diffRatio * input.fscHighRate),
-      PRICE_SCALE,
-    ),
+    diffRatio: round(priceDiffKrwPerL / input.scenarioPriceKrwPerL, RATIO_SCALE),
   };
 }
 
@@ -80,12 +69,7 @@ export function buildFscPriceScenario(
 ): FscDashboardResultSection {
   const weeks = fsc.weeks.map((week) => buildScenarioWeek(week, scenarioPriceKrwPerL));
   const quarterAverageKrwPerL = Number(fsc.quarterAverageKrwPerL);
-  const calculation = calculateScenarioFscValues({
-    scenarioPriceKrwPerL,
-    quarterAverageKrwPerL,
-    fscLowRate: Number(fsc.fscLowRate),
-    fscHighRate: Number(fsc.fscHighRate),
-  });
+  const calculation = calculateScenarioFscValues({ scenarioPriceKrwPerL, quarterAverageKrwPerL });
   const formattedScenarioPrice = formatPrice(scenarioPriceKrwPerL);
 
   return {
@@ -95,8 +79,6 @@ export function buildFscPriceScenario(
     quarterAverageKrwPerL: formatPrice(quarterAverageKrwPerL),
     priceDiffKrwPerL: formatPrice(calculation.priceDiffKrwPerL),
     diffRatio: formatRatio(calculation.diffRatio),
-    fscLowKrwPerL: formatPrice(calculation.fscLowKrwPerL),
-    fscHighKrwPerL: formatPrice(calculation.fscHighKrwPerL),
     weeks,
   };
 }

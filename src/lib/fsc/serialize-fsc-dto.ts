@@ -48,9 +48,6 @@ export interface FscResultDto {
   priceDiffKrwPerL: string;
   diffRatio: string;
   fscLowRate: string;
-  fscHighRate: string;
-  fscLowKrwPerL: string;
-  fscHighKrwPerL: string;
   actualWeekCount: number;
   forecastWeekCount: number;
   qualityMetrics: {
@@ -142,9 +139,6 @@ export function serializeFscResultDto(value: FscResultRecord): FscResultDto {
     priceDiffKrwPerL: value.priceDiffKrwPerL.toFixed(PRICE_SCALE),
     diffRatio: value.diffRatio.toFixed(6),
     fscLowRate: value.fscLowRate.toFixed(4),
-    fscHighRate: value.fscHighRate.toFixed(4),
-    fscLowKrwPerL: value.fscLowKrwPerL.toFixed(PRICE_SCALE),
-    fscHighKrwPerL: value.fscHighKrwPerL.toFixed(PRICE_SCALE),
     actualWeekCount: value.actualWeekCount,
     forecastWeekCount: value.forecastWeekCount,
     qualityMetrics: {

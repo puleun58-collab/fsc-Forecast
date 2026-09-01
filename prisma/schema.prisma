@@ -270,7 +270,6 @@ model QuarterSetting {
   basePriceKrwPerL    Decimal       @db.Decimal(10, 3)
   appliedPriceKrwPerL Decimal       @db.Decimal(10, 3)
   fscLowRate          Decimal       @db.Decimal(5, 4)
-  fscHighRate         Decimal       @db.Decimal(5, 4)
   status              QuarterStatus @default(draft)
   isActive            Boolean       @default(false)
   activeKey           String?       @unique
@@ -303,9 +302,6 @@ model FscResult {
   priceDiffKrwPerL                Decimal                @db.Decimal(10, 3)
   diffRatio                       Decimal                @db.Decimal(10, 6)
   fscLowRate                      Decimal                @db.Decimal(5, 4)
-  fscHighRate                     Decimal                @db.Decimal(5, 4)
-  fscLowKrwPerL                   Decimal                @db.Decimal(10, 3)
-  fscHighKrwPerL                  Decimal                @db.Decimal(10, 3)
   actualWeekCount                 Int
   forecastWeekCount               Int
   recent13wWeeklyPriceMae         Decimal?               @db.Decimal(10, 3)

@@ -48,25 +48,13 @@ export function calculateFscResult(input: CalculateFscResultInput): CalculateFsc
   const appliedPriceKrwPerL = roundPrice(toDecimal(input.appliedPriceKrwPerL, 'appliedPriceKrwPerL'));
   const quarterAverageKrwPerL = roundPrice(toDecimal(input.quarterAverageKrwPerL, 'quarterAverageKrwPerL'));
   const fscLowRate = roundRate(toDecimal(input.fscLowRate, 'fscLowRate'));
-  const fscHighRate = roundRate(toDecimal(input.fscHighRate, 'fscHighRate'));
 
   assertPositive(basePriceKrwPerL, 'basePriceKrwPerL');
   assertPositive(quarterAverageKrwPerL, 'quarterAverageKrwPerL');
   assertRate(fscLowRate, 'fscLowRate');
-  assertRate(fscHighRate, 'fscHighRate');
-
-  if (fscLowRate.gt(fscHighRate)) {
-    throw new Error('fscLowRate must be less than or equal to fscHighRate.');
-  }
 
   const priceDiffKrwPerL = roundPrice(quarterAverageKrwPerL.minus(basePriceKrwPerL));
   const diffRatio = roundRatio(priceDiffKrwPerL.dividedBy(basePriceKrwPerL));
-  const fscLowKrwPerL = roundPrice(
-    quarterAverageKrwPerL.mul(diffRatio.mul(fscLowRate).plus(ONE)),
-  );
-  const fscHighKrwPerL = roundPrice(
-    quarterAverageKrwPerL.mul(diffRatio.mul(fscHighRate).plus(ONE)),
-  );
 
   return {
     calculationFormulaVersion: 'fsc-v1',
@@ -76,19 +64,16 @@ export function calculateFscResult(input: CalculateFscResultInput): CalculateFsc
     priceDiffKrwPerL,
     diffRatio,
     fscLowRate,
-    fscHighRate,
-    fscLowKrwPerL,
-    fscHighKrwPerL,
   };
 }
 
 export function verifyFscExcelRegressionFixture(): boolean {
   const result = calculateFscResult(FSC_EXCEL_REGRESSION_FIXTURE.input);
+  const estimatedFscRate = roundRatio(result.diffRatio.mul(result.fscLowRate));
 
   return (
     result.priceDiffKrwPerL.toFixed(3) === FSC_EXCEL_REGRESSION_FIXTURE.expected.priceDiffKrwPerL &&
     result.diffRatio.toFixed(6) === FSC_EXCEL_REGRESSION_FIXTURE.expected.diffRatio &&
-    result.fscLowKrwPerL.toFixed(3) === FSC_EXCEL_REGRESSION_FIXTURE.expected.fscLowKrwPerL &&
-    result.fscHighKrwPerL.toFixed(3) === FSC_EXCEL_REGRESSION_FIXTURE.expected.fscHighKrwPerL
+    estimatedFscRate.toFixed(6) === FSC_EXCEL_REGRESSION_FIXTURE.expected.estimatedFscRate
   );
 }
