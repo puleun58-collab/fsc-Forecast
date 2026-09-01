@@ -158,8 +158,6 @@ export default async function AdminPage() {
                     ['actual weeks', String(activeResultDto.actualWeekCount)],
                     ['forecast weeks', String(activeResultDto.forecastWeekCount)],
                     ['quarter average', activeResultDto.quarterAverageKrwPerL],
-                    ['FSC 30%', activeResultDto.fscLowKrwPerL],
-                    ['FSC 70%', activeResultDto.fscHighKrwPerL],
                   ].map(([label, value]) => (
                     <div key={label} className="admin-metric">
                       <span className="dashboard-shell__metric-label">{label}</span>
@@ -170,8 +168,6 @@ export default async function AdminPage() {
                 <div className="admin-panel">
                   <strong>직전 결과 대비</strong>
                   <span>quarter average 변화: {formatDiff(activeResultDto.quarterAverageKrwPerL, previousResultDto?.quarterAverageKrwPerL ?? null)}</span>
-                  <span>FSC 30% 변화: {formatDiff(activeResultDto.fscLowKrwPerL, previousResultDto?.fscLowKrwPerL ?? null)}</span>
-                  <span>FSC 70% 변화: {formatDiff(activeResultDto.fscHighKrwPerL, previousResultDto?.fscHighKrwPerL ?? null)}</span>
                 </div>
                 <div className="admin-panel">
                   <strong>Reliability 상세</strong>
