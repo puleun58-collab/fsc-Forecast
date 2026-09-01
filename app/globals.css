@@ -2111,9 +2111,9 @@ main {
 
 .market-signal-card__body {
   display: grid;
-  grid-template-columns: minmax(0, 46fr) minmax(0, 54fr);
-  gap: 14px;
-  align-items: center;
+  grid-template-columns: minmax(0, 45fr) minmax(0, 55fr);
+  gap: 16px;
+  align-items: start;
 }
 
 .market-signal-card__info {
@@ -2126,7 +2126,7 @@ main {
 .market-trend-chart {
   position: relative;
   display: grid;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -2134,64 +2134,71 @@ main {
   color: var(--text-secondary);
   font-size: 0.72rem;
   font-weight: 700;
+  text-align: left;
 }
 
 .market-trend-chart__svg {
   display: block;
   width: 100%;
   height: auto;
+  color: var(--chart-benchmark);
   touch-action: pan-y;
+}
+
+.market-trend-chart__svg--up {
+  color: var(--market-up);
+}
+
+.market-trend-chart__svg--down {
+  color: var(--market-down);
 }
 
 .market-trend-chart__line {
   fill: none;
-  stroke: var(--chart-benchmark);
-  stroke-width: 1.6;
+  stroke: currentColor;
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
 }
 
-.market-trend-chart__latest-dot,
-.market-trend-chart__active-dot {
-  fill: var(--chart-benchmark);
+.market-trend-chart__area-stop-top {
+  stop-color: currentColor;
+  stop-opacity: 0.1;
+}
+
+.market-trend-chart__area-stop-bottom {
+  stop-color: currentColor;
+  stop-opacity: 0;
+}
+
+.market-trend-chart__baseline {
+  stroke: color-mix(in srgb, var(--border) 70%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.market-trend-chart__latest-dot {
+  fill: currentColor;
 }
 
 .market-trend-chart__active-dot {
   fill: var(--surface);
-  stroke: var(--chart-benchmark);
+  stroke: currentColor;
   stroke-width: 2;
-}
-
-.market-trend-chart__svg--up .market-trend-chart__line,
-.market-trend-chart__svg--up .market-trend-chart__active-dot {
-  stroke: var(--market-up);
-}
-
-.market-trend-chart__svg--up .market-trend-chart__latest-dot {
-  fill: var(--market-up);
-}
-
-.market-trend-chart__svg--down .market-trend-chart__line,
-.market-trend-chart__svg--down .market-trend-chart__active-dot {
-  stroke: var(--market-down);
-}
-
-.market-trend-chart__svg--down .market-trend-chart__latest-dot {
-  fill: var(--market-down);
 }
 
 .market-trend-chart__axis-value,
 .market-trend-chart__axis-date {
   fill: var(--text-secondary);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
 }
 
 .market-trend-chart__latest-value {
-  fill: var(--ink);
-  font-size: 11px;
+  fill: currentColor;
+  font-size: 13px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
@@ -2229,7 +2236,7 @@ main {
   align-items: center;
   justify-content: center;
   margin: 0;
-  min-height: 72px;
+  min-height: 108px;
   border: 1px dashed var(--border);
   border-radius: var(--radius-control);
   color: var(--text-secondary);

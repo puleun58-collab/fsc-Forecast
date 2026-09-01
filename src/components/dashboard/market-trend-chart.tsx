@@ -21,20 +21,25 @@ export type MarketTrendPlotPoint = {
   observedAt: string;
 };
 
+export type MarketTrendTick = {
+  value: number;
+  y: number;
+};
+
 export type MarketTrendPlot = {
   points: MarketTrendPlotPoint[];
-  min: number;
-  max: number;
-  minY: number;
-  maxY: number;
+  ticks: MarketTrendTick[];
+  linePath: string;
+  areaPath: string;
   spanDays: number;
 };
 
-const VIEW_WIDTH = 320;
-const VIEW_HEIGHT = 128;
-const MARGIN = { top: 16, right: 58, bottom: 20, left: 44 };
+const VIEW_WIDTH = 360;
+const VIEW_HEIGHT = 150;
+const MARGIN = { top: 10, right: 66, bottom: 20, left: 40 };
 const PLOT_WIDTH = VIEW_WIDTH - MARGIN.left - MARGIN.right;
 const PLOT_HEIGHT = VIEW_HEIGHT - MARGIN.top - MARGIN.bottom;
+const PLOT_BOTTOM = MARGIN.top + PLOT_HEIGHT;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MINIMUM_PLOT_POINTS = 3;
 // 주말·공휴일로 창 시작 부근 관측이 비어도 전체 창을 표시한 것으로 간주한다.
@@ -57,28 +62,32 @@ export function buildMarketTrendPlot(
   const values = parsed.map((point) => point.value);
   const rawMin = Math.min(...values);
   const rawMax = Math.max(...values);
-  const padding = rawMax === rawMin ? Math.abs(rawMax) * 0.005 || 0.5 : (rawMax - rawMin) * 0.12;
+  const padding = rawMax === rawMin ? Math.abs(rawMax) * 0.005 || 0.5 : (rawMax - rawMin) * 0.14;
   const min = rawMin - padding;
   const max = rawMax + padding;
   const startTime = parsed[0].time;
   const timeSpan = parsed[parsed.length - 1].time - startTime || 1;
 
-  const resolveY = (value: number) =>
-    MARGIN.top + PLOT_HEIGHT - ((value - min) / (max - min)) * PLOT_HEIGHT;
+  const resolveY = (value: number) => PLOT_BOTTOM - ((value - min) / (max - min)) * PLOT_HEIGHT;
+  const plotPoints = parsed.map((point, index) => ({
+    index,
+    x: MARGIN.left + ((point.time - startTime) / timeSpan) * PLOT_WIDTH,
+    y: resolveY(point.value),
+    value: point.value,
+    observedAt: point.observedAt,
+  }));
+  const linePath = plotPoints
+    .map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x.toFixed(2)},${point.y.toFixed(2)}`)
+    .join(' ');
+  const firstX = plotPoints[0].x.toFixed(2);
+  const lastX = plotPoints[plotPoints.length - 1].x.toFixed(2);
 
   return {
-    min: rawMin,
-    max: rawMax,
-    minY: resolveY(rawMin),
-    maxY: resolveY(rawMax),
+    points: plotPoints,
+    ticks: [rawMax, (rawMax + rawMin) / 2, rawMin].map((value) => ({ value, y: resolveY(value) })),
+    linePath,
+    areaPath: `${linePath} L${lastX},${PLOT_BOTTOM} L${firstX},${PLOT_BOTTOM} Z`,
     spanDays: Math.round(timeSpan / DAY_MS) + 1,
-    points: parsed.map((point, index) => ({
-      index,
-      x: MARGIN.left + ((point.time - startTime) / timeSpan) * PLOT_WIDTH,
-      y: resolveY(point.value),
-      value: point.value,
-      observedAt: point.observedAt,
-    })),
   };
 }
 
@@ -110,6 +119,7 @@ export function MarketTrendChart({
   points,
 }: MarketTrendChartProps) {
   const tooltipId = useId();
+  const gradientId = `market-trend-area-${useId().replaceAll(':', '')}`;
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const plot = buildMarketTrendPlot(points);
 
@@ -157,22 +167,30 @@ export function MarketTrendChart({
         role="img"
         aria-label={`${displayName} ${captionText} 추이, ${formatDotDate(firstPoint.observedAt)} ${formatTrendValue(firstPoint.value, unitLabel)}부터 ${formatDotDate(latestPoint.observedAt)} ${formatTrendValue(latestPoint.value, unitLabel)}까지`}
       >
-        <text
-          className="market-trend-chart__axis-value"
-          x={MARGIN.left - 8}
-          y={plot.maxY + 4}
-          textAnchor="end"
-        >
-          {formatAxisValue(plot.max)}
-        </text>
-        <text
-          className="market-trend-chart__axis-value"
-          x={MARGIN.left - 8}
-          y={plot.minY + 4}
-          textAnchor="end"
-        >
-          {formatAxisValue(plot.min)}
-        </text>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop className="market-trend-chart__area-stop-top" offset="0%" />
+            <stop className="market-trend-chart__area-stop-bottom" offset="100%" />
+          </linearGradient>
+        </defs>
+        {plot.ticks.map((tick, tickIndex) => (
+          <text
+            key={tickIndex}
+            className="market-trend-chart__axis-value"
+            x={MARGIN.left - 7}
+            y={tick.y + 3.5}
+            textAnchor="end"
+          >
+            {formatAxisValue(tick.value)}
+          </text>
+        ))}
+        <line
+          className="market-trend-chart__baseline"
+          x1={MARGIN.left}
+          x2={MARGIN.left + PLOT_WIDTH}
+          y1={PLOT_BOTTOM}
+          y2={PLOT_BOTTOM}
+        />
         <text className="market-trend-chart__axis-date" x={MARGIN.left} y={VIEW_HEIGHT - 6}>
           {formatAxisDate(firstPoint.observedAt)}
         </text>
@@ -184,15 +202,13 @@ export function MarketTrendChart({
         >
           {formatAxisDate(latestPoint.observedAt)}
         </text>
-        <polyline
-          className="market-trend-chart__line"
-          points={plot.points.map((point) => `${point.x},${point.y}`).join(' ')}
-        />
-        <circle className="market-trend-chart__latest-dot" cx={latestPoint.x} cy={latestPoint.y} r={3.6} />
+        <path className="market-trend-chart__area" d={plot.areaPath} fill={`url(#${gradientId})`} />
+        <path className="market-trend-chart__line" d={plot.linePath} />
+        <circle className="market-trend-chart__latest-dot" cx={latestPoint.x} cy={latestPoint.y} r={4} />
         <text
           className="market-trend-chart__latest-value"
-          x={Math.min(latestPoint.x + 9, VIEW_WIDTH - 2)}
-          y={Math.min(Math.max(latestPoint.y + 4, MARGIN.top + 4), VIEW_HEIGHT - MARGIN.bottom)}
+          x={Math.min(latestPoint.x + 10, VIEW_WIDTH - 2)}
+          y={Math.min(Math.max(latestPoint.y + 4.5, MARGIN.top + 10), PLOT_BOTTOM)}
         >
           {latestValueText}
         </text>
@@ -201,7 +217,7 @@ export function MarketTrendChart({
             className="market-trend-chart__active-dot"
             cx={activePoint.x}
             cy={activePoint.y}
-            r={3.6}
+            r={4}
             aria-hidden="true"
           />
         )}
@@ -226,10 +242,8 @@ export function MarketTrendChart({
       </svg>
       {activePoint === null ? null : (
         <div id={tooltipId} className="market-trend-chart__tooltip" role="tooltip" style={tooltipStyle}>
-          <strong>{formatDotDate(activePoint.observedAt)}</strong>
-          <span>
-            {displayName} {formatTrendValue(activePoint.value, unitLabel)}
-          </span>
+          <strong>{formatAxisDate(activePoint.observedAt)}</strong>
+          <span>{formatTrendValue(activePoint.value, unitLabel)}</span>
         </div>
       )}
     </div>

@@ -136,4 +136,7 @@ test('market signal cards render the recent 30-day mini trend chart', () => {
   assert.match(markup, /70\.25<\/text>/);
   assert.match(markup, /추세 데이터 준비 중/);
   assert.equal(markup.match(/market-trend-chart__line/g)?.length, 1);
+  assert.equal(markup.match(/market-trend-chart__area"/g)?.length, 1);
+  assert.equal(markup.match(/market-trend-chart__axis-value/g)?.length, 3);
+  assert.doesNotMatch(markup, /market-trend-chart__grid/);
 });
