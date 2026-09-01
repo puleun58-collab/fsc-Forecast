@@ -68,7 +68,7 @@ export function AdminQuarterCard({
     <SectionCard
       title="현재 운영 분기"
       badge={quarterLabel}
-      description="현재 활성 분기의 FSC 운영 상태와 주요 지표입니다."
+      description="현재 분기의 FSC 운영 상태와 주요 지표입니다."
       highlights={[`참조 분기 ${referenceQuarterLabel}`, `기간 ${periodLabel}`]}
       highlight
       className="admin-quarter"
@@ -119,8 +119,8 @@ export function AdminQuarterCard({
           <summary className="admin-disclosure__summary">
             <strong>고급 운영</strong>
             <span className="admin-disclosure__toggle" aria-hidden="true">
-              <span className="admin-disclosure__toggle-closed">펼쳐보기 ▾</span>
-              <span className="admin-disclosure__toggle-open">접기 ▴</span>
+              <span className="admin-disclosure__toggle-closed">상세 보기 ▾</span>
+              <span className="admin-disclosure__toggle-open">상세 접기 ▴</span>
             </span>
           </summary>
           <div className="admin-disclosure__body">

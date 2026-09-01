@@ -117,7 +117,7 @@ export function AdminForecastDiagnostics({
       <SectionCard
         title="예측 모델 진단"
         badge="진단 기록 없음"
-        description="예측 실행의 모델 선택 판단을 확인합니다."
+        description="현재 모델의 성능과 선택 결과를 확인합니다."
         emptyStateTitle="모델 선택 진단 기록이 없습니다."
         emptyStateCopy="forecast pipeline이 최소 한 번 실행되면 후보 비교와 승격 판단이 표시됩니다."
       />
@@ -131,7 +131,7 @@ export function AdminForecastDiagnostics({
     <SectionCard
       title="예측 모델 진단"
       badge={`Model ${selectedParams.modelId}`}
-      description="이번 예측 실행에서 모델 선택 엔진이 무엇을 비교했고 왜 유지·승격했는지 보여 줍니다. 값은 forecast pipeline이 기록한 결과를 그대로 사용합니다."
+      description="현재 모델의 성능과 선택 결과를 확인합니다."
     >
       <div className="admin-detail-stack">
         <div className="admin-metric-grid">
@@ -265,8 +265,8 @@ export function AdminForecastDiagnostics({
           <summary className="admin-disclosure__summary">
             <strong>전체 Horizon 성능 · 참고</strong>
             <span className="admin-disclosure__toggle" aria-hidden="true">
-              <span className="admin-disclosure__toggle-closed">펼쳐보기 ▾</span>
-              <span className="admin-disclosure__toggle-open">접기 ▴</span>
+              <span className="admin-disclosure__toggle-closed">상세 보기 ▾</span>
+              <span className="admin-disclosure__toggle-open">상세 접기 ▴</span>
             </span>
           </summary>
           <div className="admin-disclosure__body">

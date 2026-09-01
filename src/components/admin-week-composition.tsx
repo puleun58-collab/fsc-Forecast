@@ -20,25 +20,45 @@ export type AdminWeekCompositionWeek = {
   fallbackUsed: boolean;
 };
 
+export type AdminForecastBasis = {
+  modelId: string;
+  trendLookbackWeeks: number;
+  dubai: { lagWeeks: number; weight: number } | null;
+  usdKrw: { lagWeeks: number; weight: number } | null;
+};
+
 type AdminWeekCompositionProps = {
   actualWeekCount: number;
   forecastWeekCount: number;
   quarterAverageKrwPerL: string | null;
   weeks: readonly AdminWeekCompositionWeek[];
+  forecastBasis: AdminForecastBasis | null;
 };
+
+function formatIndicator(indicator: AdminForecastBasis['dubai']): string {
+  return indicator === null
+    ? '미사용'
+    : `Lag ${indicator.lagWeeks}주 · Weight ${(indicator.weight * 100).toFixed(1)}%`;
+}
+
+/** 표준 산출 경로(주간 예측값)를 벗어난 주차만 행에서 따로 알린다. */
+function isExceptionalWeek(week: AdminWeekCompositionWeek): boolean {
+  return week.priceKind === 'forecast' && (week.fallbackUsed || week.forecastSourceKind !== 'weekly_point');
+}
 
 export function AdminWeekComposition({
   actualWeekCount,
   forecastWeekCount,
   quarterAverageKrwPerL,
   weeks,
+  forecastBasis,
 }: AdminWeekCompositionProps) {
   if (weeks.length === 0) {
     return (
       <SectionCard
         title="주차 구성"
         badge="주차 없음"
-        description="현재 분기의 실제값과 예측값 구성을 확인합니다."
+        description="현재 분기의 Actual/Forecast 구성을 확인합니다."
         className="admin-week-composition"
         emptyStateTitle="아직 주차 데이터가 없습니다."
         emptyStateCopy="FSC 재계산 후 Actual / Forecast 구성이 표시됩니다."
@@ -52,7 +72,7 @@ export function AdminWeekComposition({
     <SectionCard
       title="주차 구성"
       badge={`${weeks.length}개 주차`}
-      description="현재 분기의 실제값과 예측값 구성을 확인합니다."
+      description="현재 분기의 Actual/Forecast 구성을 확인합니다."
       className="admin-week-composition"
     >
       <div className="admin-detail-stack">
@@ -71,50 +91,74 @@ export function AdminWeekComposition({
 
         <details className="admin-panel admin-disclosure">
           <summary className="admin-disclosure__summary">
-            <span className="admin-disclosure__toggle">
-              <span className="admin-disclosure__toggle-closed">주차 상세 보기 ▾</span>
-              <span className="admin-disclosure__toggle-open">주차 상세 접기 ▴</span>
+            <strong>주차 상세</strong>
+            <span className="admin-disclosure__toggle" aria-hidden="true">
+              <span className="admin-disclosure__toggle-closed">상세 보기 ▾</span>
+              <span className="admin-disclosure__toggle-open">상세 접기 ▴</span>
             </span>
           </summary>
           <div className="admin-disclosure__body">
             <ul className="week-composition-list">
-              {orderedWeeks.map((week) => {
-                const showSourceDetail = week.priceKind === 'forecast';
-
-                return (
-                  <li
-                    key={week.sequenceNo}
-                    className={`week-composition-row week-composition-row--${week.priceKind}`}
+              {orderedWeeks.map((week) => (
+                <li
+                  key={week.sequenceNo}
+                  className={`week-composition-row week-composition-row--${week.priceKind}`}
+                >
+                  <span className="week-composition-row__week">
+                    <strong>{formatWeekDisplayName(week)}</strong>
+                    <span>
+                      {formatDashboardDate(week.weekStartDate)} ~ {formatDashboardDate(week.weekEndDate)}
+                    </span>
+                  </span>
+                  <span
+                    className={`status-tag ${week.priceKind === 'actual' ? 'status-tag--ok' : ''}`.trim()}
                   >
-                    <span className="week-composition-row__week">
-                      <strong>{formatWeekDisplayName(week)}</strong>
-                      <span>
-                        {formatDashboardDate(week.weekStartDate)} ~ {formatDashboardDate(week.weekEndDate)}
+                    {mapWeekKind(week.priceKind)}
+                  </span>
+                  <strong className="week-composition-row__price">
+                    {formatPriceText(week.priceKrwPerL, '산정 중')}
+                  </strong>
+                  {isExceptionalWeek(week) ? (
+                    <span className="week-composition-row__exception">
+                      <span className="status-tag status-tag--warning">
+                        {week.fallbackUsed ? '대체값 사용' : '다른 산출 방식'}
                       </span>
+                      <span>{mapForecastSourceKind(week.forecastSourceKind)}</span>
                     </span>
-                    <span
-                      className={`status-tag ${week.priceKind === 'actual' ? 'status-tag--ok' : ''}`.trim()}
-                    >
-                      {mapWeekKind(week.priceKind)}
-                    </span>
-                    <strong className="week-composition-row__price">
-                      {formatPriceText(week.priceKrwPerL, '산정 중')}
-                    </strong>
-                    {week.fallbackUsed ? (
-                      <span className="status-tag status-tag--warning">대체값 사용</span>
-                    ) : null}
-                    {showSourceDetail ? (
-                      <details className="week-composition-row__source">
-                        <summary>산출 근거 보기</summary>
-                        <p>{mapForecastSourceKind(week.forecastSourceKind)}</p>
-                      </details>
-                    ) : null}
-                  </li>
-                );
-              })}
+                  ) : null}
+                </li>
+              ))}
             </ul>
           </div>
         </details>
+
+        {forecastBasis === null ? null : (
+          <details className="admin-panel admin-disclosure">
+            <summary className="admin-disclosure__summary">
+              <strong>Forecast 산출 근거</strong>
+              <span className="admin-disclosure__toggle" aria-hidden="true">
+                <span className="admin-disclosure__toggle-closed">상세 보기 ▾</span>
+                <span className="admin-disclosure__toggle-open">상세 접기 ▴</span>
+              </span>
+            </summary>
+            <div className="admin-disclosure__body">
+              <div className="admin-metric-grid">
+                {[
+                  ['예측 방식', '주간 실제값 기준 추세 연장'],
+                  ['사용 모델', `Model ${forecastBasis.modelId}`],
+                  ['추세 기준', `최근 ${forecastBasis.trendLookbackWeeks}주`],
+                  ['Dubai', formatIndicator(forecastBasis.dubai)],
+                  ['USD/KRW', formatIndicator(forecastBasis.usdKrw)],
+                ].map(([label, value]) => (
+                  <div key={label} className="admin-metric">
+                    <span className="dashboard-shell__metric-label">{label}</span>
+                    <strong>{value}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </details>
+        )}
       </div>
     </SectionCard>
   );

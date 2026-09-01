@@ -13,13 +13,26 @@ const STATUS_VIEW: Record<AdminOperationStatus, { label: string; className: stri
   pending: { label: '대기', className: '' },
 };
 
+function OperationRowContent({ event }: { event: AdminOperationEvent }) {
+  const statusView = STATUS_VIEW[event.status];
+
+  return (
+    <>
+      <span className="operation-history-row__time">{formatDashboardDateTime(event.occurredAt)}</span>
+      <strong className="operation-history-row__label">{event.label}</strong>
+      <span className={`status-tag ${statusView.className}`.trim()}>{statusView.label}</span>
+      <span className="operation-history-row__summary">{event.summary}</span>
+    </>
+  );
+}
+
 export function AdminOperationHistory({ events }: { events: readonly AdminOperationEvent[] }) {
   if (events.length === 0) {
     return (
       <SectionCard
         title="최근 운영 이력"
         badge="이력 없음"
-        description="데이터 수집부터 Forecast 및 FSC 처리까지 최근 실행 흐름을 확인합니다."
+        description="최근 데이터 수집 및 Forecast/FSC 실행 흐름입니다."
         className="admin-operation-history"
         emptyStateTitle="아직 운영 이력이 없습니다."
         emptyStateCopy="데이터 수집 또는 Forecast/FSC 실행 후 이력이 표시됩니다."
@@ -31,38 +44,52 @@ export function AdminOperationHistory({ events }: { events: readonly AdminOperat
     <SectionCard
       title="최근 운영 이력"
       badge={`최근 ${events.length}건`}
-      description="데이터 수집부터 Forecast 및 FSC 처리까지 최근 실행 흐름을 확인합니다."
+      description="최근 데이터 수집 및 Forecast/FSC 실행 흐름입니다."
       className="admin-operation-history"
     >
       <ul className="operation-history-list">
         {events.map((event) => {
-          const statusView = STATUS_VIEW[event.status];
           const hasDetails = event.details.length > 0 || event.errorMessage !== null;
 
+          if (!hasDetails) {
+            return (
+              <li key={event.id} className={`operation-history-item operation-history-item--${event.status}`}>
+                <div className="operation-history-row">
+                  <OperationRowContent event={event} />
+                </div>
+              </li>
+            );
+          }
+
           return (
-            <li key={event.id} className={`operation-history-row operation-history-row--${event.status}`}>
-              <span className="operation-history-row__time">{formatDashboardDateTime(event.occurredAt)}</span>
-              <strong className="operation-history-row__label">{event.label}</strong>
-              <span className={`status-tag ${statusView.className}`.trim()}>{statusView.label}</span>
-              {event.summary ? (
-                <span className="operation-history-row__summary">{event.summary}</span>
-              ) : null}
-              {hasDetails ? (
-                <details className="operation-history-row__detail">
-                  <summary>상세 보기</summary>
-                  <dl className="operation-history-row__detail-list">
-                    {event.details.map((detail) => (
-                      <div key={detail.label}>
-                        <dt>{detail.label}</dt>
-                        <dd>{detail.value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                  {event.errorMessage ? (
-                    <p className="operation-history-row__error">{event.errorMessage}</p>
+            <li key={event.id} className={`operation-history-item operation-history-item--${event.status}`}>
+              <details className="operation-history-entry">
+                <summary className="operation-history-row">
+                  <OperationRowContent event={event} />
+                  <span className="operation-history-row__toggle admin-disclosure__toggle" aria-hidden="true">
+                    <span className="admin-disclosure__toggle-closed">상세 보기 ▾</span>
+                    <span className="admin-disclosure__toggle-open">상세 접기 ▴</span>
+                  </span>
+                </summary>
+                <div className="operation-history-detail">
+                  {event.details.length > 0 ? (
+                    <dl className="operation-history-detail__list">
+                      {event.details.map((detail) => (
+                        <div key={detail.label}>
+                          <dt>{detail.label}</dt>
+                          <dd>{detail.value}</dd>
+                        </div>
+                      ))}
+                    </dl>
                   ) : null}
-                </details>
-              ) : null}
+                  {event.errorMessage ? (
+                    <p className="operation-history-detail__error">
+                      <span>오류 사유</span>
+                      <strong>{event.errorMessage}</strong>
+                    </p>
+                  ) : null}
+                </div>
+              </details>
             </li>
           );
         })}

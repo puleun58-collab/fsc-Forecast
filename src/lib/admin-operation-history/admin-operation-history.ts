@@ -1,5 +1,6 @@
 import { calculateEstimatedFscRate } from '@/lib/fsc/estimated-fsc-rate';
 import { readForecastModelState } from '@/lib/forecast/forecast-model-state';
+import { formatDashboardDateTime } from '@/lib/dashboard/dashboard-time';
 
 export const ADMIN_OPERATION_HISTORY_LIMIT = 20;
 
@@ -223,8 +224,14 @@ function buildFscRecomputeEvent(
   const ratio = readEstimatedFscRatio(result);
   const rateLabel = ratio === null ? null : formatSignedPercent(ratio);
   const details: AdminOperationDetail[] = [
-    { label: '분기 예상 평균', value: formatQuarterAverage(result.quarterAverageKrwPerL) },
+    { label: '대상 분기', value: quarterLabel(result.targetYear, result.targetQuarter) },
   ];
+
+  if (rateLabel !== null) {
+    details.push({ label: '예상 FSC율', value: rateLabel });
+  }
+
+  details.push({ label: '분기 예상 평균', value: formatQuarterAverage(result.quarterAverageKrwPerL) });
 
   if (ratio !== null) {
     details.push({
@@ -261,6 +268,15 @@ function buildFscApprovalEvent(result: AdminFscResultRecord): AdminOperationEven
   }
 
   const ratio = readEstimatedFscRatio(result);
+  const details: AdminOperationDetail[] = [
+    { label: '대상 분기', value: quarterLabel(result.targetYear, result.targetQuarter) },
+    { label: '승인 상태', value: '완료' },
+    { label: '승인 시각', value: formatDashboardDateTime(occurredAt) },
+  ];
+
+  if (ratio !== null) {
+    details.push({ label: '승인된 예상 FSC율', value: formatSignedPercent(ratio) });
+  }
 
   return {
     id: `fsc-approval:${result.id}`,
@@ -269,7 +285,7 @@ function buildFscApprovalEvent(result: AdminFscResultRecord): AdminOperationEven
     occurredAt,
     status: 'success',
     summary: quarterLabel(result.targetYear, result.targetQuarter),
-    details: ratio === null ? [] : [{ label: '승인된 예상 FSC율', value: formatSignedPercent(ratio) }],
+    details,
     errorMessage: null,
   };
 }

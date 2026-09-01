@@ -64,26 +64,37 @@ const SUMMARY: DataHealthSummary = {
   ],
 };
 
-test('data health panel renders compact source rows and sanitized error details', () => {
+test('data health renders one compact table with column headers instead of repeated labels', () => {
   const markup = renderToStaticMarkup(createElement(AdminDataHealthPanel, { summary: SUMMARY }));
+  const headEnd = markup.indexOf('</thead>');
+  const head = markup.slice(0, headEnd);
+  const body = markup.slice(headEnd);
 
   assert.match(markup, /데이터 상태/);
   assert.match(markup, /확인 필요/);
   assert.match(markup, /Forecast 입력 데이터의 최신 상태를 확인합니다/);
-  assert.match(markup, /<span class="status-tag status-tag--ok">최신<\/span>/);
-  assert.match(markup, /<span class="status-tag status-tag--warning">지연<\/span>/);
-  assert.match(markup, /<span class="status-tag status-tag--critical">오류<\/span>/);
-  assert.match(markup, /<span class="status-tag">데이터 없음<\/span>/);
-  assert.equal(markup.match(/최근 성공 수집/g)?.length, 4);
+  assert.match(head, /<th scope="col">데이터 소스<\/th><th scope="col">상태<\/th><th scope="col">최신 데이터<\/th><th scope="col">최근 성공 수집<\/th>/);
+  assert.equal(markup.match(/최근 성공 수집/g)?.length, 5);
+  assert.equal(markup.match(/최신 데이터/g)?.length, 5);
+  assert.match(body, /<th scope="row" data-label="데이터 소스">오피넷 일별 경유가<\/th>/);
+  assert.match(body, /<span class="status-tag status-tag--ok">최신<\/span>/);
+  assert.match(body, /<span class="status-tag status-tag--warning">지연<\/span>/);
+  assert.match(body, /<span class="status-tag status-tag--critical">오류<\/span>/);
+  assert.match(body, /<span class="status-tag">데이터 없음<\/span>/);
+  assert.match(body, /8월 3주차/);
+  assert.match(body, /2026\.09\.01 11:05 KST/);
+  assert.match(body, /1주차 지연/);
   assert.doesNotMatch(markup, /정상/);
-  assert.match(markup, /오피넷 일별 경유가/);
-  assert.match(markup, /오피넷 주간 경유가/);
-  assert.match(markup, /Dubai/);
-  assert.match(markup, /USD\/KRW/);
-  assert.match(markup, /8월 3주차/);
-  assert.match(markup, /2026\.09\.01 11:05 KST/);
-  assert.match(markup, /<details class="data-health-row__error">/);
+});
+
+test('only the failed source exposes a sanitized error disclosure', () => {
+  const markup = renderToStaticMarkup(createElement(AdminDataHealthPanel, { summary: SUMMARY }));
+  const errorStart = markup.indexOf('<details class="data-health-table__error">');
+
+  assert.ok(errorStart > 0);
+  assert.equal(markup.match(/data-health-table__error/g)?.length, 1);
+  assert.doesNotMatch(markup.slice(errorStart, errorStart + 60), /\sopen(?:=|>|\s)/);
   assert.match(markup, /Dubai 데이터 수집 요청 실패/);
-  assert.equal(markup.match(/오류 상세 보기/g)?.length, 1);
+  assert.match(markup, /최근 오류 2026\.09\.01 11:00 KST/);
   assert.doesNotMatch(markup, /DATABASE_URL|ADMIN_SESSION_SECRET|API[_ -]?KEY|stack/i);
 });

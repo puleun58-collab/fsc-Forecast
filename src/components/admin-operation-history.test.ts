@@ -49,7 +49,7 @@ test('the operation history renders compact rows with KST times and status tags'
   const markup = renderToStaticMarkup(createElement(AdminOperationHistory, { events: EVENTS }));
 
   assert.match(markup, /최근 운영 이력/);
-  assert.match(markup, /데이터 수집부터 Forecast 및 FSC 처리까지 최근 실행 흐름을 확인합니다/);
+  assert.match(markup, /최근 데이터 수집 및 Forecast\/FSC 실행 흐름입니다/);
   assert.match(markup, /최근 3건/);
   assert.match(markup, /2026\.09\.01 16:20 KST/);
   assert.match(markup, /<span class="status-tag status-tag--ok">성공<\/span>/);
@@ -57,20 +57,42 @@ test('the operation history renders compact rows with KST times and status tags'
   assert.match(markup, /<span class="status-tag status-tag--warning">진행 중<\/span>/);
   assert.match(markup, /2026년 3분기 · \+7\.03%/);
   assert.match(markup, /<dt>직전 결과 대비<\/dt><dd>\+0\.21%p<\/dd>/);
-  assert.match(markup, /Forecast pipeline 실행이 실패했습니다/);
+  assert.match(markup, /오류 사유<\/span><strong>Forecast pipeline 실행이 실패했습니다\.<\/strong>/);
   assert.doesNotMatch(markup, /fsc-1|forecast-failed|ingest-running/);
 });
 
-test('details stay collapsed and are omitted when an event has nothing to expand', () => {
+test('each expanded detail is a full-width panel that follows its own row', () => {
+  const markup = renderToStaticMarkup(createElement(AdminOperationHistory, { events: EVENTS }));
+  const items = [...markup.matchAll(/<li class="operation-history-item[^"]*">(.*?)<\/li>/gs)].map(
+    (match) => match[1] ?? '',
+  );
+
+  assert.equal(items.length, 3);
+
+  for (const item of items) {
+    const rowEnd = item.indexOf('</summary>');
+    const detailStart = item.indexOf('<div class="operation-history-detail">');
+
+    assert.match(item, /<details class="operation-history-entry">/);
+    assert.ok(rowEnd > 0 && detailStart > rowEnd);
+    assert.equal(item.match(/상세 보기 ▾/g)?.length, 1);
+    assert.equal(item.match(/상세 접기 ▴/g)?.length, 1);
+    assert.doesNotMatch(item.slice(0, rowEnd), /operation-history-detail/);
+  }
+
+  assert.doesNotMatch(markup, /<details[^>]*\sopen/);
+});
+
+test('an event without details renders a plain row and no toggle', () => {
   const markup = renderToStaticMarkup(
     createElement(AdminOperationHistory, {
       events: [{ ...EVENTS[0]!, details: [], errorMessage: null }, EVENTS[1]!],
     }),
   );
 
-  assert.equal(markup.match(/<details class="operation-history-row__detail">/g)?.length, 1);
-  assert.doesNotMatch(markup, /<details[^>]*\sopen/);
-  assert.match(markup, /상세 보기/);
+  assert.equal(markup.match(/<details class="operation-history-entry">/g)?.length, 1);
+  assert.equal(markup.match(/상세 보기 ▾/g)?.length, 1);
+  assert.match(markup, /<li class="operation-history-item operation-history-item--success"><div class="operation-history-row">/);
 });
 
 test('an empty operation history explains how entries appear', () => {

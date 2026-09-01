@@ -38,7 +38,7 @@ test('the operating quarter card shows humanized operating state without raw enu
 
   assert.match(markup, /현재 운영 분기/);
   assert.match(markup, /2026년 3분기/);
-  assert.match(markup, /현재 활성 분기의 FSC 운영 상태와 주요 지표입니다/);
+  assert.match(markup, /현재 분기의 FSC 운영 상태와 주요 지표입니다/);
   assert.match(markup, /참조 분기 2026년 2분기/);
   assert.match(markup, /기간 2026\.07\.01 ~ 2026\.09\.30/);
   assert.match(markup, /승인 상태<\/span><strong>승인 대기<\/strong>/);

@@ -19,40 +19,60 @@ export function AdminDataHealthPanel({ summary }: { summary: DataHealthSummary }
       badge={
         <span className={`status-tag ${summaryView.className}`.trim()}>{summary.label}</span>
       }
-      description="Forecast 입력 데이터의 최신 상태를 확인합니다. 상태 표시는 예측 실행을 차단하지 않습니다."
+      description="Forecast 입력 데이터의 최신 상태를 확인합니다."
       className="admin-data-health"
     >
-      <ul className="data-health-list">
-        {summary.items.map((item) => {
-          const statusView = STATUS_VIEW[item.status];
-          const latestDataText =
-            item.latestDataLabel ??
-            (item.latestDataAt === null ? '기록 없음' : formatDashboardDate(item.latestDataAt));
+      <div className="admin-table-wrap">
+        <table className="admin-table data-health-table">
+          <thead>
+            <tr>
+              <th scope="col">데이터 소스</th>
+              <th scope="col">상태</th>
+              <th scope="col">최신 데이터</th>
+              <th scope="col">최근 성공 수집</th>
+            </tr>
+          </thead>
+          <tbody>
+            {summary.items.map((item) => {
+              const statusView = STATUS_VIEW[item.status];
+              const latestDataText =
+                item.latestDataLabel ??
+                (item.latestDataAt === null ? '기록 없음' : formatDashboardDate(item.latestDataAt));
 
-          return (
-            <li key={item.sourceCode} className={`data-health-row data-health-row--${item.status}`}>
-              <strong className="data-health-row__source">{item.source}</strong>
-              <span className={`status-tag ${statusView.className}`.trim()}>{statusView.label}</span>
-              <span className="data-health-row__metric">
-                <span>최신 데이터</span>
-                <strong>{latestDataText}</strong>
-              </span>
-              <span className="data-health-row__metric">
-                <span>최근 성공 수집</span>
-                <strong>{formatDashboardDateTime(item.lastCollectedAt)}</strong>
-              </span>
-              {item.delayLabel ? <span className="data-health-row__delay">{item.delayLabel}</span> : null}
-              {item.status === 'error' && item.errorMessage ? (
-                <details className="data-health-row__error">
-                  <summary>오류 상세 보기</summary>
-                  <p>{item.errorMessage}</p>
-                  {item.errorAt ? <span>최근 오류 {formatDashboardDateTime(item.errorAt)}</span> : null}
-                </details>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
+              return (
+                <tr key={item.sourceCode} className={`data-health-table__row data-health-table__row--${item.status}`}>
+                  <th scope="row" data-label="데이터 소스">
+                    {item.source}
+                  </th>
+                  <td data-label="상태">
+                    <span className={`status-tag ${statusView.className}`.trim()}>{statusView.label}</span>
+                    {item.delayLabel ? (
+                      <span className="data-health-table__delay">{item.delayLabel}</span>
+                    ) : null}
+                  </td>
+                  <td data-label="최신 데이터">{latestDataText}</td>
+                  <td data-label="최근 성공 수집">
+                    {formatDashboardDateTime(item.lastCollectedAt)}
+                    {item.status === 'error' && item.errorMessage ? (
+                      <details className="data-health-table__error">
+                        <summary>
+                          <span>오류 상세</span>
+                          <span className="admin-disclosure__toggle" aria-hidden="true">
+                            <span className="admin-disclosure__toggle-closed">상세 보기 ▾</span>
+                            <span className="admin-disclosure__toggle-open">상세 접기 ▴</span>
+                          </span>
+                        </summary>
+                        <p>{item.errorMessage}</p>
+                        {item.errorAt ? <span>최근 오류 {formatDashboardDateTime(item.errorAt)}</span> : null}
+                      </details>
+                    ) : null}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </SectionCard>
   );
 }
