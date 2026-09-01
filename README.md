@@ -124,6 +124,11 @@
 | `npm run start` | production 서버 시작 |
 | `npm run vercel-build` | Vercel build 진입점 |
 | `npm run lint` | Next.js lint |
+| `npm run check` | prisma validate·generate, typecheck, lint, test, build을 순서대로 실행하는 통합 검증 |
+| `npm run check:prisma` | Prisma schema 검증 |
+| `npm run generate:prisma` | Prisma Client 생성 |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run test` | `node:test` 기반 단위 테스트 (`src`·`app`·`scripts`의 `*.test.ts(x)`) |
 | `npm run worker` | scheduled worker 실행 |
 | `npm run fetch:opinet` | 오피넷 raw cache 수집 |
 | `npm run ingest:opinet` | DB ingest, reconcile, snapshot, forecast 생성 |
@@ -132,6 +137,8 @@
 | `npm run doctor` | React Doctor 진단 |
 
 명령의 입력, 결과 판정, 반복 실행, 실패 처리는 운영 및 문제 해결 문서를 기준으로 합니다.
+
+`npm run check`는 코드와 schema만 검증하며 운영 DB를 변경하지 않습니다. `prisma migrate deploy`는 `npm run vercel-build`에서만 실행합니다. 테스트와 Prisma CLI 검증은 `DATABASE_URL`이 없으면 더미 값을 사용하므로 실제 DB 접속 없이 실행됩니다. GitHub Actions의 `ci` workflow가 PR과 master push에서 같은 `npm run check`를 실행합니다.
 
 ## 상세 문서
 
