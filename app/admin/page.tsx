@@ -260,6 +260,22 @@ export default async function AdminPage() {
         <AdminForecastDiagnostics
           latest={forecastDiagnosticsEntries[0] ?? null}
           history={forecastDiagnosticsEntries}
+          reliability={
+            activeResultDto === null
+              ? null
+              : {
+                  grade: activeResultDto.reliabilityGrade,
+                  sampleCount: activeResultDto.reliabilitySampleCount,
+                  recent13wWeeklyPriceMae:
+                    activeResultDto.qualityMetrics.recent13wWeeklyPriceMae === null
+                      ? null
+                      : Number(activeResultDto.qualityMetrics.recent13wWeeklyPriceMae),
+                  recent13wWeeklyPriceMape:
+                    activeResultDto.qualityMetrics.recent13wWeeklyPriceMape === null
+                      ? null
+                      : Number(activeResultDto.qualityMetrics.recent13wWeeklyPriceMape),
+                }
+          }
         />
 
         <SectionCard

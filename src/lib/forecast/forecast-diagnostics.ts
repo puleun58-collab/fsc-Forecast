@@ -130,6 +130,9 @@ const ForecastDiagnosticsSchema = z.object({
     recent: WindowMetricsSchema,
     long: WindowMetricsSchema,
     currentModelRecent: WindowMetricsSchema,
+    recentOneStep: WindowMetricsSchema,
+    longOneStep: WindowMetricsSchema,
+    currentModelRecentOneStep: WindowMetricsSchema,
   }),
 });
 
@@ -165,6 +168,9 @@ export interface ForecastModelDiagnostics {
   recent: ForecastWindowMetricsView | null;
   long: ForecastWindowMetricsView | null;
   currentModelRecent: ForecastWindowMetricsView | null;
+  recentOneStep: ForecastWindowMetricsView | null;
+  longOneStep: ForecastWindowMetricsView | null;
+  currentModelRecentOneStep: ForecastWindowMetricsView | null;
   candidates: ForecastCandidateView[];
 }
 
@@ -226,6 +232,9 @@ export function readForecastModelDiagnostics(metadata: unknown): ForecastModelDi
     recent: model.recent,
     long: model.long,
     currentModelRecent: model.currentModelRecent,
+    recentOneStep: model.recentOneStep,
+    longOneStep: model.longOneStep,
+    currentModelRecentOneStep: model.currentModelRecentOneStep,
     candidates,
   };
 }

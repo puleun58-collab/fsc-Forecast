@@ -1142,6 +1142,18 @@ main {
   gap: 14px;
 }
 
+.admin-decision__metrics--wide {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.admin-decision__note {
+  margin: 0;
+  max-width: 820px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
 .admin-decision__metric {
   display: grid;
   gap: 4px;

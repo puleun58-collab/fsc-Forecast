@@ -14,9 +14,17 @@ export interface ForecastRunHistoryEntry {
   diagnostics: ForecastModelDiagnostics;
 }
 
+export interface AdminReliabilitySummary {
+  grade: string;
+  sampleCount: number;
+  recent13wWeeklyPriceMae: number | null;
+  recent13wWeeklyPriceMape: number | null;
+}
+
 type AdminForecastDiagnosticsProps = {
   latest: ForecastRunHistoryEntry | null;
   history: readonly ForecastRunHistoryEntry[];
+  reliability: AdminReliabilitySummary | null;
 };
 
 const MISSING_METRIC_TEXT = '데이터 부족';
@@ -79,19 +87,12 @@ const CANDIDATE_STATUS_TONE: Record<ForecastCandidateView['status'], string> = {
   insufficient_sample: 'status-tag--warning',
 };
 
-function MetricList({ metrics }: { metrics: ForecastWindowMetricsView | null }) {
-  if (metrics === null) {
-    return <span>{MISSING_METRIC_TEXT}</span>;
-  }
-
+function DiagnosticMetric({ label, value }: { label: string; value: string }) {
   return (
-    <>
-      <span>MAE: {formatMetric(metrics.maeKrwPerL, 2, '원/L')}</span>
-      <span>MAPE: {formatPercent(metrics.mapePct)}</span>
-      <span>최대 절대오차: {formatMetric(metrics.maxAbsoluteErrorKrwPerL, 2, '원/L')}</span>
-      <span>예측 변동성: {formatMetric(metrics.forecastChurnKrwPerL, 2, '원/L')}</span>
-      <span>백테스트 표본 수: {describeSampleCount(metrics.sampleCount)}</span>
-    </>
+    <div className="admin-decision__metric">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
   );
 }
 
@@ -105,7 +106,11 @@ function describeRunResult(diagnostics: ForecastModelDiagnostics): string {
     : `Model ${diagnostics.previousModelId} → Model ${diagnostics.selectedParams.modelId} 승격`;
 }
 
-export function AdminForecastDiagnostics({ latest, history }: AdminForecastDiagnosticsProps) {
+export function AdminForecastDiagnostics({
+  latest,
+  history,
+  reliability,
+}: AdminForecastDiagnosticsProps) {
   if (latest === null) {
     return (
       <SectionCard
@@ -155,11 +160,83 @@ export function AdminForecastDiagnostics({ latest, history }: AdminForecastDiagn
           </span>
         </div>
 
-        <div className="admin-panel">
-          <strong>현재 모델 성능</strong>
-          <span>최근 구간</span>
-          <MetricList metrics={diagnostics.recent} />
-          <span>장기 구간 MAE: {formatMetric(diagnostics.long?.maeKrwPerL ?? null, 2, '원/L')}</span>
+        <div className="admin-panel admin-decision">
+          <div className="admin-decision__header">
+            <strong>신뢰도 기준 성능 · 최근 13주 1주 ahead</strong>
+            <span
+              className="status-tag"
+              title="최근 13주의 1주 앞 예측 오차를 기준으로 산정합니다. 사용자 화면 신뢰도와 같은 값입니다."
+            >
+              사용자 화면과 동일 기준
+            </span>
+          </div>
+          {reliability === null && diagnostics.recentOneStep === null ? (
+            <p className="admin-decision__summary">
+              이 실행에는 1주 기준 진단값이 저장되지 않았습니다.
+            </p>
+          ) : (
+            <div className="admin-decision__metrics">
+              <DiagnosticMetric
+                label="MAE"
+                value={formatMetric(
+                  reliability?.recent13wWeeklyPriceMae ?? diagnostics.recentOneStep?.maeKrwPerL ?? null,
+                  2,
+                  '원/L',
+                )}
+              />
+              <DiagnosticMetric
+                label="MAPE"
+                value={formatPercent(
+                  reliability?.recent13wWeeklyPriceMape ?? diagnostics.recentOneStep?.mapePct ?? null,
+                )}
+              />
+              <DiagnosticMetric label="신뢰도" value={reliability?.grade ?? '데이터 없음'} />
+              <DiagnosticMetric
+                label="신뢰도 표본"
+                value={
+                  reliability === null
+                    ? describeSampleCount(diagnostics.recentOneStep?.sampleCount ?? 0)
+                    : `${reliability.sampleCount}개`
+                }
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="admin-panel admin-decision">
+          <div className="admin-decision__header">
+            <strong>전체 Horizon 성능 · 참고</strong>
+            <span
+              className="status-tag"
+              title="1~13주 앞 예측 결과를 모두 포함한 모델 진단용 지표입니다."
+            >
+              모델 선택 기준
+            </span>
+          </div>
+          <div className="admin-decision__metrics admin-decision__metrics--wide">
+            <DiagnosticMetric label="MAE" value={formatMetric(diagnostics.recent?.maeKrwPerL ?? null, 2, '원/L')} />
+            <DiagnosticMetric label="MAPE" value={formatPercent(diagnostics.recent?.mapePct ?? null)} />
+            <DiagnosticMetric
+              label="최대 절대오차"
+              value={formatMetric(diagnostics.recent?.maxAbsoluteErrorKrwPerL ?? null, 2, '원/L')}
+            />
+            <DiagnosticMetric
+              label="예측 변동성"
+              value={formatMetric(diagnostics.recent?.forecastChurnKrwPerL ?? null, 2, '원/L')}
+            />
+            <DiagnosticMetric
+              label="장기 구간 MAE"
+              value={formatMetric(diagnostics.long?.maeKrwPerL ?? null, 2, '원/L')}
+            />
+            <DiagnosticMetric
+              label="백테스트 표본"
+              value={describeSampleCount(diagnostics.recent?.sampleCount ?? 0)}
+            />
+          </div>
+          <p className="admin-decision__note">
+            1주부터 최대 13주 ahead 예측을 모두 포함한 성능입니다. 신뢰도 등급 산정에는 직접 사용하지
+            않습니다.
+          </p>
         </div>
 
         <div className="admin-panel admin-decision">

@@ -69,6 +69,8 @@ function createEntry(overrides: Record<string, unknown> = {}) {
       },
       long: { sampleCount: 40, maeKrwPerL: 39.7, mapePct: 2.1 },
       currentModelRecent: { sampleCount: 20, maeKrwPerL: 18.42, mapePct: 0.97 },
+      recentOneStep: { sampleCount: 13, maeKrwPerL: 28.42, mapePct: 1.47 },
+      longOneStep: { sampleCount: 26, maeKrwPerL: 31.1, mapePct: 1.62 },
       ...overrides,
     },
   });
@@ -77,10 +79,17 @@ function createEntry(overrides: Record<string, unknown> = {}) {
   return { runId: 'run-1', completedAt: '2026-08-18T02:00:00.000Z', diagnostics };
 }
 
+const RELIABILITY = {
+  grade: 'C',
+  sampleCount: 13,
+  recent13wWeeklyPriceMae: 28.42,
+  recent13wWeeklyPriceMape: 1.47,
+};
+
 test('admin diagnostics render the current model, parameters, and candidate comparison', () => {
   const entry = createEntry();
   const markup = renderToStaticMarkup(
-    createElement(AdminForecastDiagnostics, { latest: entry, history: [entry] }),
+    createElement(AdminForecastDiagnostics, { latest: entry, history: [entry], reliability: RELIABILITY }),
   );
 
   assert.match(markup, /예측 모델 진단/);
@@ -102,11 +111,11 @@ test('admin diagnostics render the current model, parameters, and candidate comp
 test('the decision panel keeps the badge, sentence, and metrics in one compact block', () => {
   const entry = createEntry();
   const markup = renderToStaticMarkup(
-    createElement(AdminForecastDiagnostics, { latest: entry, history: [entry] }),
+    createElement(AdminForecastDiagnostics, { latest: entry, history: [entry], reliability: RELIABILITY }),
   );
 
   assert.match(markup, /admin-decision__summary[^>]*><span class="status-tag status-tag--ok">승격<\/span>/);
-  assert.equal(markup.match(/admin-decision__metric"/g)?.length, 3);
+  assert.equal(markup.match(/admin-decision__metric"/g)?.length, 13);
   assert.match(markup, /admin-decision__metric"[^>]*><span>MAE 개선<\/span>/);
   assert.match(markup, /<span>평가 후보<\/span><strong>225개<\/strong>/);
   assert.doesNotMatch(markup, /평가한 후보 조합 수/);
@@ -132,7 +141,7 @@ test('admin diagnostics label unused indicators and missing metrics without fake
     },
   });
   const markup = renderToStaticMarkup(
-    createElement(AdminForecastDiagnostics, { latest: entry, history: [entry] }),
+    createElement(AdminForecastDiagnostics, { latest: entry, history: [entry], reliability: null }),
   );
 
   assert.match(markup, /Dubai: 미사용/);
@@ -146,9 +155,37 @@ test('admin diagnostics label unused indicators and missing metrics without fake
 
 test('admin diagnostics fall back to an empty state without forecast runs', () => {
   const markup = renderToStaticMarkup(
-    createElement(AdminForecastDiagnostics, { latest: null, history: [] }),
+    createElement(AdminForecastDiagnostics, { latest: null, history: [], reliability: null }),
   );
 
   assert.match(markup, /모델 선택 진단 기록이 없습니다/);
   assert.doesNotMatch(markup, /후보 모델 비교/);
+});
+
+test('performance blocks separate the reliability basis from the full-horizon basis', () => {
+  const entry = createEntry();
+  const markup = renderToStaticMarkup(
+    createElement(AdminForecastDiagnostics, { latest: entry, history: [entry], reliability: RELIABILITY }),
+  );
+
+  assert.match(markup, /신뢰도 기준 성능 · 최근 13주 1주 ahead/);
+  assert.match(markup, /전체 Horizon 성능 · 참고/);
+  assert.match(markup, /<strong>28\.42원\/L<\/strong>/);
+  assert.match(markup, /<strong>1\.47%<\/strong>/);
+  assert.match(markup, /<span>신뢰도<\/span><strong>C<\/strong>/);
+  assert.match(markup, /<strong>17\.05원\/L<\/strong>/);
+  assert.match(markup, /<strong>0\.89%<\/strong>/);
+  assert.match(markup, /1주부터 최대 13주 ahead 예측을 모두 포함한 성능입니다/);
+  assert.doesNotMatch(markup, /최근 구간/);
+});
+
+test('a run without one-step diagnostics never substitutes the full-horizon metrics', () => {
+  const entry = createEntry({ recentOneStep: null, longOneStep: null });
+  const markup = renderToStaticMarkup(
+    createElement(AdminForecastDiagnostics, { latest: entry, history: [entry], reliability: null }),
+  );
+
+  assert.match(markup, /이 실행에는 1주 기준 진단값이 저장되지 않았습니다/);
+  assert.match(markup, /<strong>17\.05원\/L<\/strong>/);
+  assert.doesNotMatch(markup, /<span>신뢰도<\/span>/);
 });
