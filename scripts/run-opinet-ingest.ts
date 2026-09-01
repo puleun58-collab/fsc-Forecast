@@ -1,10 +1,7 @@
-import { config as loadEnv } from "dotenv";
+import "./load-env";
 
 import { db } from "../src/lib/db";
 import { runOpinetIngest } from "../src/lib/ingest/run-opinet-ingest";
-
-loadEnv({ path: ".env.local", override: true });
-loadEnv();
 
 async function main(): Promise<void> {
   const result = await runOpinetIngest({

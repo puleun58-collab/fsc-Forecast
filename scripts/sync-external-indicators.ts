@@ -1,12 +1,9 @@
-import { config as loadEnv } from "dotenv";
+import "./load-env";
 
 import { externalIndicatorCodes } from "../src/lib/external-indicators/catalog";
 import { db } from "../src/lib/db";
 import { loadLatestIndicatorStates } from "../src/lib/external-indicators/latest-indicator-states";
 import { syncExternalIndicators } from "../src/lib/external-indicators/sync-external-indicators";
-
-loadEnv({ path: ".env.local", override: true });
-loadEnv();
 
 async function main(): Promise<void> {
   const syncResult = await syncExternalIndicators();

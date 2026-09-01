@@ -1,9 +1,6 @@
-import { config as loadEnv } from "dotenv";
+import "./load-env";
+
 import { refreshOpinetSeriesCache } from "../src/lib/opinet/refresh-series-cache";
-
-
-loadEnv({ path: ".env.local", override: true });
-loadEnv();
 
 async function main(): Promise<void> {
   const summary = await refreshOpinetSeriesCache();

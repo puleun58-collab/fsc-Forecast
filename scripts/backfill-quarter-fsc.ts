@@ -1,7 +1,4 @@
-import { config as loadEnv } from "dotenv";
-
-loadEnv({ path: ".env.local", override: true });
-loadEnv();
+import "./load-env";
 
 import { db } from "../src/lib/db";
 import { runFscResultRecompute } from "../src/lib/fsc/run-fsc-result-recompute";

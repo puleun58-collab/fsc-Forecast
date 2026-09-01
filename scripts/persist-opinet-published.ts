@@ -1,18 +1,14 @@
-import { config as loadEnv } from 'dotenv';
+import './load-env';
 
-loadEnv({ path: '.env.local', override: true });
-loadEnv();
+import {
+  persistOpinetPublishedPrices,
+  readPersistedMonthlySeries,
+  readPersistedQuarterlySeries,
+} from '../src/lib/opinet/published-price-store';
+import { readMonthlySeries } from '../src/lib/opinet/save-monthly-series';
+import { readQuarterlySeries } from '../src/lib/opinet/save-quarterly-series';
 
 async function main(): Promise<void> {
-  const [
-    { persistOpinetPublishedPrices, readPersistedMonthlySeries, readPersistedQuarterlySeries },
-    { readMonthlySeries },
-    { readQuarterlySeries },
-  ] = await Promise.all([
-    import('../src/lib/opinet/published-price-store'),
-    import('../src/lib/opinet/save-monthly-series'),
-    import('../src/lib/opinet/save-quarterly-series'),
-  ]);
   const [monthlyEntries, quarterlyEntries] = await Promise.all([
     readMonthlySeries(),
     readQuarterlySeries(),
