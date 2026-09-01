@@ -47,32 +47,50 @@ export function mapReliabilityAdjustmentReason(code: string): string {
   return RELIABILITY_ADJUSTMENT_REASON_TEXT[code] ?? '여러 품질 지표를 종합해 평가에 반영했습니다.';
 }
 
-function formatOfficialWeekName(officialWeekLabel: string): string {
-  const match = officialWeekLabel.match(/^\d{4}년(\d{2})월(\d)주$/);
-
-  if (!match) {
-    return officialWeekLabel;
-  }
-
-  return `${Number(match[1])}월 ${Number(match[2])}주차`;
-}
-
-export function formatWeekDisplayName(week: {
+type WeekDisplayInput = {
   officialWeekLabel: string | null;
   weekStartDate: string;
   weekEndDate: string;
   targetMonth: number;
-}): string {
-  if (typeof week.officialWeekLabel === 'string') {
-    return formatOfficialWeekName(week.officialWeekLabel);
+};
+
+const OFFICIAL_WEEK_LABEL_PATTERN = /^\d{4}년(\d{2})월(\d)주$/;
+
+function resolveWeekDisplay(week: WeekDisplayInput): { month: number; label: string } {
+  const officialMatch =
+    typeof week.officialWeekLabel === 'string'
+      ? week.officialWeekLabel.match(OFFICIAL_WEEK_LABEL_PATTERN)
+      : null;
+
+  if (officialMatch) {
+    const month = Number(officialMatch[1]);
+    return { month, label: `${month}월 ${Number(officialMatch[2])}주차` };
   }
 
+  let displayWeek: { month: number; weekOfMonth: number } | null = null;
+
   try {
-    const displayWeek = getOpinetDisplayWeek(week.weekStartDate, week.weekEndDate);
-    return `${displayWeek.month}월 ${displayWeek.weekOfMonth}주차`;
+    displayWeek = getOpinetDisplayWeek(week.weekStartDate, week.weekEndDate);
   } catch {
-    return `${week.targetMonth}월`;
+    displayWeek = null;
   }
+
+  // 형식을 벗어난 공식 라벨은 원문을 그대로 노출하되 월 경계 판정은 오피넷 주차로 유도한다.
+  if (typeof week.officialWeekLabel === 'string') {
+    return { month: displayWeek?.month ?? week.targetMonth, label: week.officialWeekLabel };
+  }
+
+  return displayWeek === null
+    ? { month: week.targetMonth, label: `${week.targetMonth}월` }
+    : { month: displayWeek.month, label: `${displayWeek.month}월 ${displayWeek.weekOfMonth}주차` };
+}
+
+export function formatWeekDisplayName(week: WeekDisplayInput): string {
+  return resolveWeekDisplay(week).label;
+}
+
+export function getWeekDisplayMonth(week: WeekDisplayInput): number {
+  return resolveWeekDisplay(week).month;
 }
 
 

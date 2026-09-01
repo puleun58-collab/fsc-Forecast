@@ -101,3 +101,61 @@ test('active quarter weekly detail shows only the Opinet month-week name', () =>
   assert.match(markup, /9월 1주차/);
   assert.doesNotMatch(markup, /오피넷 기준 주차|ISO 27|ISO 36/);
 });
+
+function opinetWeek(
+  sequenceNo: number,
+  weekStartDate: string,
+  weekEndDate: string,
+  targetMonth: number,
+  priceKind: FscDashboardWeekItem['priceKind'] = 'actual',
+): FscDashboardWeekItem {
+  return {
+    ...HISTORICAL_WEEK,
+    sequenceNo,
+    targetMonth,
+    weekNo: sequenceNo,
+    weekStartDate,
+    weekEndDate,
+    officialWeekLabel: null,
+    priceKind,
+    forecastSourceKind: priceKind === 'forecast' ? 'weekly_point' : null,
+  };
+}
+
+test('every quarter marks the first row of a new display month', () => {
+  const markup = renderToStaticMarkup(
+    createElement(WeeklyDetailTable, {
+      weeks: [
+        opinetWeek(1, '2026-03-29T00:00:00.000Z', '2026-04-02T00:00:00.000Z', 4),
+        opinetWeek(2, '2026-04-05T00:00:00.000Z', '2026-04-09T00:00:00.000Z', 4),
+        opinetWeek(3, '2026-05-03T00:00:00.000Z', '2026-05-07T00:00:00.000Z', 5),
+      ],
+      previousWeekPriceKrwPerL: null,
+      useStoredWeekRange: true,
+    }),
+  );
+  const rowClasses = [...markup.matchAll(/<tr class="(weekly-table__row[^"]*)"/g)].map((match) => match[1]);
+
+  assert.deepEqual(rowClasses, [
+    'weekly-table__row weekly-table__row--actual',
+    'weekly-table__row weekly-table__row--actual',
+    'weekly-table__row weekly-table__row--actual weekly-table__row--month-start',
+  ]);
+  assert.equal(markup.match(/weekly-mobile-item--month-start/g)?.length, 1);
+});
+
+test('a forecast boundary replaces the month divider when both fall on the same row', () => {
+  const markup = renderToStaticMarkup(
+    createElement(WeeklyDetailTable, {
+      weeks: [
+        opinetWeek(1, '2026-08-16T00:00:00.000Z', '2026-08-20T00:00:00.000Z', 8),
+        opinetWeek(2, '2026-08-23T00:00:00.000Z', '2026-08-27T00:00:00.000Z', 8),
+        opinetWeek(3, '2026-08-30T00:00:00.000Z', '2026-09-03T00:00:00.000Z', 9, 'forecast'),
+      ],
+      previousWeekPriceKrwPerL: null,
+    }),
+  );
+
+  assert.match(markup, /weekly-table__boundary/);
+  assert.doesNotMatch(markup, /weekly-table__row--month-start/);
+});

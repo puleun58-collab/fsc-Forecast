@@ -34,6 +34,8 @@ available 상태의 구성 순서는 다음과 같다.
 
 상세 표는 actual과 forecast의 첫 경계 앞에 `예측 시작` 행을 넣는다. 각 행은 주차명, 기간, 상태, 가격, 기준유가 대비 차이·차이율·산출 방식을 표시한다. 주차명은 모든 분기·Actual·Forecast에서 동일하게 오피넷 주차 기준 `{월}월 {n}주차` 한 줄만 표시하고 보조 문구는 붙이지 않는다. 내부적으로는 저장된 `officialWeekLabel`이 있으면 그 값을, 없으면 `weekStartDate`·`weekEndDate`에서 계산한 오피넷 주차를 사용한다. forecast 산출 방식은 주간 예측값, 월간 예측값, 직전 예측값 유지, 현재 적용유가 대체, 기준유가 대체로 구분한다. 데스크톱 표는 fallback 행에 `대체값 사용`과 source kind를 표시하지만, 현재 모바일 그룹에는 이 provenance가 표시되지 않는다. 모바일에서는 Actual 구간과 Forecast 구간만 별도 그룹으로 표시한다.
 
+주차 행 구분은 모든 분기에서 동일한 규칙을 쓴다. 구분 강도는 `예측 시작` 경계 > 월 변경 경계 > 일반 행 구분선 순서다. 표시 월이 바뀌는 첫 행에는 `weekly-table__row--month-start`(모바일은 `weekly-mobile-item--month-start`)로 굵은 구분선을 넣되, 그 행이 `예측 시작` 경계 바로 뒤라면 경계 하나만 남기고 월 구분선은 생략한다. 월 판정은 화면에 보이는 주차명과 같은 기준(공식 라벨 우선, 없으면 오피넷 주차)을 사용한다. zebra stripe나 월 제목 블록은 쓰지 않고, 데스크톱 hover는 surface 계열의 미세한 배경 변화만 준다.
+
 actual-first 판정과 forecast fallback 순서는 [아키텍처의 계산 규칙](architecture.md#actual-first-and-fallback)을 따른다.
 
 <a id="date-time-and-formatting"></a>

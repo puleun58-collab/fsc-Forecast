@@ -1905,7 +1905,7 @@ main {
 
 .weekly-table th,
 .weekly-table td {
-  padding: 12px 14px;
+  padding: 16px 14px;
   text-align: left;
   vertical-align: top;
 }
@@ -1926,11 +1926,15 @@ main {
 }
 
 .weekly-table tbody tr:not(.weekly-table__boundary):hover {
-  background: color-mix(in srgb, var(--forecast-tint) 35%, transparent);
+  background: color-mix(in srgb, var(--surface-muted) 72%, transparent);
 }
 
 .weekly-table__row {
-  border-top: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+}
+
+.weekly-table__row--month-start {
+  border-top: 2px solid color-mix(in srgb, var(--border-strong) 62%, transparent);
 }
 
 .weekly-table__row--forecast {
@@ -2745,8 +2749,12 @@ main {
   .weekly-mobile-item {
     display: grid;
     gap: 7px;
-    padding: 14px 0;
+    padding: 17px 0;
     border-bottom: 1px solid var(--border);
+  }
+
+  .weekly-mobile-item--month-start {
+    border-top: 2px solid color-mix(in srgb, var(--border-strong) 62%, transparent);
   }
 
   .weekly-mobile-item--forecast {

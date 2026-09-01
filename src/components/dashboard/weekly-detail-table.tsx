@@ -9,6 +9,7 @@ import {
   formatWeekOverWeekChange,
   formatWeekRange,
   getFirstForecastIndex,
+  getWeekDisplayMonth,
   mapForecastSourceKind,
   mapWeekKind,
   PriceValue,
@@ -59,20 +60,25 @@ export function WeeklyDetailTable({
             </tr>
           </thead>
           <tbody>
-            {weeks.map((week) => (
-              <Fragment key={week.sequenceNo}>
-                {week.sequenceNo === firstForecastSequenceNo ? (
-                  <tr className="weekly-table__boundary">
-                    <td colSpan={7}>예측 시작</td>
-                  </tr>
-                ) : null}
-                <WeekTableRow
-                  week={week}
-                  previousPriceKrwPerL={previousWeekBySequenceNo.get(week.sequenceNo) ?? null}
-                  useStoredWeekRange={useStoredWeekRange}
-                />
-              </Fragment>
-            ))}
+            {weeks.map((week, index) => {
+              const isForecastBoundary = week.sequenceNo === firstForecastSequenceNo;
+
+              return (
+                <Fragment key={week.sequenceNo}>
+                  {isForecastBoundary ? (
+                    <tr className="weekly-table__boundary">
+                      <td colSpan={7}>예측 시작</td>
+                    </tr>
+                  ) : null}
+                  <WeekTableRow
+                    week={week}
+                    previousPriceKrwPerL={previousWeekBySequenceNo.get(week.sequenceNo) ?? null}
+                    useStoredWeekRange={useStoredWeekRange}
+                    isMonthStart={!isForecastBoundary && startsNewDisplayMonth(weeks, index)}
+                  />
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -100,6 +106,11 @@ function formatWeekChange(currentWeek: FscDashboardWeekItem, previousPriceKrwPer
   return change === null ? '비교 기준 없음' : formatWeekOverWeekChange(change);
 }
 
+function startsNewDisplayMonth(weeks: readonly FscDashboardWeekItem[], index: number): boolean {
+  const previousWeek = index > 0 ? weeks[index - 1] : null;
+  return previousWeek !== null && getWeekDisplayMonth(previousWeek) !== getWeekDisplayMonth(weeks[index]);
+}
+
 function formatStoredWeekRange(week: FscDashboardWeekItem, compact = false): string {
   const start = formatDisplayDate(week.weekStartDate, '-');
   const end = formatDisplayDate(week.weekEndDate, '-');
@@ -117,16 +128,22 @@ function WeekTableRow({
   week,
   previousPriceKrwPerL,
   useStoredWeekRange,
+  isMonthStart,
 }: {
   week: FscDashboardWeekItem;
   previousPriceKrwPerL: string | null;
   useStoredWeekRange: boolean;
+  isMonthStart: boolean;
 }) {
   const isPendingForecast = week.priceKind === 'forecast' && week.priceKrwPerL === null;
   const sourceText = isPendingForecast ? '예측값 산정 중' : mapForecastSourceKind(week.forecastSourceKind);
 
   return (
-    <tr className={`weekly-table__row weekly-table__row--${week.priceKind}`}>
+    <tr
+      className={`weekly-table__row weekly-table__row--${week.priceKind}${
+        isMonthStart ? ' weekly-table__row--month-start' : ''
+      }`}
+    >
       <th scope="row">
         <strong>{formatWeekDisplayName(week)}</strong>
       </th>
@@ -179,8 +196,13 @@ function WeekMobileGroup({
   return (
     <div className="weekly-mobile-list__group">
       <h3>{title}</h3>
-      {weeks.map((week) => (
-        <div key={week.sequenceNo} className={`weekly-mobile-item weekly-mobile-item--${week.priceKind}`}>
+      {weeks.map((week, index) => (
+        <div
+          key={week.sequenceNo}
+          className={`weekly-mobile-item weekly-mobile-item--${week.priceKind}${
+            startsNewDisplayMonth(weeks, index) ? ' weekly-mobile-item--month-start' : ''
+          }`}
+        >
           <div className="weekly-mobile-item__top">
             <strong>
               {formatWeekDisplayName(week)} ·{' '}
