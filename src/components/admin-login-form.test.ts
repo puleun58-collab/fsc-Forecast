@@ -23,10 +23,21 @@ test('the login form keeps only the password field and submit action', () => {
 test('the login screen renders as a narrow centered card', () => {
   const css = readFileSync('app/globals.css', 'utf8');
   const page = readFileSync('app/admin/login/page.tsx', 'utf8');
+  const route = readFileSync('app/api/admin/login/route.ts', 'utf8');
 
   assert.match(css, /\.admin-login\s*\{[^}]*justify-content:\s*center/s);
   assert.match(css, /\.admin-login__card\s*\{[^}]*width:\s*min\(100%, 480px\)/s);
   assert.match(css, /\.admin-login \.button\s*\{[^}]*width:\s*100%/s);
-  assert.match(page, /설정 확인됨/);
-  assert.doesNotMatch(page, /Authenticated admin|ADMIN_SESSION_SECRET|ADMIN_SESSION_MAX_AGE_DAYS|httpOnly|sameSite/);
+  assert.match(page, /FSC Admin/);
+  assert.match(page, /관리자 전용 로그인/);
+  assert.match(page, /관리자 기능은 로그인 후 사용할 수 있습니다/);
+  assert.doesNotMatch(
+    page,
+    /설정 확인됨|설정 필요|Authenticated admin|httpOnly|sameSite|ADMIN_SESSION_SECRET|ADMIN_SESSION_MAX_AGE_DAYS/,
+  );
+  assert.match(route, /message: '관리자 인증 설정을 확인해 주세요\.'/);
+  assert.doesNotMatch(
+    route,
+    /code: 'ADMIN_AUTH_NOT_CONFIGURED',[\s\S]{0,120}message: error\.message/,
+  );
 });

@@ -62,10 +62,10 @@ function createEntry(overrides: Record<string, unknown> = {}) {
       },
       recent: {
         sampleCount: 20,
-        maeKrwPerL: 17.05,
-        mapePct: 0.89,
-        maxAbsoluteErrorKrwPerL: 67.5,
-        forecastChurnKrwPerL: 5.2,
+        maeKrwPerL: 179.35,
+        mapePct: 9.38,
+        maxAbsoluteErrorKrwPerL: 267.5,
+        forecastChurnKrwPerL: 15.2,
       },
       long: { sampleCount: 40, maeKrwPerL: 39.7, mapePct: 2.1 },
       currentModelRecent: { sampleCount: 20, maeKrwPerL: 18.42, mapePct: 0.97 },
@@ -115,12 +115,12 @@ test('the decision panel keeps the badge, sentence, and metrics in one compact b
   );
 
   assert.match(markup, /admin-decision__summary[^>]*><span class="status-tag status-tag--ok">승격<\/span>/);
-  assert.equal(markup.match(/admin-decision__metric"/g)?.length, 13);
+  assert.equal(markup.match(/admin-decision__metric"/g)?.length, 12);
   assert.match(markup, /admin-decision__metric"[^>]*><span>MAE 개선<\/span>/);
   assert.match(markup, /<span>평가 후보<\/span><strong>225개<\/strong>/);
   assert.doesNotMatch(markup, /평가한 후보 조합 수/);
   // 승격 기준은 카드 폭을 차지하는 admin-panel 박스가 아니라 헤더의 토글이어야 한다.
-  assert.doesNotMatch(markup, /<details class="admin-panel"/);
+  assert.doesNotMatch(markup, /<details class="admin-panel admin-thresholds"/);
   assert.match(markup, /<details class="admin-thresholds">/);
 });
 
@@ -167,15 +167,34 @@ test('performance blocks separate the reliability basis from the full-horizon ba
   const markup = renderToStaticMarkup(
     createElement(AdminForecastDiagnostics, { latest: entry, history: [entry], reliability: RELIABILITY }),
   );
+  const reliabilityStart = markup.indexOf('admin-panel admin-decision admin-reliability');
+  const judgmentStart = markup.indexOf('<div class="admin-panel admin-decision">', reliabilityStart);
+  const horizonStart = markup.indexOf('<details class="admin-panel admin-horizon">');
+  const horizonEnd = markup.indexOf('</details>', horizonStart);
+  const candidatesStart = markup.indexOf('후보 모델 비교');
+  const reliabilityBlock = markup.slice(reliabilityStart, judgmentStart);
+  const horizonBlock = markup.slice(horizonStart, horizonEnd);
 
-  assert.match(markup, /신뢰도 기준 성능 · 최근 13주 1주 ahead/);
-  assert.match(markup, /전체 Horizon 성능 · 참고/);
-  assert.match(markup, /<strong>28\.42원\/L<\/strong>/);
-  assert.match(markup, /<strong>1\.47%<\/strong>/);
-  assert.match(markup, /<span>신뢰도<\/span><strong>C<\/strong>/);
-  assert.match(markup, /<strong>17\.05원\/L<\/strong>/);
-  assert.match(markup, /<strong>0\.89%<\/strong>/);
-  assert.match(markup, /1주부터 최대 13주 ahead 예측을 모두 포함한 성능입니다/);
+  assert.match(reliabilityBlock, /신뢰도 기준 · 최근 13주/);
+  assert.match(reliabilityBlock, /신뢰도 산정에 사용하는 최근 13주 1주 ahead 성능입니다/);
+  assert.match(reliabilityBlock, />C<\/span>/);
+  assert.match(reliabilityBlock, /<span>MAPE<\/span><strong>1\.47%<\/strong>/);
+  assert.match(reliabilityBlock, /<span>MAE<\/span><strong>28\.42원\/L<\/strong>/);
+  assert.match(reliabilityBlock, /<span>평가 표본<\/span><strong>13주<\/strong>/);
+  assert.doesNotMatch(reliabilityBlock, /9\.38%|179\.35원\/L/);
+
+  assert.match(markup.slice(horizonStart, horizonStart + 60), /<details class="admin-panel admin-horizon">/);
+  assert.doesNotMatch(markup.slice(horizonStart, horizonStart + 80), /\sopen(?:=|>|\s)/);
+  assert.match(horizonBlock, /전체 Horizon 성능 · 참고/);
+  assert.match(horizonBlock, /<span>MAPE<\/span><strong>9\.38%<\/strong>/);
+  assert.match(horizonBlock, /<span>MAE<\/span><strong>179\.35원\/L<\/strong>/);
+  assert.match(
+    horizonBlock,
+    /1주부터 최대 13주 ahead 예측을 모두 포함한 통합 성능이며, 신뢰도 등급 산정에는 직접 사용하지 않습니다/,
+  );
+  assert.ok(reliabilityStart < judgmentStart);
+  assert.ok(judgmentStart < horizonStart);
+  assert.ok(horizonStart < candidatesStart);
   assert.doesNotMatch(markup, /최근 구간/);
 });
 
@@ -184,8 +203,13 @@ test('a run without one-step diagnostics never substitutes the full-horizon metr
   const markup = renderToStaticMarkup(
     createElement(AdminForecastDiagnostics, { latest: entry, history: [entry], reliability: null }),
   );
+  const reliabilityStart = markup.indexOf('admin-panel admin-decision admin-reliability');
+  const judgmentStart = markup.indexOf('<div class="admin-panel admin-decision">', reliabilityStart);
+  const reliabilityBlock = markup.slice(reliabilityStart, judgmentStart);
 
-  assert.match(markup, /이 실행에는 1주 기준 진단값이 저장되지 않았습니다/);
-  assert.match(markup, /<strong>17\.05원\/L<\/strong>/);
-  assert.doesNotMatch(markup, /<span>신뢰도<\/span>/);
+  assert.match(reliabilityBlock, /신뢰도 기준 성능 데이터 없음/);
+  assert.match(reliabilityBlock, /등급 데이터 없음/);
+  assert.doesNotMatch(reliabilityBlock, /9\.38%|179\.35원\/L/);
+  assert.match(markup, /<span>MAPE<\/span><strong>9\.38%<\/strong>/);
+  assert.match(markup, /<span>MAE<\/span><strong>179\.35원\/L<\/strong>/);
 });

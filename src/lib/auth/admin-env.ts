@@ -54,11 +54,3 @@ export function readAdminAuthEnv(): AdminAuthEnv {
   };
 }
 
-export function isAdminAuthConfigured(): boolean {
-  try {
-    readAdminAuthEnv();
-    return true;
-  } catch {
-    return false;
-  }
-}

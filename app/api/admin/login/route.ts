@@ -67,7 +67,7 @@ export async function POST(request: Request): Promise<Response> {
         {
           ok: false,
           code: 'ADMIN_AUTH_NOT_CONFIGURED',
-          message: error.message,
+          message: '관리자 인증 설정을 확인해 주세요.',
         },
         { status: 503 },
       );

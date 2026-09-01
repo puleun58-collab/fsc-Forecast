@@ -1024,16 +1024,8 @@ main {
 }
 
 .admin-login__header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.admin-login__header .status-tag {
-  flex: 0 0 auto;
-  width: fit-content;
+  display: grid;
+  gap: 4px;
 }
 
 .admin-login__title {
@@ -1045,7 +1037,7 @@ main {
 }
 
 .admin-login__subtitle {
-  margin: 4px 0 0;
+  margin: 0;
   color: var(--text-secondary);
   font-size: 0.9rem;
 }
@@ -1179,6 +1171,95 @@ main {
   font-variant-numeric: tabular-nums;
 }
 
+.data-health-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.data-health-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 1.2fr) auto minmax(130px, 0.8fr) minmax(210px, 1.2fr);
+  align-items: center;
+  gap: 8px 16px;
+  padding: 13px 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.data-health-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.data-health-row:last-child {
+  padding-bottom: 0;
+}
+
+.data-health-row__source {
+  min-width: 0;
+}
+
+.data-health-row__metric {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.data-health-row__metric > span,
+.data-health-row__error > span {
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+}
+
+.data-health-row__metric > strong {
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.data-health-row__delay {
+  grid-column: 3 / -1;
+  color: var(--warning);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.data-health-row__error {
+  grid-column: 1 / -1;
+  width: fit-content;
+  color: var(--critical);
+  font-size: 0.8rem;
+}
+
+.data-health-row__error summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.data-health-row__error p {
+  margin: 8px 0 2px;
+}
+
+@media (max-width: 700px) {
+  .data-health-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+  }
+
+  .data-health-row__metric,
+  .data-health-row__delay,
+  .data-health-row__error {
+    grid-column: 1 / -1;
+  }
+
+  .data-health-row__metric {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+}
+
 .admin-decision {
   gap: 14px;
 }
@@ -1243,6 +1324,89 @@ main {
   font-variant-numeric: tabular-nums;
 }
 
+.admin-reliability {
+  border-color: var(--border-strong);
+  background: var(--bg-card);
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+
+.admin-reliability__metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-horizon {
+  display: block;
+  overflow: hidden;
+  padding: 0;
+  background: transparent;
+}
+
+.admin-horizon__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px var(--space-4);
+  color: var(--text-secondary);
+  cursor: pointer;
+  list-style: none;
+}
+
+.admin-horizon__summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-horizon__summary strong {
+  color: var(--text-primary);
+  font-size: 0.86rem;
+}
+
+.admin-horizon__summary:hover {
+  background: var(--bg-muted);
+}
+
+.admin-horizon__toggle {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.admin-horizon__toggle-open {
+  display: none;
+}
+
+.admin-horizon[open] .admin-horizon__summary {
+  border-bottom: 1px solid var(--border-default);
+}
+
+.admin-horizon[open] .admin-horizon__toggle-closed {
+  display: none;
+}
+
+.admin-horizon[open] .admin-horizon__toggle-open {
+  display: inline;
+}
+
+.admin-horizon__body {
+  display: grid;
+  gap: 12px;
+  padding: var(--space-4);
+}
+
+.admin-horizon__metrics {
+  gap: 12px;
+}
+
+.admin-horizon__metrics .admin-decision__metric > span {
+  font-size: 0.74rem;
+}
+
+.admin-horizon__metrics .admin-decision__metric > strong {
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+}
+
 .admin-thresholds {
   position: relative;
   width: fit-content;
@@ -1297,6 +1461,15 @@ main {
 @media (max-width: 640px) {
   .admin-decision__metrics {
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  .admin-reliability__metrics,
+  .admin-horizon__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-horizon__summary {
+    align-items: flex-start;
   }
 
   .admin-thresholds__panel {

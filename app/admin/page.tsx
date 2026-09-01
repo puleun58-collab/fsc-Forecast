@@ -1,11 +1,13 @@
 import { redirect } from 'next/navigation';
 
 import { AdminActionButton } from '@/components/admin-action-button';
+import { AdminDataHealthPanel } from '@/components/admin-data-health-panel';
 import { AdminForecastDiagnostics, type ForecastRunHistoryEntry } from '@/components/admin-forecast-diagnostics';
 import { AdminLogoutButton } from '@/components/admin-logout-button';
 import { SectionCard } from '@/components/section-card';
 import { getAdminSession } from '@/lib/auth/admin';
 import { db } from '@/lib/db';
+import { loadAdminDataHealth } from '@/lib/data-health/load-admin-data-health';
 
 import { findLatestBaseFscResultByQuarter } from '@/lib/fsc/load-latest-fsc-result';
 import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
@@ -47,7 +49,7 @@ export default async function AdminPage() {
 
 
   const activeQuarter = await ensureActiveQuarter();
-  const [quarters, activeResult, activeResultHistory, forecastRuns] = await Promise.all([
+  const [quarters, activeResult, activeResultHistory, forecastRuns, dataHealth] = await Promise.all([
     db.quarterSetting.findMany({
       orderBy: [{ targetYear: 'desc' }, { targetQuarter: 'desc' }],
     }),
@@ -84,6 +86,7 @@ export default async function AdminPage() {
       take: 10,
       select: { id: true, completedAt: true, createdAt: true, metadata: true },
     }),
+    loadAdminDataHealth(),
   ]);
 
   const activeResultDto = activeResult ? serializeFscResultDto(activeResult) : null;
@@ -138,6 +141,29 @@ export default async function AdminPage() {
       </section>
 
       <div className="dashboard-shell__grid">
+        <AdminDataHealthPanel summary={dataHealth} />
+
+        <AdminForecastDiagnostics
+          latest={forecastDiagnosticsEntries[0] ?? null}
+          history={forecastDiagnosticsEntries}
+          reliability={
+            activeResultDto === null
+              ? null
+              : {
+                  grade: activeResultDto.reliabilityGrade,
+                  sampleCount: activeResultDto.reliabilitySampleCount,
+                  recent13wWeeklyPriceMae:
+                    activeResultDto.qualityMetrics.recent13wWeeklyPriceMae === null
+                      ? null
+                      : Number(activeResultDto.qualityMetrics.recent13wWeeklyPriceMae),
+                  recent13wWeeklyPriceMape:
+                    activeResultDto.qualityMetrics.recent13wWeeklyPriceMape === null
+                      ? null
+                      : Number(activeResultDto.qualityMetrics.recent13wWeeklyPriceMape),
+                }
+          }
+        />
+
         <SectionCard
           title="현재 active quarter"
           badge={quarterLabel(activeQuarter.targetYear, activeQuarter.targetQuarter)}
@@ -257,26 +283,6 @@ export default async function AdminPage() {
           ) : null}
         </SectionCard>
 
-        <AdminForecastDiagnostics
-          latest={forecastDiagnosticsEntries[0] ?? null}
-          history={forecastDiagnosticsEntries}
-          reliability={
-            activeResultDto === null
-              ? null
-              : {
-                  grade: activeResultDto.reliabilityGrade,
-                  sampleCount: activeResultDto.reliabilitySampleCount,
-                  recent13wWeeklyPriceMae:
-                    activeResultDto.qualityMetrics.recent13wWeeklyPriceMae === null
-                      ? null
-                      : Number(activeResultDto.qualityMetrics.recent13wWeeklyPriceMae),
-                  recent13wWeeklyPriceMape:
-                    activeResultDto.qualityMetrics.recent13wWeeklyPriceMape === null
-                      ? null
-                      : Number(activeResultDto.qualityMetrics.recent13wWeeklyPriceMape),
-                }
-          }
-        />
 
         <SectionCard
           title="Quarter 목록과 draft"

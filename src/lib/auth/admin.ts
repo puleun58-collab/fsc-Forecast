@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { createHmac, randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 
-import { AdminEnvConfigurationError, isAdminAuthConfigured, readAdminAuthEnv } from '@/lib/auth/admin-env';
+import { AdminEnvConfigurationError, readAdminAuthEnv } from '@/lib/auth/admin-env';
 
 const scrypt = promisify(scryptCallback);
 const ADMIN_SESSION_COOKIE_NAME = 'fsc_admin_session';
@@ -75,9 +75,6 @@ function parseAdminPasswordHash(passwordHash: string): { salt: Buffer; hash: Buf
   };
 }
 
-export function isAdminAuthReady(): boolean {
-  return isAdminAuthConfigured();
-}
 
 export async function verifyAdminPassword(password: string): Promise<boolean> {
   const normalizedPassword = password.normalize('NFKC');
