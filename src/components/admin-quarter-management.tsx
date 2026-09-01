@@ -43,12 +43,21 @@ function QuarterRow({ quarter, activatable }: { quarter: AdminQuarterSummary; ac
   );
 }
 
+function quarterOrdinal(quarter: AdminQuarterSummary): number {
+  return quarter.targetYear * 4 + quarter.targetQuarter;
+}
+
 export function AdminQuarterManagement({ quarters }: AdminQuarterManagementProps) {
   const activeQuarter = quarters.find((quarter) => quarter.isActive) ?? null;
-  const nextDraft = quarters.find((quarter) => quarter.status === 'draft') ?? null;
-  const pastQuarters = quarters.filter(
-    (quarter) => quarter.id !== activeQuarter?.id && quarter.id !== nextDraft?.id,
-  );
+  const activeOrdinal = activeQuarter === null ? Number.NEGATIVE_INFINITY : quarterOrdinal(activeQuarter);
+  const futureDrafts = quarters
+    .filter((quarter) => quarter.status === 'draft' && quarterOrdinal(quarter) > activeOrdinal)
+    .sort((left, right) => quarterOrdinal(left) - quarterOrdinal(right));
+  const [nextDraft = null, ...laterDrafts] = futureDrafts;
+  const futureIds = new Set(futureDrafts.map((quarter) => quarter.id));
+  const pastQuarters = quarters
+    .filter((quarter) => quarter.id !== activeQuarter?.id && !futureIds.has(quarter.id))
+    .sort((left, right) => quarterOrdinal(right) - quarterOrdinal(left));
 
   return (
     <SectionCard
@@ -75,6 +84,25 @@ export function AdminQuarterManagement({ quarters }: AdminQuarterManagementProps
           )}
         </ul>
 
+        {laterDrafts.length > 0 ? (
+          <details className="admin-panel admin-disclosure">
+            <summary className="admin-disclosure__summary">
+              <strong>이후 준비 분기</strong>
+              <span className="admin-disclosure__toggle" aria-hidden="true">
+                <span className="admin-disclosure__toggle-closed">상세 보기 ▾</span>
+                <span className="admin-disclosure__toggle-open">상세 접기 ▴</span>
+              </span>
+            </summary>
+            <div className="admin-disclosure__body">
+              <ul className="quarter-management-list">
+                {laterDrafts.map((quarter) => (
+                  <QuarterRow key={quarter.id} quarter={quarter} activatable={false} />
+                ))}
+              </ul>
+            </div>
+          </details>
+        ) : null}
+
         {pastQuarters.length > 0 ? (
           <details className="admin-panel admin-disclosure">
             <summary className="admin-disclosure__summary">
@@ -87,7 +115,7 @@ export function AdminQuarterManagement({ quarters }: AdminQuarterManagementProps
             <div className="admin-disclosure__body">
               <ul className="quarter-management-list">
                 {pastQuarters.map((quarter) => (
-                  <QuarterRow key={quarter.id} quarter={quarter} activatable={quarter.status === 'draft'} />
+                  <QuarterRow key={quarter.id} quarter={quarter} activatable={false} />
                 ))}
               </ul>
             </div>

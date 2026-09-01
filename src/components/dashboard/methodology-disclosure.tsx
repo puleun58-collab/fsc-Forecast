@@ -1,4 +1,3 @@
-import { RELIABILITY_POLICY_ITEMS } from './dashboard-format';
 import { formatDisplayDateTime } from './dashboard-format';
 
 import type { FscDashboardResultSection } from '@/lib/dashboard/fsc-types';
@@ -9,10 +8,11 @@ type MethodologyDisclosureProps = {
 };
 
 const POLICY_ITEMS = [
-  'actual 값이 존재하는 완료 주차는 예측값보다 우선합니다.',
-  'forecast 구간은 주간 예측값, 월간 예측값, 보수적 대체값 순서로 표시 출처를 구분합니다.',
-  ...RELIABILITY_POLICY_ITEMS,
-  '내부 식별자와 revision ID는 의사결정 화면에 노출하지 않습니다.',
+  '완료된 주차는 Actual 값을 우선 적용합니다.',
+  '미완료 주차는 Forecast 값을 적용해 분기 예상 평균을 산출합니다.',
+  'Forecast는 최근 주간 경유가 추세와 선택된 보조 지표를 반영합니다.',
+  '신뢰도는 최근 13주 MAPE를 기준으로 최근 오차 추세, 장기 안정성, 데이터 최신성을 함께 반영합니다.',
+  '데이터가 갱신되면 이후 Forecast와 FSC 결과를 다시 산출합니다.',
 ] as const;
 
 export function MethodologyDisclosure({ fsc }: MethodologyDisclosureProps) {
@@ -22,7 +22,7 @@ export function MethodologyDisclosure({ fsc }: MethodologyDisclosureProps) {
         <summary>
           <span>
             <strong id="methodology-title">산출 기준 및 데이터 정책</strong>
-            <small>actual 값이 있는 완료 주차는 forecast로 덮어쓰지 않습니다.</small>
+            <small>Actual 값이 있는 완료 주차는 Forecast로 덮어쓰지 않습니다.</small>
           </span>
         </summary>
         <div className="methodology__body">

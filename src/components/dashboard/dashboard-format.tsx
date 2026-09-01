@@ -24,13 +24,6 @@ export type WeekOverWeekChange = {
   percent: number;
 };
 
-export const RELIABILITY_POLICY_ITEMS = [
-  '공식 신뢰도 등급은 유효한 주간 백테스트 13개가 확보된 후 산정합니다.',
-  '현재 분기의 Actual·Forecast 주차 수는 신뢰도 표본 수에 포함하지 않습니다.',
-  '등급은 최근 13주 MAPE로 기본 산정한 뒤 최근 4주 오차 추세, 최근 26주 안정성, 데이터 최신성으로 보정합니다.',
-  'MAE와 Bias는 품질 참고 지표로 사용하며 공식 등급에는 반영하지 않습니다.',
-] as const;
-
 const RELIABILITY_ADJUSTMENT_REASON_TEXT: Record<string, string> = {
   recent_4w_error_worsening: '최근 단기 오차 변동성이 커져 신뢰도 평가에 반영되었습니다.',
   long_window_instability: '장기 예측 성능의 안정성을 보수적으로 반영했습니다.',
