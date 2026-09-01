@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 
 import { AdminActionButton } from '@/components/admin-action-button';
+import { AdminForecastDiagnostics, type ForecastRunHistoryEntry } from '@/components/admin-forecast-diagnostics';
 import { AdminLogoutButton } from '@/components/admin-logout-button';
 import { SectionCard } from '@/components/section-card';
 import { getAdminSession } from '@/lib/auth/admin';
@@ -9,6 +10,7 @@ import { db } from '@/lib/db';
 import { findLatestBaseFscResultByQuarter } from '@/lib/fsc/load-latest-fsc-result';
 import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
 import { readFscReliabilityTrail } from '@/lib/fsc/reliability-trail';
+import { readForecastModelDiagnostics } from '@/lib/forecast/forecast-diagnostics';
 import { mapReliabilityStatus } from '@/components/dashboard/dashboard-format';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
 
@@ -45,7 +47,7 @@ export default async function AdminPage() {
 
 
   const activeQuarter = await ensureActiveQuarter();
-  const [quarters, activeResult, activeResultHistory] = await Promise.all([
+  const [quarters, activeResult, activeResultHistory, forecastRuns] = await Promise.all([
     db.quarterSetting.findMany({
       orderBy: [{ targetYear: 'desc' }, { targetQuarter: 'desc' }],
     }),
@@ -77,6 +79,11 @@ export default async function AdminPage() {
       },
       take: 2,
     }),
+    db.forecastRun.findMany({
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 10,
+      select: { id: true, completedAt: true, createdAt: true, metadata: true },
+    }),
   ]);
 
   const activeResultDto = activeResult ? serializeFscResultDto(activeResult) : null;
@@ -102,6 +109,19 @@ export default async function AdminPage() {
   const nextDraft = quarters.find(
     (quarter) => quarter.status === 'draft' && (quarter.targetYear > activeQuarter.targetYear || (quarter.targetYear === activeQuarter.targetYear && quarter.targetQuarter > activeQuarter.targetQuarter)),
   );
+  const forecastDiagnosticsEntries: ForecastRunHistoryEntry[] = forecastRuns.flatMap((run) => {
+    const diagnostics = readForecastModelDiagnostics(run.metadata);
+
+    return diagnostics === null
+      ? []
+      : [
+          {
+            runId: run.id,
+            completedAt: (run.completedAt ?? run.createdAt).toISOString(),
+            diagnostics,
+          },
+        ];
+  });
 
 
   return (
@@ -236,6 +256,11 @@ export default async function AdminPage() {
             </ul>
           ) : null}
         </SectionCard>
+
+        <AdminForecastDiagnostics
+          latest={forecastDiagnosticsEntries[0] ?? null}
+          history={forecastDiagnosticsEntries}
+        />
 
         <SectionCard
           title="Quarter 목록과 draft"

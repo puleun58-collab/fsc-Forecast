@@ -1071,6 +1071,42 @@ main {
   gap: var(--space-3);
 }
 
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 8px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.admin-table thead th {
+  border-bottom: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.admin-table tbody tr {
+  border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.admin-table tbody th {
+  font-weight: 800;
+}
+
+.admin-table td {
+  font-variant-numeric: tabular-nums;
+}
+
 .skeleton-stack,
 .skeleton-grid {
   display: grid;
