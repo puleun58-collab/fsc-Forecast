@@ -1107,6 +1107,120 @@ main {
   font-variant-numeric: tabular-nums;
 }
 
+.admin-decision {
+  gap: 14px;
+}
+
+/* 상태 chip은 진단 정보이므로 좁은 폭에서도 입력창처럼 늘어나지 않는다. */
+.admin-panel .status-tag {
+  flex: 0 0 auto;
+  width: fit-content;
+}
+
+.admin-decision__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-decision__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  max-width: 820px;
+  color: var(--text-primary);
+  line-height: 1.55;
+}
+
+.admin-decision__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-decision__metric {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-decision__metric > span {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.admin-decision__metric > strong {
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-thresholds {
+  position: relative;
+  width: fit-content;
+}
+
+.admin-thresholds__panel {
+  position: absolute;
+  right: 0;
+  z-index: 3;
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 14px;
+  width: max-content;
+  max-width: min(360px, 80vw);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-control);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.admin-thresholds__panel p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.admin-thresholds__list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.admin-thresholds__list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.82rem;
+}
+
+.admin-thresholds__list dt {
+  color: var(--text-secondary);
+}
+
+.admin-thresholds__list dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .admin-decision__metrics {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  .admin-thresholds__panel {
+    right: auto;
+    left: 0;
+  }
+}
+
 .skeleton-stack,
 .skeleton-grid {
   display: grid;

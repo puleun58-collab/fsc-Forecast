@@ -99,6 +99,22 @@ test('admin diagnostics render the current model, parameters, and candidate comp
   assert.doesNotMatch(markup, /undefined|null|NaN/);
 });
 
+test('the decision panel keeps the badge, sentence, and metrics in one compact block', () => {
+  const entry = createEntry();
+  const markup = renderToStaticMarkup(
+    createElement(AdminForecastDiagnostics, { latest: entry, history: [entry] }),
+  );
+
+  assert.match(markup, /admin-decision__summary[^>]*><span class="status-tag status-tag--ok">승격<\/span>/);
+  assert.equal(markup.match(/admin-decision__metric"/g)?.length, 3);
+  assert.match(markup, /admin-decision__metric"[^>]*><span>MAE 개선<\/span>/);
+  assert.match(markup, /<span>평가 후보<\/span><strong>225개<\/strong>/);
+  assert.doesNotMatch(markup, /평가한 후보 조합 수/);
+  // 승격 기준은 카드 폭을 차지하는 admin-panel 박스가 아니라 헤더의 토글이어야 한다.
+  assert.doesNotMatch(markup, /<details class="admin-panel"/);
+  assert.match(markup, /<details class="admin-thresholds">/);
+});
+
 test('admin diagnostics label unused indicators and missing metrics without fake numbers', () => {
   const entry = createEntry({
     params: MODEL_A_PARAMS,

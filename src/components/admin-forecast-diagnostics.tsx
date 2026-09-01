@@ -162,27 +162,58 @@ export function AdminForecastDiagnostics({ latest, history }: AdminForecastDiagn
           <span>장기 구간 MAE: {formatMetric(diagnostics.long?.maeKrwPerL ?? null, 2, '원/L')}</span>
         </div>
 
-        <div className="admin-panel">
-          <strong>판단 사유</strong>
-          <span
-            className={`status-tag ${diagnostics.promoted ? 'status-tag--ok' : ''}`.trim()}
-          >
-            {diagnostics.promoted ? '승격' : '유지'}
-          </span>
-          <span>{diagnostics.promotionReasonText}</span>
-          <span>
-            MAE 개선:{' '}
-            {diagnostics.maeImprovementRatio === null
-              ? '비교 데이터 없음'
-              : `${(diagnostics.maeImprovementRatio * 100).toFixed(1)}%`}
-          </span>
-          <span>
-            MAPE 개선:{' '}
-            {diagnostics.mapeImprovementPctPoint === null
-              ? '비교 데이터 없음'
-              : `${diagnostics.mapeImprovementPctPoint.toFixed(2)}%p`}
-          </span>
-          <span>평가한 후보 조합 수: {diagnostics.evaluatedCandidateCount}개</span>
+        <div className="admin-panel admin-decision">
+          <div className="admin-decision__header">
+            <strong>판단 사유</strong>
+            <details className="admin-thresholds">
+              <summary className="status-tag status-tag--interactive">승격 기준 보기</summary>
+              <div className="admin-thresholds__panel">
+                <p>
+                  모델 승격은 최근 예측 성능 개선뿐 아니라 장기 안정성, 최대 오차, 예측 변동성, 승격
+                  쿨다운을 함께 고려합니다.
+                </p>
+                <dl className="admin-thresholds__list">
+                  {FORECAST_PROMOTION_THRESHOLDS.map((threshold) => (
+                    <div key={threshold.label}>
+                      <dt>{threshold.label}</dt>
+                      <dd>{threshold.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            </details>
+          </div>
+          <p className="admin-decision__summary">
+            <span className={`status-tag ${diagnostics.promoted ? 'status-tag--ok' : ''}`.trim()}>
+              {diagnostics.promoted ? '승격' : '유지'}
+            </span>
+            <span>{diagnostics.promotionReasonText}</span>
+          </p>
+          <div className="admin-decision__metrics">
+            <div className="admin-decision__metric">
+              <span>MAE 개선</span>
+              <strong>
+                {diagnostics.maeImprovementRatio === null
+                  ? '비교 데이터 없음'
+                  : `${(diagnostics.maeImprovementRatio * 100).toFixed(1)}%`}
+              </strong>
+            </div>
+            <div className="admin-decision__metric">
+              <span>MAPE 개선</span>
+              <strong>
+                {diagnostics.mapeImprovementPctPoint === null
+                  ? '비교 데이터 없음'
+                  : `${diagnostics.mapeImprovementPctPoint.toFixed(2)}%p`}
+              </strong>
+            </div>
+            <div
+              className="admin-decision__metric"
+              title="이번 모델 선택 과정에서 평가한 파라미터 조합 수입니다."
+            >
+              <span>평가 후보</span>
+              <strong>{diagnostics.evaluatedCandidateCount}개</strong>
+            </div>
+          </div>
         </div>
 
         {diagnostics.candidates.length === 0 ? (
@@ -242,19 +273,6 @@ export function AdminForecastDiagnostics({ latest, history }: AdminForecastDiagn
             </ul>
           </div>
         )}
-
-        <details className="admin-panel">
-          <summary className="status-tag status-tag--interactive">승격 기준 보기</summary>
-          <span>
-            모델 승격은 최근 예측 성능 개선뿐 아니라 장기 안정성, 최대 오차, 예측 변동성, 승격 쿨다운을
-            함께 고려합니다.
-          </span>
-          {FORECAST_PROMOTION_THRESHOLDS.map((threshold) => (
-            <span key={threshold.label}>
-              {threshold.label}: {threshold.value}
-            </span>
-          ))}
-        </details>
 
         <div className="admin-panel">
           <strong>최근 모델 변경 이력</strong>
