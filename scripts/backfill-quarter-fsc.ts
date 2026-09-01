@@ -2,6 +2,7 @@ import "./load-env";
 
 import { db } from "../src/lib/db";
 import { runFscResultRecompute } from "../src/lib/fsc/run-fsc-result-recompute";
+import { calculateEstimatedFscRate } from "../src/lib/fsc/estimated-fsc-rate";
 import { ensureHistoricalQuarterSetting } from "../src/lib/quarter/ensure-historical-quarter";
 
 function parseQuarterArgument(value: string | undefined, name: string): number {
@@ -33,7 +34,10 @@ async function main(): Promise<void> {
         basePriceKrwPerL: result.basePriceKrwPerL.toFixed(3),
         diffRatio: result.diffRatio.toFixed(6),
         fscLowRate: result.fscLowRate.toFixed(4),
-        estimatedFscRate: result.diffRatio.mul(result.fscLowRate).toFixed(6),
+        estimatedFscRate: calculateEstimatedFscRate({
+          diffRatio: result.diffRatio.toFixed(6),
+          oilWeightRate: result.fscLowRate.toFixed(4),
+        }),
         weeks: result.weeks.map((week) => ({
           sequenceNo: week.sequenceNo,
           weekStartDate: week.weekStartDate.toISOString().slice(0, 10),

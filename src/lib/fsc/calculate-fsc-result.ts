@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 
+import { calculateEstimatedFscRate } from './estimated-fsc-rate';
 import {
   FSC_EXCEL_REGRESSION_FIXTURE,
   type CalculateFscResultInput,
@@ -69,11 +70,14 @@ export function calculateFscResult(input: CalculateFscResultInput): CalculateFsc
 
 export function verifyFscExcelRegressionFixture(): boolean {
   const result = calculateFscResult(FSC_EXCEL_REGRESSION_FIXTURE.input);
-  const estimatedFscRate = roundRatio(result.diffRatio.mul(result.fscLowRate));
+  const estimatedFscRate = calculateEstimatedFscRate({
+    diffRatio: result.diffRatio.toFixed(6),
+    oilWeightRate: result.fscLowRate.toFixed(4),
+  });
 
   return (
     result.priceDiffKrwPerL.toFixed(3) === FSC_EXCEL_REGRESSION_FIXTURE.expected.priceDiffKrwPerL &&
     result.diffRatio.toFixed(6) === FSC_EXCEL_REGRESSION_FIXTURE.expected.diffRatio &&
-    estimatedFscRate.toFixed(6) === FSC_EXCEL_REGRESSION_FIXTURE.expected.estimatedFscRate
+    estimatedFscRate === FSC_EXCEL_REGRESSION_FIXTURE.expected.estimatedFscRate
   );
 }

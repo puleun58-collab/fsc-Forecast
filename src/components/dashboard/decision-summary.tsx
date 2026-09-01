@@ -20,6 +20,7 @@ import type {
   FscDashboardWeekItem,
 } from '@/lib/dashboard/fsc-types';
 import { formatPercentText } from '@/lib/dashboard/display-format';
+import { calculateEstimatedFscRate } from '@/lib/fsc/estimated-fsc-rate';
 
 type DecisionSummaryProps = {
   fsc: FscDashboardResultSection;
@@ -261,8 +262,9 @@ export function EstimatedFscRateCard({
   historical = false,
 }: EstimatedFscRateCardProps) {
   const oilWeightLabel = formatRateLabel(fsc.fscLowRate);
-  const estimatedFscRate = Number(fsc.diffRatio) * Number(fsc.fscLowRate);
-  const estimatedFscRateLabel = formatSignedRatioText(estimatedFscRate);
+  const estimatedFscRateLabel = formatSignedRatioText(
+    calculateEstimatedFscRate({ diffRatio: fsc.diffRatio, oilWeightRate: fsc.fscLowRate }),
+  );
   const nextQuarter = quarter ? (quarter.targetQuarter === 4 ? 1 : quarter.targetQuarter + 1) : null;
 
   return (

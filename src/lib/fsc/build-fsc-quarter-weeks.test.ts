@@ -6,6 +6,7 @@ import { Prisma } from '@prisma/client';
 import { buildFscQuarterWeeks, type BuildFscQuarterWeeksInput } from './build-fsc-quarter-weeks';
 import type { FscSourceDailyPriceRow, FscSourceOfficialWeeklyPriceRow } from './types';
 import { calculateFscResult } from './calculate-fsc-result';
+import { calculateEstimatedFscRate } from './estimated-fsc-rate';
 
 function createMonthlyForecastRun() {
   return {
@@ -484,7 +485,13 @@ test('quarter average and FSC calculation include only valid actual and weekly f
   assert.equal(result.forecastWeekCount, 1);
   assert.equal(result.quarterAverageKrwPerL.toFixed(3), '1850.000');
   assert.equal(calculation.quarterAverageKrwPerL.toFixed(3), '1850.000');
-  assert.equal(calculation.diffRatio.mul(calculation.fscLowRate).toFixed(6), '0.070000');
+  assert.equal(
+    calculateEstimatedFscRate({
+      diffRatio: calculation.diffRatio.toFixed(6),
+      oilWeightRate: calculation.fscLowRate.toFixed(4),
+    }),
+    '0.070000',
+  );
 });
 
 test('weekly forecast weeks carry the backtest-derived expected range', () => {
