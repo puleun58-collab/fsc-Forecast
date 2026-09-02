@@ -239,13 +239,38 @@ test('model selection history is compact, grouped by repeated outcome, and cappe
   assert.match(preview, /2026\.09\.02<\/span><strong class="model-history-row__result">Model C 유지 · 3회<\/strong>/);
   assert.match(preview, /2026\.09\.01<\/span><strong class="model-history-row__result">Model C 유지<\/strong>/);
   assert.match(preview, /2026\.08\.31<\/span><strong class="model-history-row__result">Model A → Model C 승격<\/strong>/);
-  assert.equal(rest.match(/class="model-history-row"/g)?.length, 1);
-  assert.match(rest, /2026\.08\.30/);
+  assert.equal(rest.match(/class="model-history-row"/g)?.length, 6);
+  assert.match(rest, /<strong>전체 이력 6건<\/strong>/);
+  assert.match(rest, /2026\.09\.02 11:00 KST/);
+  assert.match(rest, /2026\.08\.30 11:00 KST/);
+  assert.doesNotMatch(rest, /· 3회/);
   assert.match(rest, /전체 이력 보기 ▾/);
   assert.doesNotMatch(markup.slice(disclosureStart, disclosureStart + 70), /\sopen(?:=|>|\s)/);
 });
 
-test('three or fewer model history rows render without the extra disclosure', () => {
+test('grouped rows still expose every original run behind the disclosure', () => {
+  const kept = createEntry({ promoted: false, promotionReason: 'kept_current_model_is_best' });
+  const history = [
+    { ...kept, runId: 'run-a', completedAt: '2026-09-02T02:00:00.000Z' },
+    { ...kept, runId: 'run-b', completedAt: '2026-09-02T05:00:00.000Z' },
+    { ...kept, runId: 'run-c', completedAt: '2026-09-02T08:00:00.000Z' },
+    { ...kept, runId: 'run-d', completedAt: '2026-09-02T09:00:00.000Z' },
+  ];
+  const markup = renderToStaticMarkup(
+    createElement(AdminForecastDiagnostics, { latest: kept, history, reliability: RELIABILITY }),
+  );
+  const disclosureStart = markup.indexOf('<details class="admin-disclosure admin-disclosure--inline">');
+  const preview = markup.slice(markup.indexOf('최근 모델 선택 이력'), disclosureStart);
+  const rest = markup.slice(disclosureStart);
+
+  assert.equal(preview.match(/class="model-history-row"/g)?.length, 1);
+  assert.match(preview, /Model C 유지 · 4회/);
+  assert.match(rest, /<strong>전체 이력 4건<\/strong>/);
+  assert.equal(rest.match(/class="model-history-row"/g)?.length, 4);
+  assert.match(rest, /2026\.09\.02 18:00 KST/);
+});
+
+test('three or fewer runs render without the extra disclosure', () => {
   const entry = createEntry();
   const markup = renderToStaticMarkup(
     createElement(AdminForecastDiagnostics, { latest: entry, history: [entry], reliability: RELIABILITY }),

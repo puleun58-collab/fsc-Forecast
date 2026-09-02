@@ -7,6 +7,7 @@ import {
   type ForecastModelParamsView,
   type ForecastWindowMetricsView,
 } from '@/lib/forecast/forecast-diagnostics';
+import { formatDashboardDateTime } from '@/lib/dashboard/dashboard-time';
 
 export interface ForecastRunHistoryEntry {
   runId: string;
@@ -144,16 +145,24 @@ function groupModelHistory(history: readonly ForecastRunHistoryEntry[]): ModelHi
   return groups;
 }
 
-function ModelHistoryRow({ group }: { group: ModelHistoryGroup }) {
+function ModelHistoryRow({
+  dateLabel,
+  resultText,
+  reasonText,
+  promoted,
+}: {
+  dateLabel: string;
+  resultText: string;
+  reasonText: string;
+  promoted: boolean;
+}) {
   return (
     <li className="model-history-row">
-      <span className="model-history-row__date">{group.dateLabel}</span>
-      <strong className="model-history-row__result">
-        {group.count > 1 ? `${group.resultText} · ${group.count}회` : group.resultText}
-      </strong>
-      <span className="model-history-row__reason">{group.reasonText}</span>
-      <span className={`status-tag ${group.promoted ? 'status-tag--ok' : ''}`.trim()}>
-        {group.promoted ? '승격' : '유지'}
+      <span className="model-history-row__date">{dateLabel}</span>
+      <strong className="model-history-row__result">{resultText}</strong>
+      <span className="model-history-row__reason">{reasonText}</span>
+      <span className={`status-tag ${promoted ? 'status-tag--ok' : ''}`.trim()}>
+        {promoted ? '승격' : '유지'}
       </span>
     </li>
   );
@@ -416,13 +425,21 @@ export function AdminForecastDiagnostics({
             <>
               <ul className="model-history-list">
                 {modelHistoryGroups.slice(0, MODEL_HISTORY_PREVIEW_COUNT).map((group) => (
-                  <ModelHistoryRow key={group.key} group={group} />
+                  <ModelHistoryRow
+                    key={group.key}
+                    dateLabel={group.dateLabel}
+                    resultText={group.count > 1 ? `${group.resultText} · ${group.count}회` : group.resultText}
+                    reasonText={group.reasonText}
+                    promoted={group.promoted}
+                  />
                 ))}
               </ul>
-              {modelHistoryGroups.length > MODEL_HISTORY_PREVIEW_COUNT ? (
+              {/* 묶인 실행이나 미리보기에서 빠진 그룹이 있으면 실행 단위 원본을 펼쳐 볼 수 있어야 한다. */}
+              {history.length > MODEL_HISTORY_PREVIEW_COUNT ||
+              modelHistoryGroups.length > MODEL_HISTORY_PREVIEW_COUNT ? (
                 <details className="admin-disclosure admin-disclosure--inline">
                   <summary className="admin-disclosure__summary">
-                    <strong>전체 이력</strong>
+                    <strong>전체 이력 {history.length}건</strong>
                     <span className="admin-disclosure__toggle" aria-hidden="true">
                       <span className="admin-disclosure__toggle-closed">전체 이력 보기 ▾</span>
                       <span className="admin-disclosure__toggle-open">전체 이력 접기 ▴</span>
@@ -430,8 +447,14 @@ export function AdminForecastDiagnostics({
                   </summary>
                   <div className="admin-disclosure__body">
                     <ul className="model-history-list">
-                      {modelHistoryGroups.slice(MODEL_HISTORY_PREVIEW_COUNT).map((group) => (
-                        <ModelHistoryRow key={group.key} group={group} />
+                      {history.map((entry) => (
+                        <ModelHistoryRow
+                          key={entry.runId}
+                          dateLabel={formatDashboardDateTime(entry.completedAt)}
+                          resultText={describeRunResult(entry.diagnostics)}
+                          reasonText={entry.diagnostics.promotionReasonText}
+                          promoted={entry.diagnostics.promoted}
+                        />
                       ))}
                     </ul>
                   </div>
