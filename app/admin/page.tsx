@@ -7,6 +7,7 @@ import { AdminLogoutButton } from '@/components/admin-logout-button';
 import { AdminParameterSensitivity } from '@/components/admin-parameter-sensitivity';
 import { AdminOperationHistory } from '@/components/admin-operation-history';
 import { AdminQuarterCard } from '@/components/admin-quarter-card';
+import { AdminShadowValidation } from '@/components/admin-shadow-validation';
 import { AdminQuarterManagement } from '@/components/admin-quarter-management';
 import { AdminWeekComposition } from '@/components/admin-week-composition';
 import { getAdminSession } from '@/lib/auth/admin';
@@ -20,6 +21,7 @@ import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
 import { readBacktestOneStepPoints } from '@/lib/forecast/backtest-detail';
 import { readForecastErrorAnalysis } from '@/lib/forecast/forecast-error-analysis';
 import { readParameterSensitivity } from '@/lib/forecast/parameter-sensitivity';
+import { readShadowValidation } from '@/lib/forecast/shadow-validation';
 import { readForecastModelDiagnostics } from '@/lib/forecast/forecast-diagnostics';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
 
@@ -152,6 +154,8 @@ export default async function AdminPage() {
         <AdminParameterSensitivity
           sensitivity={readParameterSensitivity(forecastRuns[0]?.metadata)}
         />
+
+        <AdminShadowValidation session={readShadowValidation(forecastRuns[0]?.metadata)} />
 
         <AdminQuarterCard
           quarterLabel={quarterLabel(activeQuarter.targetYear, activeQuarter.targetQuarter)}

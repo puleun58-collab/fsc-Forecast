@@ -1914,6 +1914,47 @@ summary.operation-history-row::-webkit-details-marker {
   }
 }
 
+.shadow-validation__status {
+  gap: 10px;
+  background: var(--bg-card);
+}
+
+@media (max-width: 700px) {
+  .shadow-validation__table thead,
+  .shadow-validation__observations thead {
+    display: none;
+  }
+
+  .shadow-validation__table tbody tr,
+  .shadow-validation__observations tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+    gap: 4px 12px;
+    padding: 10px 0;
+  }
+
+  .shadow-validation__table tbody th,
+  .shadow-validation__table tbody td,
+  .shadow-validation__observations tbody th,
+  .shadow-validation__observations tbody td {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    padding: 0;
+    white-space: normal;
+  }
+
+  .shadow-validation__table tbody th::before,
+  .shadow-validation__table tbody td::before,
+  .shadow-validation__observations tbody th::before,
+  .shadow-validation__observations tbody td::before {
+    content: attr(data-label);
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+    font-weight: 700;
+  }
+}
+
 @media (max-width: 380px) {
   .quality-trend-metrics {
     grid-template-columns: minmax(0, 1fr);

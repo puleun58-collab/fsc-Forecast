@@ -78,10 +78,12 @@ function roundMetric(value: number | null): number | null {
   return value === null ? null : Math.round(value * 1000) / 1000;
 }
 
-function resolveDirection(from: number, to: number): ForecastDirection {
-  if (to > from) return "up";
-  if (to < from) return "down";
-  return "flat";
+export function resolveForecastDirection(anchor: number, value: number): ForecastDirection {
+  if (value > anchor) {
+    return "up";
+  }
+
+  return value < anchor ? "down" : "flat";
 }
 
 export function calculateQuantile(sortedValues: readonly number[], level: number): number | null {
@@ -261,8 +263,8 @@ export function runWalkForwardBacktest(
         absoluteErrorKrwPerL,
         absolutePercentageErrorPct:
           actual.pointKrwPerL === 0 ? null : (absoluteErrorKrwPerL / actual.pointKrwPerL) * 100,
-        actualDirection: resolveDirection(forecast.anchorPriceKrwPerL, actual.pointKrwPerL),
-        forecastDirection: resolveDirection(forecast.anchorPriceKrwPerL, point.pointKrwPerL),
+        actualDirection: resolveForecastDirection(forecast.anchorPriceKrwPerL, actual.pointKrwPerL),
+        forecastDirection: resolveForecastDirection(forecast.anchorPriceKrwPerL, point.pointKrwPerL),
         trendDeltaKrwPerL: forecast.trendDeltaKrwPerL ?? 0,
         dubaiContributionRatio: forecast.dubai?.contributionRatio ?? null,
         usdKrwContributionRatio: forecast.usdKrw?.contributionRatio ?? null,

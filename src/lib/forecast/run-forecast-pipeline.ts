@@ -23,6 +23,11 @@ import {
   buildParameterSensitivity,
   serializeSensitivityParamsKey,
 } from "./parameter-sensitivity";
+import {
+  readShadowValidation,
+  recordShadowCycle,
+  resolveShadowSession,
+} from "./shadow-validation";
 import { runWalkForwardBacktest } from "./run-walk-forward-backtest";
 import { buildForecastQualityGate } from "./build-forecast-quality-gate";
 import {
@@ -520,6 +525,53 @@ async function executeForecastPipeline(
         horizonCount: FORECAST_WEEKLY_HORIZON_COUNT,
       }),
   });
+  const shadowSession = resolveShadowSession({
+    previousSession: readShadowValidation(previousRun?.metadata ?? null),
+    modelVersion: FORECAST_MODEL_VERSION,
+    baselineParams: selection.selectedParams,
+    tuningCandidates: parameterSensitivity.tuningCandidates,
+    now: startedAt,
+  });
+  // Shadow는 운영 예측과 완전히 같은 입력으로 1주 ahead 예측만 추가로 만든다.
+  const shadowForecast =
+    shadowSession === null || shadowSession.status !== "validating"
+      ? null
+      : buildWeeklyForecast({
+          weeklySeries,
+          indicatorSeries: indicatorWeeklySeries,
+          params: shadowSession.candidateParams,
+          horizonCount: 1,
+        });
+  const shadowValidation =
+    shadowSession === null
+      ? null
+      : shadowSession.status !== "validating"
+        ? shadowSession
+        : recordShadowCycle({
+            session: shadowSession,
+            confirmedWeeks: weeklySeries.map((point) => ({
+              targetDate: point.targetDate,
+              actualKrwPerL: point.pointKrwPerL,
+            })),
+            now: startedAt,
+            prediction:
+              weeklyForecast.status !== "ready" ||
+              weeklyForecast.anchorWeekEndDate === null ||
+              weeklyForecast.anchorPriceKrwPerL === null ||
+              weeklyForecast.points[0] === undefined ||
+              shadowForecast === null ||
+              shadowForecast.status !== "ready" ||
+              shadowForecast.points[0] === undefined
+                ? null
+                : {
+                    originWeekEndDate: weeklyForecast.anchorWeekEndDate,
+                    targetDate: weeklyForecast.points[0].targetDate,
+                    anchorKrwPerL: weeklyForecast.anchorPriceKrwPerL,
+                    baselineForecastKrwPerL: weeklyForecast.points[0].pointKrwPerL,
+                    shadowForecastKrwPerL: shadowForecast.points[0].pointKrwPerL,
+                    issuedAt: startedAt,
+                  },
+          });
   const approvalState = gate.approvalState;
   const degradedReason = gate.degradedReason;
   const weeklyForecastPoints =
@@ -589,6 +641,7 @@ async function executeForecastPipeline(
             candidateBacktestsByModelId: selection.bestBacktestByModelId,
           }),
           parameterSensitivity,
+          shadowValidation,
         },
         weeklyForecast: {
           status: weeklyForecast.status,
