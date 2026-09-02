@@ -3,7 +3,6 @@ import {
   DUBAI_LAG_WEEK_CANDIDATES,
   DUBAI_WEIGHT_CANDIDATES,
   EXTERNAL_ADJUSTMENT_CAP_CANDIDATES,
-  PROMOTION_COOLDOWN_DAYS,
   PROMOTION_LONG_WINDOW_TOLERANCE_RATIO,
   PROMOTION_MAX_ERROR_TOLERANCE_RATIO,
   PROMOTION_MIN_MAE_IMPROVEMENT_RATIO,
@@ -20,10 +19,8 @@ import {
   runWalkForwardBacktest,
   type RunWalkForwardBacktestResult,
 } from "./run-walk-forward-backtest";
-import { evaluatePromotionQuality } from "./promotion-quality";
+import { evaluatePromotionCooldown, evaluatePromotionQuality } from "./promotion-quality";
 import type { ForecastSeriesPoint } from "./types";
-
-const DAY_MS = 86_400_000;
 
 export interface ForecastModelCandidateSummary {
   modelId: ForecastModelId;
@@ -34,6 +31,11 @@ export interface ForecastModelCandidateSummary {
   longMaeKrwPerL: number | null;
   longMapePct: number | null;
   maxAbsoluteErrorKrwPerL: number | null;
+  recentOneStepSampleCount: number;
+  recentOneStepMaeKrwPerL: number | null;
+  recentOneStepMapePct: number | null;
+  recentOneStepMaxAbsoluteErrorKrwPerL: number | null;
+  longOneStepMaeKrwPerL: number | null;
   forecastChurnKrwPerL: number | null;
 }
 
@@ -123,6 +125,11 @@ function summarizeCandidate(result: RunWalkForwardBacktestResult): ForecastModel
     longMaeKrwPerL: result.long.maeKrwPerL,
     longMapePct: result.long.mapePct,
     maxAbsoluteErrorKrwPerL: result.recent.maxAbsoluteErrorKrwPerL,
+    recentOneStepSampleCount: result.recentOneStep.sampleCount,
+    recentOneStepMaeKrwPerL: result.recentOneStep.maeKrwPerL,
+    recentOneStepMapePct: result.recentOneStep.mapePct,
+    recentOneStepMaxAbsoluteErrorKrwPerL: result.recentOneStep.maxAbsoluteErrorKrwPerL,
+    longOneStepMaeKrwPerL: result.longOneStep.maeKrwPerL,
     forecastChurnKrwPerL: result.recent.forecastChurnKrwPerL,
   };
 }
@@ -262,11 +269,8 @@ export function selectForecastModel(input: SelectForecastModelInput): SelectFore
   }
 
   const quality = evaluatePromotionQuality(currentBacktest, best);
-  const maeImprovementRatio = quality.maeImprovementRatio;
-  const mapeImprovementPctPoint = quality.mapeImprovementPctPoint;
-  const cooldownElapsed =
-    input.currentPromotedAt === null ||
-    input.now.getTime() - input.currentPromotedAt.getTime() >= PROMOTION_COOLDOWN_DAYS * DAY_MS;
+  const cooldownElapsed = evaluatePromotionCooldown(input.currentPromotedAt, input.now).elapsed;
+  const { maeImprovementRatio, mapeImprovementPctPoint } = quality;
   const meetsMinimumImprovement = quality.meetsMinimumImprovement;
   const longStable = quality.longStable;
   const maxErrorStable = quality.maxErrorStable;

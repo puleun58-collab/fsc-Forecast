@@ -111,7 +111,7 @@ export function AdminBacktestDetail({ points }: { points: readonly BacktestDetai
               </table>
             </div>
             <p className="admin-decision__note">
-              각 주차는 해당 시점까지의 데이터만으로 만든 1주 ahead walk-forward 예측과 실제값을 비교한
+              각 주차는 해당 시점까지의 데이터만으로 만든 다음 주 walk-forward 예측과 실제값을 비교한
               결과입니다.
             </p>
             <p className="admin-decision__note">오차는 Forecast에서 Actual을 뺀 값입니다.</p>

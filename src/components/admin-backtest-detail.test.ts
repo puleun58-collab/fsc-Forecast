@@ -52,6 +52,7 @@ test('the backtest table stays collapsed and lists each week with signed error a
     markup,
     /<p class="admin-decision__note">방향 적중 여부는 직전 Actual 대비 다음 주 상승·하락 방향이 일치했는지를 의미합니다\.<\/p>/,
   );
+  assert.doesNotMatch(markup, /1주 ahead|Horizon/);
 });
 
 test('rows carry mobile labels and Opinet week names', () => {

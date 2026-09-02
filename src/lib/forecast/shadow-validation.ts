@@ -8,7 +8,6 @@ import {
   PROMOTION_VOLATILITY_TOLERANCE_RATIO,
   type ForecastModelParams,
 } from "./forecast-model-config";
-import type { TuningCandidate } from "./parameter-sensitivity";
 import { resolveForecastDirection, type ForecastDirection } from "./run-walk-forward-backtest";
 
 export const SHADOW_VALIDATION_VERSION = 1;
@@ -145,11 +144,18 @@ function sameParams(left: ForecastModelParams, right: ForecastModelParams, model
   return buildCandidateFingerprint(left, modelVersion) === buildCandidateFingerprint(right, modelVersion);
 }
 
+/** Shadow는 민감도 UI 타입이 아니라 후보 params·품질 통과 여부·출처만 알면 된다. */
+export interface ShadowCandidateInput {
+  params: ForecastModelParams;
+  meetsPromotionQuality: boolean;
+  source: string;
+}
+
 export interface ResolveShadowSessionInput {
   previousSession: ShadowValidationSession | null;
   modelVersion: string;
   baselineParams: ForecastModelParams;
-  tuningCandidates: readonly TuningCandidate[];
+  candidates: readonly ShadowCandidateInput[];
   now: Date;
 }
 
@@ -161,7 +167,7 @@ export function resolveShadowSession({
   previousSession,
   modelVersion,
   baselineParams,
-  tuningCandidates,
+  candidates,
   now,
 }: ResolveShadowSessionInput): ShadowValidationSession | null {
   if (previousSession !== null && previousSession.status === "validating") {
@@ -187,7 +193,7 @@ export function resolveShadowSession({
   }
 
   const previousFingerprint = previousSession?.candidateFingerprint ?? null;
-  const candidate = tuningCandidates.find(
+  const candidate = candidates.find(
     (item) =>
       item.meetsPromotionQuality &&
       !sameParams(item.params, baselineParams, modelVersion) &&
@@ -209,7 +215,7 @@ export function resolveShadowSession({
     baselineParams,
     candidateParams: candidate.params,
     candidateFingerprint: buildCandidateFingerprint(candidate.params, modelVersion),
-    candidateSource: `parameter-sensitivity:${candidate.groupKey}`,
+    candidateSource: candidate.source,
     requiredSampleCount: SHADOW_REQUIRED_SAMPLE_COUNT,
     observations: [],
   };

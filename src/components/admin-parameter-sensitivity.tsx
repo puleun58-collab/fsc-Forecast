@@ -6,6 +6,7 @@ import type {
   ParameterSensitivity,
   ParameterSensitivityGroup,
   ParameterSensitivityGroupKey,
+  CombinationAnalysis,
   SensitivityCandidate,
   SensitivityWindowMetrics,
   TuningCandidate,
@@ -134,7 +135,10 @@ function TuningCandidateRow({
   return (
     <li className="sensitivity-candidate">
       <strong>
-        {index + 1}. {GROUP_LABEL[candidate.groupKey].replace(' 민감도', '')} {candidate.label}
+        {index + 1}. [{candidate.kind === 'combination' ? '2단계 조합' : '단일 설정'}]{' '}
+        {candidate.kind === 'combination'
+          ? candidate.label
+          : `${GROUP_LABEL[candidate.groupKey].replace(' 민감도', '')} ${candidate.label}`}
       </strong>
       <span>
         13주 MAE {formatMae(sensitivity.currentRecentOneStep.maeKrwPerL)} →{' '}
@@ -146,6 +150,80 @@ function TuningCandidateRow({
       </span>
       <span className="sensitivity-candidate__checks">기존 승격 품질 기준 충족</span>
     </li>
+  );
+}
+
+function CombinationAnalysisPanel({ analysis }: { analysis: CombinationAnalysis | null }) {
+  if (analysis === null || analysis.status === 'not-applicable') {
+    return null;
+  }
+
+  if (analysis.status === 'insufficient-seeds' || analysis.candidates.length === 0) {
+    return (
+      <div className="admin-panel sensitivity-combination">
+        <strong>2단계 조합 분석</strong>
+        <p className="backtest-detail__empty">2단계 조합 후보가 없습니다.</p>
+        <p className="admin-decision__note">
+          1단계 비교에서 조합할 만큼 충분한 개선 후보가 확인되지 않았습니다.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <details className="admin-panel admin-disclosure sensitivity-combination">
+      <summary className="admin-disclosure__summary">
+        <strong>2단계 조합 분석</strong>
+        <span className="sensitivity-combination__count">
+          {analysis.evaluatedCandidateCount}개 조합 평가
+        </span>
+        <AdminDisclosureToggle />
+      </summary>
+      <div className="admin-disclosure__body">
+        <p className="admin-decision__note">
+          1단계 비교에서 기준을 통과한 설정 중 서로 다른 항목의 상위 후보를 두 개씩 조합해 추가로
+          비교합니다.
+        </p>
+        <div className="admin-table-wrap">
+          <table className="admin-table sensitivity-table">
+            <thead>
+              <tr>
+                <th scope="col">조합</th>
+                <th scope="col">13주 MAE</th>
+                <th scope="col">13주 MAPE</th>
+                <th scope="col">26주 MAE</th>
+                <th scope="col">최대 오차</th>
+                <th scope="col">방향 정확도</th>
+                <th scope="col">품질 기준</th>
+              </tr>
+            </thead>
+            <tbody>
+              {analysis.candidates.map((candidate) => (
+                <tr key={candidate.label}>
+                  <th scope="row">{candidate.label}</th>
+                  <td data-label="13주 MAE">{formatMae(candidate.recentOneStep.maeKrwPerL)}</td>
+                  <td data-label="13주 MAPE">{formatMape(candidate.recentOneStep.mapePct)}</td>
+                  <td data-label="26주 MAE">{formatMae(candidate.longOneStep.maeKrwPerL)}</td>
+                  <td data-label="최대 오차">
+                    {formatMae(candidate.recentOneStep.maxAbsoluteErrorKrwPerL)}
+                  </td>
+                  <td data-label="방향 정확도">
+                    {formatDirectionAccuracy(candidate.recentOneStep.directionAccuracyRatio)}
+                  </td>
+                  <td data-label="품질 기준">
+                    <span
+                      className={`status-tag ${candidate.meetsPromotionQuality ? 'status-tag--ok' : ''}`.trim()}
+                    >
+                      {candidate.meetsPromotionQuality ? '충족' : '미충족'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </details>
   );
 }
 
@@ -210,6 +288,8 @@ export function AdminParameterSensitivity({
           <SensitivityGroup key={group.key} group={group} current={sensitivity.currentRecentOneStep} />
         ))}
 
+        <CombinationAnalysisPanel analysis={sensitivity.combinationAnalysis} />
+
         <div className="admin-panel sensitivity-candidates">
           <strong>튜닝 검토 후보</strong>
           {!sensitivity.sampleSufficient ? (
@@ -233,8 +313,8 @@ export function AdminParameterSensitivity({
             </ol>
           )}
           <p className="admin-decision__note">
-            후보는 과거 백테스트 기반 탐색 결과입니다. 실제 적용 전 별도 Shadow 검증이 필요하며, 이 화면에서
-            운영 모델이나 파라미터를 변경하지 않습니다.
+            후보는 과거 데이터 비교 결과입니다. 조합 후보도 실제 적용 전에 새 실제 데이터를 이용한 검증을
+            거치며, 이 화면에서 운영 모델이나 파라미터를 변경하지 않습니다.
           </p>
         </div>
       </div>

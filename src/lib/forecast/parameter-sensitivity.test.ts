@@ -188,6 +188,129 @@ test('metadata round-trips through the reader', () => {
   );
 });
 
+/** Trend 6주와 Dubai lag 2주/15%만 개선되고, 그 조합이 가장 좋은 시나리오. */
+function combinationEvaluate(params: ForecastModelParams): RunWalkForwardBacktestResult {
+  const trendImproved = params.trendLookbackWeeks === 6;
+  const dubaiImproved = params.dubai?.lagWeeks === 2 && params.dubai.weight === 0.15;
+
+  if (trendImproved && dubaiImproved) {
+    return backtest(params, { maeKrwPerL: 16.9, mapePct: 0.94 });
+  }
+
+  if (trendImproved) {
+    return backtest(params, { maeKrwPerL: 18.4, mapePct: 1.02 });
+  }
+
+  if (dubaiImproved) {
+    return backtest(params, { maeKrwPerL: 19.6, mapePct: 1.09 });
+  }
+
+  return backtest(params);
+}
+
+test('combination seeds use the best qualified candidate of each group', () => {
+  const analysis = build(CURRENT, combinationEvaluate).combinationAnalysis;
+
+  assert.equal(analysis?.status, 'evaluated');
+  assert.deepEqual(
+    analysis?.seeds.map((seed) => seed.groupKey),
+    ['trendLookback', 'dubai'],
+  );
+  assert.equal(analysis?.seeds.find((seed) => seed.groupKey === 'trendLookback')?.label, '6주');
+  assert.equal(analysis?.seeds.every((seed) => seed.qualityChecks.longStable), true);
+});
+
+test('combinations pair two different factors and never grow past two changes', () => {
+  const analysis = build(CURRENT, combinationEvaluate).combinationAnalysis;
+  const candidate = analysis?.candidates[0];
+
+  assert.equal(analysis?.candidates.length, 1);
+  assert.deepEqual(candidate?.factorKeys, ['trendLookback', 'dubai']);
+  assert.equal(candidate?.params.trendLookbackWeeks, 6);
+  assert.deepEqual(candidate?.params.dubai, { lagWeeks: 2, weight: 0.15 });
+  assert.equal(candidate?.params.externalAdjustmentCapRatio, CURRENT.externalAdjustmentCapRatio);
+  assert.equal(candidate?.params.usdKrw, null);
+  assert.equal(candidate?.label, 'Trend 6주 + Dubai lag 2주 · weight 15.0%');
+});
+
+test('a stronger combination outranks the single candidates it was built from', () => {
+  const sensitivity = build(CURRENT, combinationEvaluate);
+
+  assert.equal(sensitivity.tuningCandidates[0]?.kind, 'combination');
+  assert.equal(sensitivity.tuningCandidates[0]?.recentOneStep.maeKrwPerL, 16.9);
+  assert.equal(sensitivity.tuningCandidates[1]?.kind, 'single');
+  assert.ok(sensitivity.tuningCandidates.length <= TUNING_CANDIDATE_LIMIT);
+});
+
+test('a single qualified group produces no combination candidates', () => {
+  const analysis = build(CURRENT, (params) =>
+    params.trendLookbackWeeks === 6 ? backtest(params, { maeKrwPerL: 18.4 }) : backtest(params),
+  ).combinationAnalysis;
+
+  assert.equal(analysis?.status, 'insufficient-seeds');
+  assert.deepEqual(analysis?.candidates, []);
+  assert.equal(analysis?.evaluatedCandidateCount, 0);
+});
+
+test('every parameter set is evaluated by walk-forward at most once', () => {
+  const evaluated: string[] = [];
+  build(CURRENT, (params) => {
+    evaluated.push(serializeSensitivityParamsKey(params));
+    return combinationEvaluate(params);
+  });
+
+  assert.equal(evaluated.length, new Set(evaluated).size);
+});
+
+test('combination candidates stay inside the maximum pair budget', () => {
+  const currentWithUsd: ForecastModelParams = {
+    ...CURRENT,
+    modelId: 'C',
+    usdKrw: { lagWeeks: 1, weight: 0.05 },
+  };
+  const analysis = build(currentWithUsd, (params) => {
+    const improved =
+      params.trendLookbackWeeks === 6 ||
+      (params.dubai?.lagWeeks === 2 && params.dubai.weight === 0.15) ||
+      (params.usdKrw?.lagWeeks === 2 && params.usdKrw.weight === 0.05) ||
+      params.externalAdjustmentCapRatio === 0.02;
+
+    return improved ? backtest(params, { maeKrwPerL: 18, mapePct: 1 }) : backtest(params);
+  }).combinationAnalysis;
+
+  assert.ok((analysis?.seeds.length ?? 0) <= 4);
+  assert.ok((analysis?.candidates.length ?? 0) <= 6);
+  assert.equal(
+    analysis?.candidates.every((candidate) => candidate.factorKeys.length === 2),
+    true,
+  );
+  assert.equal(
+    analysis?.candidates.every(
+      (candidate) => candidate.params.usdKrw === null || candidate.params.dubai !== null,
+    ),
+    true,
+  );
+});
+
+test('version 1 metadata without combination analysis still reads', () => {
+  const sensitivity = build();
+  const legacy = {
+    ...sensitivity,
+    version: 1,
+    combinationAnalysis: undefined,
+    tuningCandidates: sensitivity.tuningCandidates.map(({ kind, factorKeys, ...rest }) => {
+      void kind;
+      void factorKeys;
+      return rest;
+    }),
+  };
+  const parsed = readParameterSensitivity({ model: { parameterSensitivity: legacy } });
+
+  assert.equal(parsed?.version, 1);
+  assert.equal(parsed?.combinationAnalysis, null);
+  assert.equal(parsed?.tuningCandidates.every((candidate) => candidate.kind === 'single'), true);
+});
+
 function series(prices: readonly number[]): ForecastSeriesPoint[] {
   return prices.map((price, index) => {
     const periodStart = new Date(Date.UTC(2026, 0, 2 + index * 7));

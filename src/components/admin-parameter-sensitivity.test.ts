@@ -91,10 +91,10 @@ test('tuning candidates are labelled as review items that are never applied auto
   const markup = render();
 
   assert.match(markup, /튜닝 검토 후보/);
-  assert.match(markup, /1\. Trend lookback 6주/);
+  assert.match(markup, /1\. \[단일 설정\] Trend lookback 6주/);
   assert.match(markup, /13주 MAE 22\.80원\/L → 18\.40원\/L/);
   assert.match(markup, /기존 승격 품질 기준 충족/);
-  assert.match(markup, /실제 적용 전 별도 Shadow 검증이 필요하며/);
+  assert.match(markup, /조합 후보도 실제 적용 전에 새 실제 데이터를 이용한 검증을 거치며/);
   assert.doesNotMatch(markup, /추천 설정|적용 예정|자동 튜닝/);
   assert.doesNotMatch(markup, /<button/);
 });

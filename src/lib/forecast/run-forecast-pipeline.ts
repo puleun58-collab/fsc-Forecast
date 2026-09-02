@@ -8,6 +8,8 @@ import {
 import {
   ForecastApprovalState,
   ForecastHorizonKind,
+  ForecastModelTransitionSourceKind,
+  ForecastModelTransitionStatus,
   RunStatus,
   type Prisma,
 } from "@prisma/client";
@@ -23,6 +25,15 @@ import {
   buildParameterSensitivity,
   serializeSensitivityParamsKey,
 } from "./parameter-sensitivity";
+import {
+  parseTransitionParams,
+  resolvePendingTransition,
+} from "./model-transition";
+import {
+  readPostTransitionMonitoring,
+  recordPostTransitionCycle,
+  resolvePostTransitionMonitoring,
+} from "./post-transition-monitoring";
 import {
   readShadowValidation,
   recordShadowCycle,
@@ -471,25 +482,65 @@ async function executeForecastPipeline(
   const indicatorHistory = await loadIndicatorHistory(tx, recomputeSnapshot.currentTruthCutoffAt);
   const indicatorWeeklySeries = buildIndicatorWeeklySeries(indicatorHistory);
   const indicators = buildIndicatorSnapshots(indicatorHistory, recomputeSnapshot.currentTruthCutoffAt);
-  const previousRun = await tx.forecastRun.findFirst({
-    where: {
-      status: RunStatus.succeeded,
-      recomputeSnapshot: {
-        datasetKey: env.datasetKey,
+  const [previousRun, pendingTransition] = await Promise.all([
+    tx.forecastRun.findFirst({
+      where: {
+        status: RunStatus.succeeded,
+        recomputeSnapshot: {
+          datasetKey: env.datasetKey,
+        },
       },
-    },
-    orderBy: [{ completedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
-    select: {
-      metadata: true,
-    },
-  });
+      orderBy: [{ completedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
+      select: {
+        metadata: true,
+      },
+    }),
+    tx.forecastModelTransition.findFirst({
+      where: {
+        datasetKey: env.datasetKey,
+        status: ForecastModelTransitionStatus.approved_pending,
+      },
+      orderBy: { approvedAt: "asc" },
+    }),
+  ]);
   const previousModelState = resolveForecastModelState(previousRun?.metadata ?? null);
+  const transitionDecision = resolvePendingTransition(
+    pendingTransition === null
+      ? null
+      : {
+          status: pendingTransition.status,
+          modelVersion: pendingTransition.modelVersion,
+          baselineFingerprint: pendingTransition.baselineFingerprint,
+          candidateParams: parseTransitionParams(pendingTransition.candidateParams),
+        },
+    previousModelState.params,
+    FORECAST_MODEL_VERSION,
+  );
+
+  if (transitionDecision.action === "cancel" && pendingTransition !== null) {
+    await tx.forecastModelTransition.update({
+      where: { id: pendingTransition.id },
+      data: {
+        status: ForecastModelTransitionStatus.cancelled,
+        cancelledAt: startedAt,
+        cancellationReason: transitionDecision.reason,
+      },
+    });
+  }
+
+  const appliedTransition =
+    transitionDecision.action === "apply" && pendingTransition !== null ? pendingTransition : null;
+  // 승인된 후보는 이번 실행의 운영 설정으로 들어가고, 적용 시점부터 기존 cooldown 보호를 받는다.
+  const effectiveParams =
+    transitionDecision.action === "apply" ? transitionDecision.candidateParams : previousModelState.params;
+  const effectivePromotedAt =
+    appliedTransition === null ? previousModelState.promotedAt : startedAt;
   const selection = selectForecastModel({
     weeklySeries,
     indicatorSeries: indicatorWeeklySeries,
     horizonCount: FORECAST_WEEKLY_HORIZON_COUNT,
-    currentParams: previousModelState.params,
-    currentPromotedAt: previousModelState.promotedAt,
+    currentParams: effectiveParams,
+    currentPromotedAt: effectivePromotedAt,
     now: startedAt,
   });
   const weeklyForecast = buildWeeklyForecast({
@@ -525,11 +576,39 @@ async function executeForecastPipeline(
         horizonCount: FORECAST_WEEKLY_HORIZON_COUNT,
       }),
   });
+  const monitoringSession = resolvePostTransitionMonitoring({
+    previous: readPostTransitionMonitoring(previousRun?.metadata ?? null),
+    appliedTransition:
+      appliedTransition === null
+        ? null
+        : {
+            transitionId: appliedTransition.id,
+            currentParams: parseTransitionParams(appliedTransition.candidateParams),
+            rollbackParams: parseTransitionParams(appliedTransition.baselineParams),
+            sourceKind: appliedTransition.sourceKind,
+          },
+    currentParams: selection.selectedParams,
+    modelVersion: FORECAST_MODEL_VERSION,
+    now: startedAt,
+  });
+  // 전환 적용 run과 롤백 검토 상태에서는 새 Shadow 후보를 시작하지 않는다.
+  const shadowCandidatesAllowed =
+    appliedTransition === null &&
+    (monitoringSession === null || monitoringSession.status !== "rollback_reviewable");
   const shadowSession = resolveShadowSession({
     previousSession: readShadowValidation(previousRun?.metadata ?? null),
     modelVersion: FORECAST_MODEL_VERSION,
     baselineParams: selection.selectedParams,
-    tuningCandidates: parameterSensitivity.tuningCandidates,
+    candidates: shadowCandidatesAllowed
+      ? parameterSensitivity.tuningCandidates.map((candidate) => ({
+          params: candidate.params,
+          meetsPromotionQuality: candidate.meetsPromotionQuality,
+          source:
+            candidate.kind === "combination"
+              ? `parameter-combination:${candidate.factorKeys.join("+")}`
+              : `parameter-sensitivity:${candidate.groupKey}`,
+        }))
+      : [],
     now: startedAt,
   });
   // Shadow는 운영 예측과 완전히 같은 입력으로 1주 ahead 예측만 추가로 만든다.
@@ -572,6 +651,44 @@ async function executeForecastPipeline(
                     issuedAt: startedAt,
                   },
           });
+  // 롤백 기준 설정도 운영 예측과 동일한 입력으로 1주 ahead 예측만 추가 계산한다.
+  const rollbackForecast =
+    monitoringSession === null || monitoringSession.status === "stopped" || monitoringSession.status === "rolled_back"
+      ? null
+      : buildWeeklyForecast({
+          weeklySeries,
+          indicatorSeries: indicatorWeeklySeries,
+          params: monitoringSession.rollbackParams,
+          horizonCount: 1,
+        });
+  const postTransitionMonitoring =
+    monitoringSession === null
+      ? null
+      : recordPostTransitionCycle({
+          monitoring: monitoringSession,
+          confirmedWeeks: weeklySeries.map((point) => ({
+            targetDate: point.targetDate,
+            actualKrwPerL: point.pointKrwPerL,
+          })),
+          now: startedAt,
+          prediction:
+            weeklyForecast.status !== "ready" ||
+            weeklyForecast.anchorWeekEndDate === null ||
+            weeklyForecast.anchorPriceKrwPerL === null ||
+            weeklyForecast.points[0] === undefined ||
+            rollbackForecast === null ||
+            rollbackForecast.status !== "ready" ||
+            rollbackForecast.points[0] === undefined
+              ? null
+              : {
+                  originWeekEndDate: weeklyForecast.anchorWeekEndDate,
+                  targetDate: weeklyForecast.points[0].targetDate,
+                  anchorKrwPerL: weeklyForecast.anchorPriceKrwPerL,
+                  currentForecastKrwPerL: weeklyForecast.points[0].pointKrwPerL,
+                  rollbackForecastKrwPerL: rollbackForecast.points[0].pointKrwPerL,
+                  issuedAt: startedAt,
+                },
+        });
   const approvalState = gate.approvalState;
   const degradedReason = gate.degradedReason;
   const weeklyForecastPoints =
@@ -612,12 +729,34 @@ async function executeForecastPipeline(
         },
         model: {
           version: FORECAST_MODEL_VERSION,
-          promotedAt: selection.promoted
-            ? startedAt.toISOString()
-            : previousModelState.promotedAt?.toISOString() ?? null,
+          promotedAt:
+            appliedTransition !== null
+              ? completedAt.toISOString()
+              : selection.promoted
+                ? startedAt.toISOString()
+                : previousModelState.promotedAt?.toISOString() ?? null,
           params: serializeForecastModelParams(selection.selectedParams),
-          promoted: selection.promoted,
-          promotionReason: selection.promotionReason,
+          promoted: selection.promoted || appliedTransition !== null,
+          promotionReason:
+            appliedTransition === null
+              ? selection.promotionReason
+              : appliedTransition.sourceKind === ForecastModelTransitionSourceKind.post_transition_rollback
+                ? "post_transition_rollback_applied"
+                : "admin_approved_shadow_transition",
+          changeSource:
+            appliedTransition === null ? "automatic_selection" : appliedTransition.sourceKind,
+          transition:
+            appliedTransition === null
+              ? null
+              : {
+                  transitionId: appliedTransition.id,
+                  sourceKind: appliedTransition.sourceKind,
+                  shadowSessionId: appliedTransition.shadowSessionId,
+                  candidateFingerprint: appliedTransition.candidateFingerprint,
+                  previousParams: serializeForecastModelParams(previousModelState.params),
+                  candidateParams: serializeForecastModelParams(effectiveParams),
+                  appliedAt: completedAt.toISOString(),
+                },
           previousVersion: previousModelState.modelVersion,
           previousParams: serializeForecastModelParams(previousModelState.params),
           maeImprovementRatio: selection.maeImprovementRatio,
@@ -642,6 +781,7 @@ async function executeForecastPipeline(
           }),
           parameterSensitivity,
           shadowValidation,
+          postTransitionMonitoring,
         },
         weeklyForecast: {
           status: weeklyForecast.status,
@@ -703,6 +843,18 @@ async function executeForecastPipeline(
       },
     },
   });
+
+  // ForecastRun 생성이 성공한 뒤 같은 transaction에서만 적용 완료로 바꾼다.
+  if (appliedTransition !== null) {
+    await tx.forecastModelTransition.update({
+      where: { id: appliedTransition.id },
+      data: {
+        status: ForecastModelTransitionStatus.applied,
+        appliedAt: completedAt,
+        appliedForecastRunId: forecastRun.id,
+      },
+    });
+  }
 
   return {
     forecastRun: toForecastRunRecord(forecastRun),

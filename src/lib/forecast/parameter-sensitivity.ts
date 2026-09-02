@@ -14,7 +14,7 @@ import type { RunWalkForwardBacktestResult } from "./run-walk-forward-backtest";
 
 /** 진단 전용 Trend 후보. 운영 candidate 탐색 범위에는 연결하지 않는다. */
 export const DIAGNOSTIC_TREND_LOOKBACK_CANDIDATES = [4, 6, 8, 10, 12] as const;
-export const PARAMETER_SENSITIVITY_VERSION = 1;
+export const PARAMETER_SENSITIVITY_VERSION = 2;
 export const TUNING_CANDIDATE_LIMIT = 3;
 
 export type ParameterSensitivityGroupKey = "trendLookback" | "dubai" | "usdKrw" | "cap";
@@ -44,14 +44,44 @@ export interface ParameterSensitivityGroup {
   candidates: SensitivityCandidate[];
 }
 
+export type TuningCandidateKind = "single" | "combination";
+
 export interface TuningCandidate {
   label: string;
   groupKey: ParameterSensitivityGroupKey;
+  kind: TuningCandidateKind;
+  factorKeys: ParameterSensitivityGroupKey[];
   params: ForecastModelParams;
   recentOneStep: SensitivityWindowMetrics;
   longOneStep: SensitivityWindowMetrics;
   qualityChecks: PromotionQualityChecks;
   meetsPromotionQuality: boolean;
+}
+
+export interface CombinationSeed {
+  groupKey: ParameterSensitivityGroupKey;
+  label: string;
+  params: ForecastModelParams;
+  recentOneStep: SensitivityWindowMetrics;
+  longOneStep: SensitivityWindowMetrics;
+  qualityChecks: PromotionQualityChecks;
+}
+
+export interface CombinationCandidate {
+  label: string;
+  factorKeys: ParameterSensitivityGroupKey[];
+  params: ForecastModelParams;
+  recentOneStep: SensitivityWindowMetrics;
+  longOneStep: SensitivityWindowMetrics;
+  qualityChecks: PromotionQualityChecks;
+  meetsPromotionQuality: boolean;
+}
+
+export interface CombinationAnalysis {
+  status: "evaluated" | "insufficient-seeds" | "not-applicable";
+  seeds: CombinationSeed[];
+  candidates: CombinationCandidate[];
+  evaluatedCandidateCount: number;
 }
 
 export interface ParameterSensitivity {
@@ -62,6 +92,8 @@ export interface ParameterSensitivity {
   currentLongOneStep: SensitivityWindowMetrics;
   sampleSufficient: boolean;
   groups: ParameterSensitivityGroup[];
+  /** v1 metadata에는 존재하지 않는다. */
+  combinationAnalysis: CombinationAnalysis | null;
   tuningCandidates: TuningCandidate[];
 }
 
@@ -93,6 +125,8 @@ const QualityChecksSchema = z.object({
   churnStable: z.boolean(),
 });
 
+const GroupKeySchema = z.enum(["trendLookback", "dubai", "usdKrw", "cap"]);
+
 const SensitivityMetadataSchema = z.object({
   model: z.object({
     parameterSensitivity: z.object({
@@ -119,16 +153,53 @@ const SensitivityMetadataSchema = z.object({
           ),
         }),
       ),
+      // v1 metadata에는 조합 분석 필드가 없으므로 없으면 null로 정규화한다.
+      combinationAnalysis: z
+        .object({
+          status: z.enum(["evaluated", "insufficient-seeds", "not-applicable"]),
+          seeds: z.array(
+            z.object({
+              groupKey: GroupKeySchema,
+              label: z.string(),
+              params: ModelParamsSchema,
+              recentOneStep: WindowMetricsSchema,
+              longOneStep: WindowMetricsSchema,
+              qualityChecks: QualityChecksSchema,
+            }),
+          ),
+          candidates: z.array(
+            z.object({
+              label: z.string(),
+              factorKeys: z.array(GroupKeySchema),
+              params: ModelParamsSchema,
+              recentOneStep: WindowMetricsSchema,
+              longOneStep: WindowMetricsSchema,
+              qualityChecks: QualityChecksSchema,
+              meetsPromotionQuality: z.boolean(),
+            }),
+          ),
+          evaluatedCandidateCount: z.number(),
+        })
+        .nullish()
+        .transform((value) => value ?? null),
       tuningCandidates: z.array(
-        z.object({
-          label: z.string(),
-          groupKey: z.enum(["trendLookback", "dubai", "usdKrw", "cap"]),
-          params: ModelParamsSchema,
-          recentOneStep: WindowMetricsSchema,
-          longOneStep: WindowMetricsSchema,
-          qualityChecks: QualityChecksSchema,
-          meetsPromotionQuality: z.boolean(),
-        }),
+        z
+          .object({
+            label: z.string(),
+            groupKey: GroupKeySchema,
+            kind: z.enum(["single", "combination"]).nullish(),
+            factorKeys: z.array(GroupKeySchema).nullish(),
+            params: ModelParamsSchema,
+            recentOneStep: WindowMetricsSchema,
+            longOneStep: WindowMetricsSchema,
+            qualityChecks: QualityChecksSchema,
+            meetsPromotionQuality: z.boolean(),
+          })
+          .transform((candidate) => ({
+            ...candidate,
+            kind: candidate.kind ?? ("single" as TuningCandidateKind),
+            factorKeys: candidate.factorKeys ?? [candidate.groupKey],
+          })),
       ),
     }),
   }),
@@ -177,6 +248,91 @@ function withParams(base: ForecastModelParams, overrides: Partial<ForecastModelP
   return { ...merged, modelId: resolveModelId(merged) };
 }
 
+const FACTOR_KEYS: readonly ParameterSensitivityGroupKey[] = [
+  "trendLookback",
+  "dubai",
+  "usdKrw",
+  "cap",
+];
+
+function describeFactorValue(
+  factorKey: ParameterSensitivityGroupKey,
+  params: ForecastModelParams,
+): string {
+  switch (factorKey) {
+    case "trendLookback":
+      return `Trend ${params.trendLookbackWeeks}주`;
+    case "dubai":
+      return `Dubai ${describeIndicator(params.dubai)}`;
+    case "usdKrw":
+      return `USD/KRW ${describeIndicator(params.usdKrw)}`;
+    case "cap":
+      return `Cap ±${(params.externalAdjustmentCapRatio * 100).toFixed(0)}%`;
+  }
+}
+
+/** 의미 단위로 실제 달라진 항목만 센다. modelId는 파생값이라 세지 않는다. */
+function diffFactorKeys(
+  currentParams: ForecastModelParams,
+  candidateParams: ForecastModelParams,
+): ParameterSensitivityGroupKey[] {
+  return FACTOR_KEYS.filter(
+    (factorKey) =>
+      describeFactorValue(factorKey, currentParams) !== describeFactorValue(factorKey, candidateParams),
+  );
+}
+
+function applyFactor(
+  base: ForecastModelParams,
+  factorKey: ParameterSensitivityGroupKey,
+  source: ForecastModelParams,
+): ForecastModelParams {
+  switch (factorKey) {
+    case "trendLookback":
+      return withParams(base, { trendLookbackWeeks: source.trendLookbackWeeks });
+    case "dubai":
+      return withParams(base, { dubai: source.dubai });
+    case "usdKrw":
+      return withParams(base, { usdKrw: source.usdKrw });
+    case "cap":
+      return withParams(base, { externalAdjustmentCapRatio: source.externalAdjustmentCapRatio });
+  }
+}
+
+function meetsAllPromotionChecks(checks: PromotionQualityChecks): boolean {
+  return (
+    checks.meetsMinimumImprovement && checks.longStable && checks.maxErrorStable && checks.churnStable
+  );
+}
+
+/** 최근 성능 우선, 동률이면 결정적 params key 순서로 정렬한다. */
+function compareByPerformance(
+  left: { recentOneStep: SensitivityWindowMetrics; longOneStep: SensitivityWindowMetrics; params: ForecastModelParams },
+  right: { recentOneStep: SensitivityWindowMetrics; longOneStep: SensitivityWindowMetrics; params: ForecastModelParams },
+): number {
+  const metrics: (keyof SensitivityWindowMetrics)[] = ["maeKrwPerL", "mapePct"];
+
+  for (const metric of metrics) {
+    const leftValue = left.recentOneStep[metric] ?? Number.POSITIVE_INFINITY;
+    const rightValue = right.recentOneStep[metric] ?? Number.POSITIVE_INFINITY;
+
+    if (leftValue !== rightValue) {
+      return leftValue - rightValue;
+    }
+  }
+
+  const leftLongMae = left.longOneStep.maeKrwPerL ?? Number.POSITIVE_INFINITY;
+  const rightLongMae = right.longOneStep.maeKrwPerL ?? Number.POSITIVE_INFINITY;
+
+  if (leftLongMae !== rightLongMae) {
+    return leftLongMae - rightLongMae;
+  }
+
+  return serializeSensitivityParamsKey(left.params).localeCompare(
+    serializeSensitivityParamsKey(right.params),
+  );
+}
+
 function buildGroupParams(
   currentParams: ForecastModelParams,
 ): Record<ParameterSensitivityGroupKey, { label: string; params: ForecastModelParams }[]> {
@@ -220,6 +376,121 @@ export interface BuildParameterSensitivityInput {
   evaluatedAt: Date;
 }
 
+interface BuildCombinationAnalysisInput {
+  currentParams: ForecastModelParams;
+  currentBacktest: RunWalkForwardBacktestResult;
+  currentKey: string;
+  groups: readonly ParameterSensitivityGroup[];
+  sampleSufficient: boolean;
+  evaluate: (params: ForecastModelParams) => RunWalkForwardBacktestResult | null;
+}
+
+/**
+ * 1단계에서 기존 품질 기준을 통과한 그룹별 최고 후보만 seed로 삼아
+ * 서로 다른 항목 2개씩 최대 6조합만 추가 평가한다. 전체 조합 탐색은 하지 않는다.
+ */
+function buildCombinationAnalysis({
+  currentParams,
+  currentBacktest,
+  currentKey,
+  groups,
+  sampleSufficient,
+  evaluate,
+}: BuildCombinationAnalysisInput): CombinationAnalysis {
+  if (!sampleSufficient) {
+    return { status: "not-applicable", seeds: [], candidates: [], evaluatedCandidateCount: 0 };
+  }
+
+  const seeds = groups.flatMap((group) => {
+    const eligible = group.candidates.filter(
+      (candidate) =>
+        !candidate.isCurrent &&
+        candidate.qualityChecks !== null &&
+        meetsAllPromotionChecks(candidate.qualityChecks) &&
+        // 구조적으로 두 항목이 함께 바뀌는 후보는 조합 seed로 쓰지 않는다.
+        diffFactorKeys(currentParams, candidate.params).join("+") === group.key,
+    );
+    const best = [...eligible].sort(compareByPerformance)[0];
+
+    return best === undefined || best.qualityChecks === null
+      ? []
+      : [
+          {
+            groupKey: group.key,
+            label: best.label,
+            params: best.params,
+            recentOneStep: best.recentOneStep,
+            longOneStep: best.longOneStep,
+            qualityChecks: best.qualityChecks,
+          },
+        ];
+  });
+
+  if (seeds.length < 2) {
+    return { status: "insufficient-seeds", seeds, candidates: [], evaluatedCandidateCount: 0 };
+  }
+
+  const seenKeys = new Set<string>([
+    currentKey,
+    ...seeds.map((seed) => serializeSensitivityParamsKey(seed.params)),
+  ]);
+  const candidates: CombinationCandidate[] = [];
+
+  for (let left = 0; left < seeds.length; left += 1) {
+    for (let right = left + 1; right < seeds.length; right += 1) {
+      const first = seeds[left];
+      const second = seeds[right];
+
+      if (first === undefined || second === undefined) {
+        continue;
+      }
+
+      const params = applyFactor(
+        applyFactor(currentParams, first.groupKey, first.params),
+        second.groupKey,
+        second.params,
+      );
+      const key = serializeSensitivityParamsKey(params);
+      const factorKeys = diffFactorKeys(currentParams, params);
+
+      // 유효하지 않은 USD/KRW 단독 사용이나 중복·비2요소 조합은 평가하지 않는다.
+      if (
+        seenKeys.has(key) ||
+        factorKeys.length !== 2 ||
+        (params.usdKrw !== null && params.dubai === null)
+      ) {
+        continue;
+      }
+
+      seenKeys.add(key);
+      const backtest = evaluate(params);
+
+      if (backtest === null) {
+        continue;
+      }
+
+      const qualityChecks = evaluatePromotionQuality(currentBacktest, backtest);
+
+      candidates.push({
+        label: `${describeFactorValue(first.groupKey, params)} + ${describeFactorValue(second.groupKey, params)}`,
+        factorKeys,
+        params,
+        recentOneStep: toWindowMetrics(backtest.recentOneStep),
+        longOneStep: toWindowMetrics(backtest.longOneStep),
+        qualityChecks,
+        meetsPromotionQuality: meetsAllPromotionChecks(qualityChecks),
+      });
+    }
+  }
+
+  return {
+    status: "evaluated",
+    seeds,
+    candidates: [...candidates].sort(compareByPerformance),
+    evaluatedCandidateCount: candidates.length,
+  };
+}
+
 /**
  * one-factor-at-a-time 방식으로 파라미터 대안을 비교한다.
  * 운영 파라미터나 모델 선택 결과는 변경하지 않는 진단 전용 계산이다.
@@ -230,6 +501,21 @@ export function buildParameterSensitivity({
   evaluate,
   evaluatedAt,
 }: BuildParameterSensitivityInput): ParameterSensitivity {
+  const backtestCache = new Map<string, RunWalkForwardBacktestResult | null>();
+  // 같은 params는 1단계·2단계를 통틀어 한 번만 walk-forward를 실행한다.
+  const evaluateCached = (params: ForecastModelParams): RunWalkForwardBacktestResult | null => {
+    const key = serializeSensitivityParamsKey(params);
+    const cached = backtestCache.get(key);
+
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const evaluated = evaluate(params);
+    backtestCache.set(key, evaluated);
+
+    return evaluated;
+  };
   const currentKey = serializeSensitivityParamsKey(currentParams);
   const groupParams = buildGroupParams(currentParams);
   const usdKrwEvaluable = currentParams.dubai !== null || currentParams.usdKrw !== null;
@@ -248,7 +534,7 @@ export function buildParameterSensitivity({
     const candidates = groupParams[key].flatMap((candidate) => {
       const candidateKey = serializeSensitivityParamsKey(candidate.params);
       const isCurrent = candidateKey === currentKey;
-      const backtest = isCurrent ? currentBacktest : evaluate(candidate.params);
+      const backtest = isCurrent ? currentBacktest : evaluateCached(candidate.params);
 
       if (backtest === null) {
         return [];
@@ -269,37 +555,65 @@ export function buildParameterSensitivity({
     return { key, status: "evaluated" as const, notApplicableReason: null, candidates };
   });
   const sampleSufficient = currentBacktest.recentOneStep.sampleCount >= PROMOTION_MIN_SAMPLE_COUNT;
-  const tuningCandidates = !sampleSufficient
+  const singleCandidates: TuningCandidate[] = !sampleSufficient
     ? []
-    : groups
-        .flatMap((group) =>
-          group.candidates.flatMap((candidate) =>
-            candidate.isCurrent || candidate.qualityChecks === null
-              ? []
-              : [
-                  {
-                    label: candidate.label,
-                    groupKey: group.key,
-                    params: candidate.params,
-                    recentOneStep: candidate.recentOneStep,
-                    longOneStep: candidate.longOneStep,
-                    qualityChecks: candidate.qualityChecks,
-                    meetsPromotionQuality:
-                      candidate.qualityChecks.meetsMinimumImprovement &&
-                      candidate.qualityChecks.longStable &&
-                      candidate.qualityChecks.maxErrorStable &&
-                      candidate.qualityChecks.churnStable,
-                  },
-                ],
-          ),
-        )
-        .filter((candidate) => candidate.meetsPromotionQuality)
-        .sort(
-          (left, right) =>
-            (left.recentOneStep.maeKrwPerL ?? Number.POSITIVE_INFINITY) -
-            (right.recentOneStep.maeKrwPerL ?? Number.POSITIVE_INFINITY),
-        )
-        .slice(0, TUNING_CANDIDATE_LIMIT);
+    : groups.flatMap((group) =>
+        group.candidates.flatMap((candidate) =>
+          candidate.isCurrent || candidate.qualityChecks === null
+            ? []
+            : [
+                {
+                  label: candidate.label,
+                  groupKey: group.key,
+                  kind: "single" as const,
+                  factorKeys: diffFactorKeys(currentParams, candidate.params),
+                  params: candidate.params,
+                  recentOneStep: candidate.recentOneStep,
+                  longOneStep: candidate.longOneStep,
+                  qualityChecks: candidate.qualityChecks,
+                  meetsPromotionQuality: meetsAllPromotionChecks(candidate.qualityChecks),
+                },
+              ],
+        ),
+      );
+  const combinationAnalysis = buildCombinationAnalysis({
+    currentParams,
+    currentBacktest,
+    currentKey,
+    groups,
+    sampleSufficient,
+    evaluate: evaluateCached,
+  });
+  const rankedByKey = new Map<string, TuningCandidate>();
+
+  for (const candidate of [
+    ...singleCandidates,
+    ...combinationAnalysis.candidates.map((candidate) => ({
+      label: candidate.label,
+      groupKey: candidate.factorKeys[0] ?? "trendLookback",
+      kind: "combination" as const,
+      factorKeys: candidate.factorKeys,
+      params: candidate.params,
+      recentOneStep: candidate.recentOneStep,
+      longOneStep: candidate.longOneStep,
+      qualityChecks: candidate.qualityChecks,
+      meetsPromotionQuality: candidate.meetsPromotionQuality,
+    })),
+  ]) {
+    if (!candidate.meetsPromotionQuality) {
+      continue;
+    }
+
+    const key = serializeSensitivityParamsKey(candidate.params);
+
+    if (!rankedByKey.has(key)) {
+      rankedByKey.set(key, candidate);
+    }
+  }
+
+  const tuningCandidates = [...rankedByKey.values()]
+    .sort(compareByPerformance)
+    .slice(0, TUNING_CANDIDATE_LIMIT);
 
   return {
     version: PARAMETER_SENSITIVITY_VERSION,
@@ -309,6 +623,7 @@ export function buildParameterSensitivity({
     currentLongOneStep: toWindowMetrics(currentBacktest.longOneStep),
     sampleSufficient,
     groups,
+    combinationAnalysis,
     tuningCandidates,
   };
 }

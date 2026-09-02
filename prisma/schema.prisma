@@ -26,6 +26,17 @@ enum ForecastHorizonKind {
   monthly
 }
 
+enum ForecastModelTransitionStatus {
+  approved_pending
+  applied
+  cancelled
+}
+
+enum ForecastModelTransitionSourceKind {
+  shadow_admin_approved
+  post_transition_rollback
+}
+
 enum QuarterStatus {
   draft
   active
@@ -188,24 +199,58 @@ model RecomputeSnapshot {
 }
 
 model ForecastRun {
-  id                  String                @id @default(cuid())
-  recomputeSnapshotId String
-  recomputeSnapshot   RecomputeSnapshot     @relation(fields: [recomputeSnapshotId], references: [id], onDelete: Restrict)
-  status              RunStatus             @default(queued)
-  approvalState       ForecastApprovalState @default(pending)
-  backtestWeeks       Int?
-  mapePct             Decimal?              @db.Decimal(6, 3)
-  maeKrwPerL          Decimal?              @db.Decimal(10, 3)
-  startedAt           DateTime?
-  completedAt         DateTime?
-  errorSummary        String?
-  metadata            Json?
-  points              ForecastPoint[]
-  createdAt           DateTime              @default(now())
-  fscResults          FscResult[]
+  id                    String                    @id @default(cuid())
+  recomputeSnapshotId   String
+  recomputeSnapshot     RecomputeSnapshot         @relation(fields: [recomputeSnapshotId], references: [id], onDelete: Restrict)
+  status                RunStatus                 @default(queued)
+  approvalState         ForecastApprovalState     @default(pending)
+  backtestWeeks         Int?
+  mapePct               Decimal?                  @db.Decimal(6, 3)
+  maeKrwPerL            Decimal?                  @db.Decimal(10, 3)
+  startedAt             DateTime?
+  completedAt           DateTime?
+  errorSummary          String?
+  metadata              Json?
+  points                ForecastPoint[]
+  createdAt             DateTime                  @default(now())
+  fscResults            FscResult[]
+  transitionSourceRuns  ForecastModelTransition[] @relation("TransitionSourceRun")
+  transitionAppliedRuns ForecastModelTransition[] @relation("TransitionAppliedRun")
 
   @@index([recomputeSnapshotId, createdAt])
   @@map("forecast_runs")
+}
+
+model ForecastModelTransition {
+  id                   String                            @id @default(cuid())
+  datasetKey           String                            @default("national-average-opinet-diesel")
+  shadowSessionId      String
+  candidateFingerprint String
+  baselineFingerprint  String
+  modelVersion         String
+  baselineParams       Json
+  candidateParams      Json
+  shadowSummary        Json
+  candidateSource      String
+  sourceKind           ForecastModelTransitionSourceKind @default(shadow_admin_approved)
+  parentTransitionId   String?
+  parentTransition     ForecastModelTransition?          @relation("TransitionRollback", fields: [parentTransitionId], references: [id], onDelete: SetNull)
+  rollbackTransitions  ForecastModelTransition[]         @relation("TransitionRollback")
+  sourceForecastRunId  String
+  sourceForecastRun    ForecastRun                       @relation("TransitionSourceRun", fields: [sourceForecastRunId], references: [id], onDelete: Restrict)
+  status               ForecastModelTransitionStatus     @default(approved_pending)
+  approvedAt           DateTime
+  appliedAt            DateTime?
+  appliedForecastRunId String?
+  appliedForecastRun   ForecastRun?                      @relation("TransitionAppliedRun", fields: [appliedForecastRunId], references: [id], onDelete: SetNull)
+  cancelledAt          DateTime?
+  cancellationReason   String?
+  createdAt            DateTime                          @default(now())
+  updatedAt            DateTime                          @updatedAt
+
+  @@unique([datasetKey, shadowSessionId])
+  @@index([datasetKey, status])
+  @@map("forecast_model_transitions")
 }
 
 model ForecastPoint {
@@ -333,33 +378,33 @@ model FscResult {
 }
 
 model FscQuarterWeek {
-  id                   String                 @id @default(cuid())
-  fscResultId          String
-  fscResult            FscResult              @relation(fields: [fscResultId], references: [id], onDelete: Restrict)
-  targetYear           Int
-  targetQuarter        Int
-  targetMonth          Int
-  weekNo               Int
-  sequenceNo           Int
-  weekStartDate        DateTime
-  weekEndDate          DateTime
-  officialWeekLabel    String?
-  priceKind            FscPriceKind
-  priceKrwPerL         Decimal?               @db.Decimal(10, 3)
-  actualPriceKrwPerL   Decimal?               @db.Decimal(10, 3)
-  forecastPriceKrwPerL Decimal?               @db.Decimal(10, 3)
-  forecastLowerBoundKrwPerL Decimal?          @db.Decimal(10, 3)
-  forecastUpperBoundKrwPerL Decimal?          @db.Decimal(10, 3)
-  sourcePriceDate      DateTime?
-  sourceRevisionIds    Json?
-  forecastPointId      String?
-  forecastPoint        ForecastPoint?         @relation(fields: [forecastPointId], references: [id], onDelete: SetNull)
-  forecastSourceKind   FscForecastSourceKind?
-  fallbackUsed         Boolean                @default(false)
-  basePriceKrwPerL     Decimal                @db.Decimal(10, 3)
-  priceDiffKrwPerL     Decimal?               @db.Decimal(10, 3)
-  diffRatio            Decimal?               @db.Decimal(10, 6)
-  createdAt            DateTime               @default(now())
+  id                        String                 @id @default(cuid())
+  fscResultId               String
+  fscResult                 FscResult              @relation(fields: [fscResultId], references: [id], onDelete: Restrict)
+  targetYear                Int
+  targetQuarter             Int
+  targetMonth               Int
+  weekNo                    Int
+  sequenceNo                Int
+  weekStartDate             DateTime
+  weekEndDate               DateTime
+  officialWeekLabel         String?
+  priceKind                 FscPriceKind
+  priceKrwPerL              Decimal?               @db.Decimal(10, 3)
+  actualPriceKrwPerL        Decimal?               @db.Decimal(10, 3)
+  forecastPriceKrwPerL      Decimal?               @db.Decimal(10, 3)
+  forecastLowerBoundKrwPerL Decimal?               @db.Decimal(10, 3)
+  forecastUpperBoundKrwPerL Decimal?               @db.Decimal(10, 3)
+  sourcePriceDate           DateTime?
+  sourceRevisionIds         Json?
+  forecastPointId           String?
+  forecastPoint             ForecastPoint?         @relation(fields: [forecastPointId], references: [id], onDelete: SetNull)
+  forecastSourceKind        FscForecastSourceKind?
+  fallbackUsed              Boolean                @default(false)
+  basePriceKrwPerL          Decimal                @db.Decimal(10, 3)
+  priceDiffKrwPerL          Decimal?               @db.Decimal(10, 3)
+  diffRatio                 Decimal?               @db.Decimal(10, 6)
+  createdAt                 DateTime               @default(now())
 
   @@unique([fscResultId, sequenceNo])
   @@index([targetYear, targetQuarter, sequenceNo])

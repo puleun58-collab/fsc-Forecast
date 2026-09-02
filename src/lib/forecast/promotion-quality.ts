@@ -1,4 +1,5 @@
 import {
+  PROMOTION_COOLDOWN_DAYS,
   PROMOTION_LONG_WINDOW_TOLERANCE_RATIO,
   PROMOTION_MAX_ERROR_TOLERANCE_RATIO,
   PROMOTION_MIN_MAE_IMPROVEMENT_RATIO,
@@ -6,6 +7,31 @@ import {
   PROMOTION_VOLATILITY_TOLERANCE_RATIO,
 } from "./forecast-model-config";
 import type { RunWalkForwardBacktestResult } from "./run-walk-forward-backtest";
+
+const DAY_MS = 86_400_000;
+
+export interface PromotionCooldownState {
+  elapsed: boolean;
+  remainingDays: number;
+}
+
+/** 자동 승격과 관리자 전환 승인이 같은 보호 기간을 사용하도록 공유한다. */
+export function evaluatePromotionCooldown(
+  promotedAt: Date | null,
+  now: Date,
+): PromotionCooldownState {
+  if (promotedAt === null) {
+    return { elapsed: true, remainingDays: 0 };
+  }
+
+  const elapsedMs = now.getTime() - promotedAt.getTime();
+  const cooldownMs = PROMOTION_COOLDOWN_DAYS * DAY_MS;
+
+  return {
+    elapsed: elapsedMs >= cooldownMs,
+    remainingDays: elapsedMs >= cooldownMs ? 0 : Math.ceil((cooldownMs - elapsedMs) / DAY_MS),
+  };
+}
 
 export interface PromotionQualityChecks {
   maeImprovementRatio: number | null;

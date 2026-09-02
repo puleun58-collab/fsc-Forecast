@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import type { ForecastModelParams } from './forecast-model-config';
-import type { TuningCandidate } from './parameter-sensitivity';
 import {
   buildCandidateFingerprint,
+  type ShadowCandidateInput,
   readShadowValidation,
   recordShadowCycle,
   resolveShadowSession,
@@ -25,31 +25,11 @@ const BASELINE: ForecastModelParams = {
 
 const CANDIDATE_PARAMS: ForecastModelParams = { ...BASELINE, trendLookbackWeeks: 6 };
 
-function tuningCandidate(params = CANDIDATE_PARAMS, meets = true): TuningCandidate {
-  const metrics = {
-    sampleCount: 13,
-    maeKrwPerL: 18.4,
-    mapePct: 1.02,
-    maxAbsoluteErrorKrwPerL: 40,
-    directionAccuracyRatio: 0.7,
-    forecastChurnKrwPerL: 4,
-  };
-
+function tuningCandidate(params = CANDIDATE_PARAMS, meets = true): ShadowCandidateInput {
   return {
-    label: '6주',
-    groupKey: 'trendLookback',
     params,
-    recentOneStep: metrics,
-    longOneStep: metrics,
-    qualityChecks: {
-      maeImprovementRatio: 0.2,
-      mapeImprovementPctPoint: 0.25,
-      meetsMinimumImprovement: true,
-      longStable: true,
-      maxErrorStable: true,
-      churnStable: true,
-    },
     meetsPromotionQuality: meets,
+    source: 'parameter-sensitivity:trendLookback',
   };
 }
 
@@ -62,7 +42,7 @@ function startSession(now = new Date('2026-09-02T00:00:00.000Z')): ShadowValidat
     previousSession: null,
     modelVersion: MODEL_VERSION,
     baselineParams: BASELINE,
-    tuningCandidates: [tuningCandidate()],
+    candidates: [tuningCandidate()],
     now,
   });
 
@@ -97,14 +77,14 @@ test('a session starts only from a qualified sensitivity candidate that differs 
     previousSession: null,
     modelVersion: MODEL_VERSION,
     baselineParams: BASELINE,
-    tuningCandidates: [tuningCandidate(BASELINE)],
+    candidates: [tuningCandidate(BASELINE)],
     now: new Date(),
   });
   const unqualified = resolveShadowSession({
     previousSession: null,
     modelVersion: MODEL_VERSION,
     baselineParams: BASELINE,
-    tuningCandidates: [tuningCandidate(CANDIDATE_PARAMS, false)],
+    candidates: [tuningCandidate(CANDIDATE_PARAMS, false)],
     now: new Date(),
   });
 
@@ -237,14 +217,14 @@ test('changing the operating parameters or model version stops the session', () 
     previousSession: session,
     modelVersion: MODEL_VERSION,
     baselineParams: { ...BASELINE, trendLookbackWeeks: 10 },
-    tuningCandidates: [tuningCandidate()],
+    candidates: [tuningCandidate()],
     now: new Date(),
   });
   const versionChanged = resolveShadowSession({
     previousSession: session,
     modelVersion: 'weekly-anchor-trend-v3',
     baselineParams: BASELINE,
-    tuningCandidates: [tuningCandidate()],
+    candidates: [tuningCandidate()],
     now: new Date(),
   });
 
@@ -260,7 +240,7 @@ test('an in-flight session keeps its candidate even when a better candidate appe
     previousSession: session,
     modelVersion: MODEL_VERSION,
     baselineParams: BASELINE,
-    tuningCandidates: [tuningCandidate({ ...BASELINE, trendLookbackWeeks: 4 })],
+    candidates: [tuningCandidate({ ...BASELINE, trendLookbackWeeks: 4 })],
     now: new Date(),
   });
 
@@ -274,14 +254,14 @@ test('a finished session never restarts with the same candidate fingerprint', ()
     previousSession: finished,
     modelVersion: MODEL_VERSION,
     baselineParams: BASELINE,
-    tuningCandidates: [tuningCandidate()],
+    candidates: [tuningCandidate()],
     now: new Date(),
   });
   const otherCandidate = resolveShadowSession({
     previousSession: finished,
     modelVersion: MODEL_VERSION,
     baselineParams: BASELINE,
-    tuningCandidates: [tuningCandidate({ ...BASELINE, trendLookbackWeeks: 4 })],
+    candidates: [tuningCandidate({ ...BASELINE, trendLookbackWeeks: 4 })],
     now: new Date(),
   });
 

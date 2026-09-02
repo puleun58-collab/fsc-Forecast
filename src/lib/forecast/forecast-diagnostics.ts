@@ -108,6 +108,11 @@ const CandidateSummarySchema = z
     longMaeKrwPerL: NullableNumber,
     maxAbsoluteErrorKrwPerL: NullableNumber,
     forecastChurnKrwPerL: NullableNumber,
+    recentOneStepSampleCount: z.number().nullish().transform((value) => value ?? 0),
+    recentOneStepMaeKrwPerL: NullableNumber,
+    recentOneStepMapePct: NullableNumber,
+    recentOneStepMaxAbsoluteErrorKrwPerL: NullableNumber,
+    longOneStepMaeKrwPerL: NullableNumber,
   })
   .nullish()
   .transform((value) => value ?? null);
@@ -149,6 +154,11 @@ export interface ForecastCandidateView {
   recentMapePct: number | null;
   longMaeKrwPerL: number | null;
   maxAbsoluteErrorKrwPerL: number | null;
+  recentOneStepSampleCount: number;
+  recentOneStepMaeKrwPerL: number | null;
+  recentOneStepMapePct: number | null;
+  recentOneStepMaxAbsoluteErrorKrwPerL: number | null;
+  longOneStepMaeKrwPerL: number | null;
   forecastChurnKrwPerL: number | null;
   status: ForecastCandidateStatus;
 }
@@ -206,6 +216,11 @@ export function readForecastModelDiagnostics(metadata: unknown): ForecastModelDi
         recentMapePct: summary.recentMapePct,
         longMaeKrwPerL: summary.longMaeKrwPerL,
         maxAbsoluteErrorKrwPerL: summary.maxAbsoluteErrorKrwPerL,
+        recentOneStepSampleCount: summary.recentOneStepSampleCount,
+        recentOneStepMaeKrwPerL: summary.recentOneStepMaeKrwPerL,
+        recentOneStepMapePct: summary.recentOneStepMapePct,
+        recentOneStepMaxAbsoluteErrorKrwPerL: summary.recentOneStepMaxAbsoluteErrorKrwPerL,
+        longOneStepMaeKrwPerL: summary.longOneStepMaeKrwPerL,
         forecastChurnKrwPerL: summary.forecastChurnKrwPerL,
         status: selected
           ? ("selected" as const)

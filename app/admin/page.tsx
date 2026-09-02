@@ -8,6 +8,8 @@ import { AdminParameterSensitivity } from '@/components/admin-parameter-sensitiv
 import { AdminOperationHistory } from '@/components/admin-operation-history';
 import { AdminQuarterCard } from '@/components/admin-quarter-card';
 import { AdminShadowValidation } from '@/components/admin-shadow-validation';
+import { AdminModelTransition } from '@/components/admin-model-transition';
+import { AdminPostTransition } from '@/components/admin-post-transition';
 import { AdminQuarterManagement } from '@/components/admin-quarter-management';
 import { AdminWeekComposition } from '@/components/admin-week-composition';
 import { getAdminSession } from '@/lib/auth/admin';
@@ -21,6 +23,7 @@ import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
 import { readBacktestOneStepPoints } from '@/lib/forecast/backtest-detail';
 import { readForecastErrorAnalysis } from '@/lib/forecast/forecast-error-analysis';
 import { readParameterSensitivity } from '@/lib/forecast/parameter-sensitivity';
+import { loadAdminTransitionSection } from '@/lib/forecast/load-model-transition-view';
 import { readShadowValidation } from '@/lib/forecast/shadow-validation';
 import { readForecastModelDiagnostics } from '@/lib/forecast/forecast-diagnostics';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
@@ -52,6 +55,7 @@ export default async function AdminPage() {
     dataHealth,
     operationHistory,
     qualityTrend,
+    transitionSection,
   ] = await Promise.all([
     db.quarterSetting.findMany({
       orderBy: [{ targetYear: 'desc' }, { targetQuarter: 'desc' }],
@@ -92,6 +96,7 @@ export default async function AdminPage() {
     loadAdminDataHealth(),
     loadAdminOperationHistory(),
     loadForecastQualityTrend(activeQuarter.targetYear, activeQuarter.targetQuarter),
+    loadAdminTransitionSection(),
   ]);
 
   const activeResultDto = activeResult ? serializeFscResultDto(activeResult) : null;
@@ -156,6 +161,10 @@ export default async function AdminPage() {
         />
 
         <AdminShadowValidation session={readShadowValidation(forecastRuns[0]?.metadata)} />
+
+        <AdminModelTransition view={transitionSection.transition} />
+
+        <AdminPostTransition view={transitionSection.postTransition} />
 
         <AdminQuarterCard
           quarterLabel={quarterLabel(activeQuarter.targetYear, activeQuarter.targetQuarter)}

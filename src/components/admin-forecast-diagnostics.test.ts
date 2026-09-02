@@ -47,6 +47,11 @@ function createEntry(overrides: Record<string, unknown> = {}) {
           longMaeKrwPerL: 36.1,
           maxAbsoluteErrorKrwPerL: 55.2,
           forecastChurnKrwPerL: 4.1,
+          recentOneStepSampleCount: 13,
+          recentOneStepMaeKrwPerL: 24.21,
+          recentOneStepMapePct: 1.47,
+          recentOneStepMaxAbsoluteErrorKrwPerL: 58.53,
+          longOneStepMaeKrwPerL: 43.13,
         },
         B: null,
         C: {
@@ -58,6 +63,11 @@ function createEntry(overrides: Record<string, unknown> = {}) {
           longMaeKrwPerL: 39.7,
           maxAbsoluteErrorKrwPerL: 67.5,
           forecastChurnKrwPerL: 5.2,
+          recentOneStepSampleCount: 13,
+          recentOneStepMaeKrwPerL: 21.84,
+          recentOneStepMapePct: 1.31,
+          recentOneStepMaxAbsoluteErrorKrwPerL: 52.1,
+          longOneStepMaeKrwPerL: 39.72,
         },
       },
       recent: {
@@ -176,7 +186,7 @@ test('performance blocks separate the reliability basis from the full-horizon ba
   const horizonBlock = markup.slice(horizonStart, horizonEnd);
 
   assert.match(reliabilityBlock, /신뢰도 기준 · 최근 13주/);
-  assert.match(reliabilityBlock, /신뢰도 산정에 사용하는 최근 13주 1주 ahead 성능입니다/);
+  assert.match(reliabilityBlock, /최근 13주의 다음 주 예측 결과를 기준으로 산정한 성능입니다/);
   assert.match(reliabilityBlock, />C<\/span>/);
   assert.match(reliabilityBlock, /<span>MAPE<\/span><strong>1\.47%<\/strong>/);
   assert.match(reliabilityBlock, /<span>MAE<\/span><strong>28\.42원\/L<\/strong>/);
@@ -185,17 +195,41 @@ test('performance blocks separate the reliability basis from the full-horizon ba
 
   assert.match(markup.slice(horizonStart, horizonStart + 60), /<details class="admin-panel admin-disclosure">/);
   assert.doesNotMatch(markup.slice(horizonStart, horizonStart + 80), /\sopen(?:=|>|\s)/);
-  assert.match(horizonBlock, /전체 Horizon 성능 · 참고/);
-  assert.match(horizonBlock, /<span>MAPE<\/span><strong>9\.38%<\/strong>/);
-  assert.match(horizonBlock, /<span>MAE<\/span><strong>179\.35원\/L<\/strong>/);
-  assert.match(
-    horizonBlock,
-    /1주부터 최대 13주 ahead 예측을 모두 포함한 통합 성능이며, 신뢰도 등급 산정에는 직접 사용하지 않습니다/,
-  );
+  assert.match(horizonBlock, /1~13주 전체 예측 성능 · 참고/);
+  assert.match(horizonBlock, /<span>전체 예측 MAPE<\/span><strong>9\.38%<\/strong>/);
+  assert.match(horizonBlock, /<span>전체 예측 MAE<\/span><strong>179\.35원\/L<\/strong>/);
+  assert.match(horizonBlock, /다음 주부터 최대 13주 후까지의 예측을 모두 포함한 성능입니다/);
+  assert.match(horizonBlock, /전체 예측 MAE/);
+  assert.match(horizonBlock, /전체 예측 MAPE/);
+  assert.equal(horizonBlock.match(/diagnostics-metrics-table/g)?.length, 1);
+  assert.match(horizonBlock, /data-label="전체 예측 MAE"/);
+  assert.match(horizonBlock, /장기 예측 MAE/);
+  assert.match(horizonBlock, /평가 개수/);
+  assert.match(horizonBlock, /18\.42원\/L/);
+  assert.match(horizonBlock, /0\.97%/);
   assert.ok(reliabilityStart < judgmentStart);
   assert.ok(judgmentStart < horizonStart);
   assert.ok(horizonStart < candidatesStart);
   assert.doesNotMatch(markup, /최근 구간/);
+  const candidateBlock = markup.slice(candidatesStart);
+  assert.match(candidateBlock, /최근 13주 MAE/);
+  assert.equal(candidateBlock.match(/diagnostics-metrics-table/g)?.length, 1);
+  assert.match(candidateBlock, /data-label="최근 13주 MAE"/);
+  assert.match(candidateBlock, /data-label="최근 13주 MAPE"/);
+  assert.match(candidateBlock, /data-label="최근 26주 MAE"/);
+  assert.match(candidateBlock, /data-label="13주 최대오차"/);
+  assert.match(candidateBlock, /data-label="표본"/);
+  assert.match(candidateBlock, /data-label="상태"/);
+  assert.match(candidateBlock, /최근 13주 MAPE/);
+  assert.match(candidateBlock, /최근 26주 MAE/);
+  assert.match(candidateBlock, /13주 최대오차/);
+  assert.match(candidateBlock, /24\.21원\/L/);
+  assert.match(candidateBlock, /1\.47%/);
+  assert.match(candidateBlock, /43\.13원\/L/);
+  assert.match(candidateBlock, /58\.53원\/L/);
+  assert.match(candidateBlock, /13주/);
+  assert.doesNotMatch(candidateBlock, /169개/);
+  assert.doesNotMatch(markup, /1주 ahead|Horizon/);
 });
 
 test('a run without one-step diagnostics never substitutes the full-horizon metrics', () => {
@@ -210,8 +244,8 @@ test('a run without one-step diagnostics never substitutes the full-horizon metr
   assert.match(reliabilityBlock, /신뢰도 기준 성능 데이터 없음/);
   assert.match(reliabilityBlock, /등급 데이터 없음/);
   assert.doesNotMatch(reliabilityBlock, /9\.38%|179\.35원\/L/);
-  assert.match(markup, /<span>MAPE<\/span><strong>9\.38%<\/strong>/);
-  assert.match(markup, /<span>MAE<\/span><strong>179\.35원\/L<\/strong>/);
+  assert.match(markup, /<span>전체 예측 MAPE<\/span><strong>9\.38%<\/strong>/);
+  assert.match(markup, /<span>전체 예측 MAE<\/span><strong>179\.35원\/L<\/strong>/);
 });
 
 test('model selection history is compact, grouped by repeated outcome, and capped at three rows', () => {
