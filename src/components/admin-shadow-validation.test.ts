@@ -137,6 +137,7 @@ test('runs without shadow metadata explain that validation has not started', () 
   const markup = render(null);
 
   assert.match(markup, /Shadow 검증 이력이 없습니다/);
-  assert.match(markup, /민감도 분석에서 검토 후보가 선정되면 다음 Forecast 실행부터 검증이 시작됩니다/);
+  assert.match(markup, /비교 분석에서 개선 후보가 나오면 다음 예측부터 실제 데이터로 검증을 시작합니다/);
+  assert.doesNotMatch(markup, /Actual로만 검증|튜닝 검토 후보를/);
   assert.doesNotMatch(markup, /<table/);
 });

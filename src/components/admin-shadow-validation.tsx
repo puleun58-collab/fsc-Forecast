@@ -202,10 +202,10 @@ export function AdminShadowValidation({ session }: { session: ShadowValidationSe
       <SectionCard
         title="Shadow 튜닝 후보 검증"
         badge="대기"
-        description="튜닝 검토 후보를 새 Actual로만 검증합니다. 검증 결과로 운영 모델을 자동 변경하지 않습니다."
+        description="개선 가능성이 있는 설정을 새 실제 데이터로 다시 검증합니다. 검증 결과가 좋아도 자동으로 적용되지는 않습니다."
         className="admin-shadow"
         emptyStateTitle="Shadow 검증 이력이 없습니다."
-        emptyStateCopy="민감도 분석에서 검토 후보가 선정되면 다음 Forecast 실행부터 검증이 시작됩니다."
+        emptyStateCopy="비교 분석에서 개선 후보가 나오면 다음 예측부터 실제 데이터로 검증을 시작합니다."
       />
     );
   }
@@ -223,7 +223,7 @@ export function AdminShadowValidation({ session }: { session: ShadowValidationSe
             : view.label}
         </span>
       }
-      description="튜닝 검토 후보를 새 Actual로만 검증합니다. 검증 결과로 운영 모델을 자동 변경하지 않습니다."
+      description="개선 가능성이 있는 설정을 새 실제 데이터로 다시 검증합니다. 검증 결과가 좋아도 자동으로 적용되지는 않습니다."
       className="admin-shadow"
     >
       <div className="admin-detail-stack">
