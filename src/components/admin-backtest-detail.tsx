@@ -62,7 +62,7 @@ function BacktestRow({ row }: { row: BacktestDetailRow }) {
       </td>
       <td data-label="방향">
         <span className={`status-tag ${row.directionHit ? 'status-tag--ok' : 'status-tag--warning'}`}>
-          {row.directionHit ? '방향 적중' : '방향 실패'}
+          {row.directionHit ? '적중' : '실패'}
         </span>
       </td>
     </tr>

@@ -43,9 +43,10 @@ test('the backtest table stays collapsed and lists each week with signed error a
   assert.match(markup, /-37\.81원\/L/);
   assert.match(markup, /2\.02%/);
   assert.match(markup, /<th scope="col">방향 적중 여부<\/th>/);
-  assert.match(markup, /<span class="status-tag status-tag--warning">방향 실패<\/span>/);
+  assert.match(markup, /<span class="status-tag status-tag--warning">실패<\/span>/);
   assert.match(markup, /\+2\.68원\/L/);
-  assert.match(markup, /<span class="status-tag status-tag--ok">방향 적중<\/span>/);
+  assert.match(markup, /<span class="status-tag status-tag--ok">적중<\/span>/);
+  assert.doesNotMatch(markup, /status-tag--ok">방향 적중|status-tag--warning">방향 실패/);
   assert.match(markup, /<p class="admin-decision__note">오차는 Forecast에서 Actual을 뺀 값입니다\.<\/p>/);
   assert.match(
     markup,
