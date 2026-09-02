@@ -1,3 +1,4 @@
+import { AdminDisclosureToggle } from './admin-disclosure-toggle';
 import { SectionCard } from './section-card';
 
 import type {
@@ -39,10 +40,7 @@ function OperationRow({ event }: { event: AdminOperationEvent }) {
       <details className="operation-history-entry">
         <summary className="operation-history-row">
           {rowContent}
-          <span className="operation-history-row__toggle admin-disclosure__toggle" aria-hidden="true">
-            <span className="admin-disclosure__toggle-closed">상세 보기 ▾</span>
-            <span className="admin-disclosure__toggle-open">상세 접기 ▴</span>
-          </span>
+          <AdminDisclosureToggle className="operation-history-row__toggle" />
         </summary>
         <div className="operation-history-detail">
           {event.details.length > 0 ? (
@@ -96,11 +94,8 @@ export function AdminOperationHistory({ events }: { events: readonly AdminOperat
       {events.length > OPERATION_HISTORY_PREVIEW_COUNT ? (
         <details className="admin-disclosure admin-disclosure--inline">
           <summary className="admin-disclosure__summary">
-            <strong>전체 이력</strong>
-            <span className="admin-disclosure__toggle" aria-hidden="true">
-              <span className="admin-disclosure__toggle-closed">전체 이력 보기 ▾</span>
-              <span className="admin-disclosure__toggle-open">전체 이력 접기 ▴</span>
-            </span>
+            <strong>전체 이력 {events.length}건</strong>
+            <AdminDisclosureToggle />
           </summary>
           <div className="admin-disclosure__body">
             <ul className="operation-history-list">

@@ -1,3 +1,4 @@
+import { AdminDisclosureToggle } from './admin-disclosure-toggle';
 import { SectionCard } from './section-card';
 
 import { formatDashboardDate, formatDashboardDateTime } from '@/lib/dashboard/dashboard-time';
@@ -57,10 +58,7 @@ export function AdminDataHealthPanel({ summary }: { summary: DataHealthSummary }
                       <details className="data-health-table__error">
                         <summary>
                           <span>오류 상세</span>
-                          <span className="admin-disclosure__toggle" aria-hidden="true">
-                            <span className="admin-disclosure__toggle-closed">상세 보기 ▾</span>
-                            <span className="admin-disclosure__toggle-open">상세 접기 ▴</span>
-                          </span>
+                          <AdminDisclosureToggle />
                         </summary>
                         <p>{item.errorMessage}</p>
                         {item.errorAt ? <span>최근 오류 {formatDashboardDateTime(item.errorAt)}</span> : null}

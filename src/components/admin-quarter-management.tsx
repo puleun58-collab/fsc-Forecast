@@ -1,4 +1,5 @@
 import { AdminActionButton } from './admin-action-button';
+import { AdminDisclosureToggle } from './admin-disclosure-toggle';
 import { SectionCard } from './section-card';
 
 export type AdminQuarterSummary = {
@@ -88,10 +89,7 @@ export function AdminQuarterManagement({ quarters }: AdminQuarterManagementProps
           <details className="admin-panel admin-disclosure">
             <summary className="admin-disclosure__summary">
               <strong>이후 준비 분기</strong>
-              <span className="admin-disclosure__toggle" aria-hidden="true">
-                <span className="admin-disclosure__toggle-closed">상세 보기 ▾</span>
-                <span className="admin-disclosure__toggle-open">상세 접기 ▴</span>
-              </span>
+              <AdminDisclosureToggle />
             </summary>
             <div className="admin-disclosure__body">
               <ul className="quarter-management-list">
@@ -107,10 +105,7 @@ export function AdminQuarterManagement({ quarters }: AdminQuarterManagementProps
           <details className="admin-panel admin-disclosure">
             <summary className="admin-disclosure__summary">
               <strong>지난 분기</strong>
-              <span className="admin-disclosure__toggle" aria-hidden="true">
-                <span className="admin-disclosure__toggle-closed">상세 보기 ▾</span>
-                <span className="admin-disclosure__toggle-open">상세 접기 ▴</span>
-              </span>
+              <AdminDisclosureToggle />
             </summary>
             <div className="admin-disclosure__body">
               <ul className="quarter-management-list">

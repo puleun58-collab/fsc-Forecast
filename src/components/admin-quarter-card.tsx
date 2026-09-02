@@ -1,4 +1,5 @@
 import { AdminActionButton } from './admin-action-button';
+import { AdminDisclosureToggle } from './admin-disclosure-toggle';
 import {
   formatSignedPriceText,
   mapApprovalStatus,
@@ -103,14 +104,14 @@ export function AdminQuarterCard({
           <AdminActionButton
             label="FSC 재계산"
             endpoint="/api/fsc/recompute"
-            confirmMessage="새 immutable FSC 결과를 생성합니다. 계속할까요?"
+            confirmMessage="최신 데이터를 기준으로 FSC 결과를 다시 계산합니다. 계속하시겠습니까?"
           />
-          {result === null ? null : (
+          {result === null || result.approvalStatus !== 'pending' ? null : (
             <AdminActionButton
               label="기준 시나리오 승인"
               endpoint="/api/fsc/approve"
               payload={{ resultId: result.id }}
-              confirmMessage={`결과 ${result.id}를 승인합니다. 계속할까요?`}
+              confirmMessage="현재 FSC 결과를 기준 시나리오로 승인합니다. 계속하시겠습니까?"
             />
           )}
         </div>
@@ -118,10 +119,7 @@ export function AdminQuarterCard({
         <details className="admin-panel admin-disclosure">
           <summary className="admin-disclosure__summary">
             <strong>고급 운영</strong>
-            <span className="admin-disclosure__toggle" aria-hidden="true">
-              <span className="admin-disclosure__toggle-closed">상세 보기 ▾</span>
-              <span className="admin-disclosure__toggle-open">상세 접기 ▴</span>
-            </span>
+            <AdminDisclosureToggle />
           </summary>
           <div className="admin-disclosure__body">
             <p className="admin-decision__note">

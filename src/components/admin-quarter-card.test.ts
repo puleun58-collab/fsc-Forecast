@@ -89,3 +89,24 @@ test('a quarter without an FSC result keeps recompute and advanced operations av
   assert.doesNotMatch(markup, /기준 시나리오 승인/);
   assert.doesNotMatch(markup, /직전 결과 대비/);
 });
+
+test('the approval action appears only while the result is still awaiting approval', () => {
+  const pending = render(RESULT);
+  const approved = render({ ...RESULT, approvalStatus: 'approved' });
+  const rejected = render({ ...RESULT, approvalStatus: 'rejected' });
+
+  assert.match(pending, /기준 시나리오 승인/);
+  assert.match(pending, /승인 상태<\/span><strong>승인 대기<\/strong>/);
+  assert.doesNotMatch(approved, /기준 시나리오 승인/);
+  assert.match(approved, /승인 상태<\/span><strong>승인 완료<\/strong>/);
+  assert.doesNotMatch(rejected, /기준 시나리오 승인/);
+  assert.match(rejected, /승인 상태<\/span><strong>반려<\/strong>/);
+});
+
+test('routine actions never leak internal identifiers into the card', () => {
+  const markup = render(RESULT);
+
+  assert.doesNotMatch(markup, /immutable|fsc-result-1|resultId/);
+  assert.match(markup, /<button type="button" class="button button--secondary">FSC 재계산<\/button>/);
+  assert.match(markup, /<button type="button" class="button button--secondary">기준 시나리오 승인<\/button>/);
+});

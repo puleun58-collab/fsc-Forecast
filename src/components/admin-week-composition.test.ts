@@ -83,8 +83,7 @@ test('the default view summarizes actual, forecast, and the quarter average only
   assert.match(markup.slice(0, summaryEnd), /Actual<\/span><strong>10주<\/strong>/);
   assert.match(markup.slice(0, summaryEnd), /Forecast<\/span><strong>3주<\/strong>/);
   assert.match(markup.slice(0, summaryEnd), /분기 예상 평균<\/span><strong>1,851\.37원\/L<\/strong>/);
-  assert.match(markup, /<strong>주차 상세<\/strong>/);
-  assert.match(markup, /상세 보기 ▾/);
+  assert.match(markup, /<strong>주차 상세<\/strong><span class="admin-disclosure__toggle" aria-hidden="true"><span class="admin-disclosure__toggle-closed">보기 ▾<\/span><span class="admin-disclosure__toggle-open">접기 ▴<\/span><\/span>/);
   assert.doesNotMatch(markup, /weekly_point|weekly_trend_extension|carry_forward|_fallback/);
 });
 

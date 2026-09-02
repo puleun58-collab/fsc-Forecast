@@ -75,8 +75,8 @@ test('each expanded detail is a full-width panel that follows its own row', () =
 
     assert.match(item, /<details class="operation-history-entry">/);
     assert.ok(rowEnd > 0 && detailStart > rowEnd);
-    assert.equal(item.match(/상세 보기 ▾/g)?.length, 1);
-    assert.equal(item.match(/상세 접기 ▴/g)?.length, 1);
+    assert.equal(item.match(/보기 ▾/g)?.length, 1);
+    assert.equal(item.match(/접기 ▴/g)?.length, 1);
     assert.doesNotMatch(item.slice(0, rowEnd), /operation-history-detail/);
   }
 
@@ -91,7 +91,7 @@ test('an event without details renders a plain row and no toggle', () => {
   );
 
   assert.equal(markup.match(/<details class="operation-history-entry">/g)?.length, 1);
-  assert.equal(markup.match(/상세 보기 ▾/g)?.length, 1);
+  assert.equal(markup.match(/보기 ▾/g)?.length, 1);
   assert.match(markup, /<li class="operation-history-item operation-history-item--success"><div class="operation-history-row">/);
 });
 
@@ -121,14 +121,14 @@ test('only the five newest events stay visible and the rest move behind one disc
   assert.match(preview, /수집 4/);
   assert.doesNotMatch(preview, /수집 5/);
   assert.match(rest, /수집 7/);
-  assert.match(rest, /전체 이력 보기 ▾/);
+  assert.match(rest, /<strong>전체 이력 8건<\/strong>/);
   assert.doesNotMatch(markup.slice(disclosureStart, disclosureStart + 70), /\sopen(?:=|>|\s)/);
-  assert.equal(markup.match(/상세 보기 ▾/g)?.length, 8);
+  assert.equal(markup.match(/보기 ▾/g)?.length, 9);
 });
 
 test('five or fewer events render without the extra disclosure', () => {
   const markup = renderToStaticMarkup(createElement(AdminOperationHistory, { events: EVENTS }));
 
   assert.doesNotMatch(markup, /admin-disclosure--inline/);
-  assert.doesNotMatch(markup, /전체 이력 보기/);
+  assert.doesNotMatch(markup, /전체 이력/);
 });

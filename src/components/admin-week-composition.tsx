@@ -1,3 +1,4 @@
+import { AdminDisclosureToggle } from './admin-disclosure-toggle';
 import {
   formatWeekDisplayName,
   mapForecastSourceKind,
@@ -92,10 +93,7 @@ export function AdminWeekComposition({
         <details className="admin-panel admin-disclosure">
           <summary className="admin-disclosure__summary">
             <strong>주차 상세</strong>
-            <span className="admin-disclosure__toggle" aria-hidden="true">
-              <span className="admin-disclosure__toggle-closed">상세 보기 ▾</span>
-              <span className="admin-disclosure__toggle-open">상세 접기 ▴</span>
-            </span>
+            <AdminDisclosureToggle />
           </summary>
           <div className="admin-disclosure__body">
             <ul className="week-composition-list">
@@ -136,10 +134,7 @@ export function AdminWeekComposition({
           <details className="admin-panel admin-disclosure">
             <summary className="admin-disclosure__summary">
               <strong>Forecast 산출 근거</strong>
-              <span className="admin-disclosure__toggle" aria-hidden="true">
-                <span className="admin-disclosure__toggle-closed">상세 보기 ▾</span>
-                <span className="admin-disclosure__toggle-open">상세 접기 ▴</span>
-              </span>
+              <AdminDisclosureToggle />
             </summary>
             <div className="admin-disclosure__body">
               <div className="admin-metric-grid">

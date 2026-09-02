@@ -1,3 +1,4 @@
+import { AdminDisclosureToggle } from './admin-disclosure-toggle';
 import { SectionCard } from './section-card';
 
 import {
@@ -326,10 +327,7 @@ export function AdminForecastDiagnostics({
         <details className="admin-panel admin-disclosure">
           <summary className="admin-disclosure__summary">
             <strong>전체 Horizon 성능 · 참고</strong>
-            <span className="admin-disclosure__toggle" aria-hidden="true">
-              <span className="admin-disclosure__toggle-closed">상세 보기 ▾</span>
-              <span className="admin-disclosure__toggle-open">상세 접기 ▴</span>
-            </span>
+            <AdminDisclosureToggle />
           </summary>
           <div className="admin-disclosure__body">
             <div className="admin-decision__metrics admin-decision__metrics--wide admin-disclosure__metrics">
@@ -440,10 +438,7 @@ export function AdminForecastDiagnostics({
                 <details className="admin-disclosure admin-disclosure--inline">
                   <summary className="admin-disclosure__summary">
                     <strong>전체 이력 {history.length}건</strong>
-                    <span className="admin-disclosure__toggle" aria-hidden="true">
-                      <span className="admin-disclosure__toggle-closed">전체 이력 보기 ▾</span>
-                      <span className="admin-disclosure__toggle-open">전체 이력 접기 ▴</span>
-                    </span>
+                    <AdminDisclosureToggle />
                   </summary>
                   <div className="admin-disclosure__body">
                     <ul className="model-history-list">

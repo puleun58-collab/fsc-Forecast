@@ -67,7 +67,7 @@ test('past quarters stay collapsed behind one shared disclosure', () => {
   assert.ok(detailsStart > 0);
   assert.doesNotMatch(markup.slice(detailsStart, detailsStart + 60), /\sopen(?:=|>|\s)/);
   assert.match(markup.slice(detailsStart), /<strong>지난 분기<\/strong>/);
-  assert.match(markup.slice(detailsStart), /상세 보기 ▾/);
+  assert.match(markup.slice(detailsStart), /보기 ▾/);
   assert.match(markup.slice(detailsStart), /<span class="status-tag">완료<\/span>/);
 });
 

@@ -244,7 +244,7 @@ test('model selection history is compact, grouped by repeated outcome, and cappe
   assert.match(rest, /2026\.09\.02 11:00 KST/);
   assert.match(rest, /2026\.08\.30 11:00 KST/);
   assert.doesNotMatch(rest, /· 3회/);
-  assert.match(rest, /전체 이력 보기 ▾/);
+  assert.match(rest, /<strong>전체 이력 6건<\/strong><span class="admin-disclosure__toggle" aria-hidden="true"><span class="admin-disclosure__toggle-closed">보기 ▾<\/span>/);
   assert.doesNotMatch(markup.slice(disclosureStart, disclosureStart + 70), /\sopen(?:=|>|\s)/);
 });
 
@@ -278,5 +278,5 @@ test('three or fewer runs render without the extra disclosure', () => {
 
   assert.match(markup, /최근 모델 선택 이력/);
   assert.equal(markup.match(/class="model-history-row"/g)?.length, 1);
-  assert.doesNotMatch(markup, /전체 이력 보기/);
+  assert.doesNotMatch(markup, /전체 이력/);
 });
