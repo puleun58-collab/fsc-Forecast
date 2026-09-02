@@ -42,9 +42,14 @@ test('the backtest table stays collapsed and lists each week with signed error a
   assert.match(markup, /1,870\.21원\/L/);
   assert.match(markup, /-37\.81원\/L/);
   assert.match(markup, /2\.02%/);
-  assert.match(markup, /<span class="status-tag status-tag--warning">실패<\/span>/);
+  assert.match(markup, /<th scope="col">방향 적중 여부<\/th>/);
+  assert.match(markup, /<span class="status-tag status-tag--warning">방향 실패<\/span>/);
   assert.match(markup, /\+2\.68원\/L/);
-  assert.match(markup, /<span class="status-tag status-tag--ok">적중<\/span>/);
+  assert.match(markup, /<span class="status-tag status-tag--ok">방향 적중<\/span>/);
+  assert.match(
+    markup,
+    /방향 적중 여부는 직전 Actual 대비 다음 주\s+상승·하락 방향이 일치했는지를 의미합니다/,
+  );
 });
 
 test('rows carry mobile labels and Opinet week names', () => {

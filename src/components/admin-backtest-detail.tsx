@@ -62,7 +62,7 @@ function BacktestRow({ row }: { row: BacktestDetailRow }) {
       </td>
       <td data-label="방향">
         <span className={`status-tag ${row.directionHit ? 'status-tag--ok' : 'status-tag--warning'}`}>
-          {row.directionHit ? '적중' : '실패'}
+          {row.directionHit ? '방향 적중' : '방향 실패'}
         </span>
       </td>
     </tr>
@@ -100,7 +100,7 @@ export function AdminBacktestDetail({ points }: { points: readonly BacktestDetai
                     <th scope="col">Actual</th>
                     <th scope="col">오차</th>
                     <th scope="col">오차율</th>
-                    <th scope="col">방향</th>
+                    <th scope="col">방향 적중 여부</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -112,7 +112,8 @@ export function AdminBacktestDetail({ points }: { points: readonly BacktestDetai
             </div>
             <p className="admin-decision__note">
               각 주차는 해당 시점까지의 데이터만으로 만든 1주 ahead walk-forward 예측과 실제값을 비교한
-              결과입니다. 오차는 Forecast에서 Actual을 뺀 값입니다.
+              결과입니다. 오차는 Forecast에서 Actual을 뺀 값이며, 방향 적중 여부는 직전 Actual 대비 다음 주
+              상승·하락 방향이 일치했는지를 의미합니다.
             </p>
           </>
         )}
