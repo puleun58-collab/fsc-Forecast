@@ -20,6 +20,7 @@ import {
   runWalkForwardBacktest,
   type RunWalkForwardBacktestResult,
 } from "./run-walk-forward-backtest";
+import { evaluatePromotionQuality } from "./promotion-quality";
 import type { ForecastSeriesPoint } from "./types";
 
 const DAY_MS = 86_400_000;
@@ -57,6 +58,8 @@ export interface SelectForecastModelResult {
   bestByModelId: Record<ForecastModelId, ForecastModelCandidateSummary | null>;
   /** 진단용: 모델별 최고 후보의 walk-forward 결과. 선택 로직에는 사용하지 않는다. */
   bestBacktestByModelId: Record<ForecastModelId, RunWalkForwardBacktestResult | null>;
+  /** 진단용: 이번 실행에서 평가한 모든 후보 결과. 재계산을 피하려고 그대로 넘긴다. */
+  candidateBacktests: RunWalkForwardBacktestResult[];
   evaluatedCandidateCount: number;
 }
 
@@ -220,6 +223,7 @@ export function selectForecastModel(input: SelectForecastModelInput): SelectFore
     mapeImprovementPctPoint: null,
     bestByModelId,
     bestBacktestByModelId,
+    candidateBacktests: results,
     evaluatedCandidateCount: results.length,
   };
 
@@ -252,34 +256,21 @@ export function selectForecastModel(input: SelectForecastModelInput): SelectFore
       mapeImprovementPctPoint: null,
       bestByModelId,
       bestBacktestByModelId,
+      candidateBacktests: results,
       evaluatedCandidateCount: results.length,
     };
   }
 
-  const maeImprovementRatio = currentMae === 0 ? null : (currentMae - bestMae) / currentMae;
-  const mapeImprovementPctPoint =
-    currentMape === null || bestMape === null ? null : currentMape - bestMape;
+  const quality = evaluatePromotionQuality(currentBacktest, best);
+  const maeImprovementRatio = quality.maeImprovementRatio;
+  const mapeImprovementPctPoint = quality.mapeImprovementPctPoint;
   const cooldownElapsed =
     input.currentPromotedAt === null ||
     input.now.getTime() - input.currentPromotedAt.getTime() >= PROMOTION_COOLDOWN_DAYS * DAY_MS;
-  const meetsMinimumImprovement =
-    (maeImprovementRatio !== null && maeImprovementRatio >= PROMOTION_MIN_MAE_IMPROVEMENT_RATIO) ||
-    (mapeImprovementPctPoint !== null &&
-      mapeImprovementPctPoint >= PROMOTION_MIN_MAPE_IMPROVEMENT_PCT_POINT);
-  const longStable =
-    currentBacktest.long.maeKrwPerL === null ||
-    best.long.maeKrwPerL === null ||
-    best.long.maeKrwPerL <= currentBacktest.long.maeKrwPerL * PROMOTION_LONG_WINDOW_TOLERANCE_RATIO;
-  const maxErrorStable =
-    currentBacktest.recent.maxAbsoluteErrorKrwPerL === null ||
-    best.recent.maxAbsoluteErrorKrwPerL === null ||
-    best.recent.maxAbsoluteErrorKrwPerL <=
-      currentBacktest.recent.maxAbsoluteErrorKrwPerL * PROMOTION_MAX_ERROR_TOLERANCE_RATIO;
-  const churnStable =
-    currentBacktest.recent.forecastChurnKrwPerL === null ||
-    best.recent.forecastChurnKrwPerL === null ||
-    best.recent.forecastChurnKrwPerL <=
-      currentBacktest.recent.forecastChurnKrwPerL * PROMOTION_VOLATILITY_TOLERANCE_RATIO;
+  const meetsMinimumImprovement = quality.meetsMinimumImprovement;
+  const longStable = quality.longStable;
+  const maxErrorStable = quality.maxErrorStable;
+  const churnStable = quality.churnStable;
   const rejectionReason = !cooldownElapsed
     ? "kept_current_model_promotion_cooldown"
     : !meetsMinimumImprovement
@@ -312,6 +303,7 @@ export function selectForecastModel(input: SelectForecastModelInput): SelectFore
     mapeImprovementPctPoint,
     bestByModelId,
     bestBacktestByModelId,
+    candidateBacktests: results,
     evaluatedCandidateCount: results.length,
   };
 }

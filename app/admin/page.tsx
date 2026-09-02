@@ -4,6 +4,7 @@ import { AdminDataHealthPanel } from '@/components/admin-data-health-panel';
 import { AdminForecastDiagnostics, type ForecastRunHistoryEntry } from '@/components/admin-forecast-diagnostics';
 import { AdminForecastQualityTrend } from '@/components/admin-forecast-quality-trend';
 import { AdminLogoutButton } from '@/components/admin-logout-button';
+import { AdminParameterSensitivity } from '@/components/admin-parameter-sensitivity';
 import { AdminOperationHistory } from '@/components/admin-operation-history';
 import { AdminQuarterCard } from '@/components/admin-quarter-card';
 import { AdminQuarterManagement } from '@/components/admin-quarter-management';
@@ -18,6 +19,7 @@ import { findLatestBaseFscResultByQuarter } from '@/lib/fsc/load-latest-fsc-resu
 import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
 import { readBacktestOneStepPoints } from '@/lib/forecast/backtest-detail';
 import { readForecastErrorAnalysis } from '@/lib/forecast/forecast-error-analysis';
+import { readParameterSensitivity } from '@/lib/forecast/parameter-sensitivity';
 import { readForecastModelDiagnostics } from '@/lib/forecast/forecast-diagnostics';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
 
@@ -145,6 +147,10 @@ export default async function AdminPage() {
           trend={qualityTrend}
           backtestPoints={readBacktestOneStepPoints(forecastRuns[0]?.metadata)}
           errorAnalysis={readForecastErrorAnalysis(forecastRuns[0]?.metadata)}
+        />
+
+        <AdminParameterSensitivity
+          sensitivity={readParameterSensitivity(forecastRuns[0]?.metadata)}
         />
 
         <AdminQuarterCard

@@ -1855,6 +1855,65 @@ summary.operation-history-row::-webkit-details-marker {
   }
 }
 
+.sensitivity-candidates {
+  gap: 10px;
+  background: var(--bg-card);
+}
+
+.sensitivity-candidates__list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.sensitivity-candidate {
+  display: grid;
+  gap: 2px;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+}
+
+.sensitivity-candidate > strong {
+  color: var(--text-primary);
+  font-size: 0.88rem;
+}
+
+.sensitivity-candidate__checks {
+  color: var(--success-subtle-text);
+  font-weight: 700;
+}
+
+@media (max-width: 700px) {
+  .sensitivity-table thead {
+    display: none;
+  }
+
+  .sensitivity-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+    gap: 4px 12px;
+    padding: 10px 0;
+  }
+
+  .sensitivity-table tbody th,
+  .sensitivity-table tbody td {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    padding: 0;
+    white-space: normal;
+  }
+
+  .sensitivity-table tbody th::before,
+  .sensitivity-table tbody td::before {
+    content: attr(data-label);
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+    font-weight: 700;
+  }
+}
+
 @media (max-width: 380px) {
   .quality-trend-metrics {
     grid-template-columns: minmax(0, 1fr);

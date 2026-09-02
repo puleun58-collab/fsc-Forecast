@@ -19,6 +19,11 @@ import { loadPublicConfirmedLatestDate } from "../opinet/resolve-public-confirme
 import { buildBaselineForecast } from "./build-baseline-forecast";
 import { serializeBacktestOneStepPoints } from "./backtest-detail";
 import { buildForecastErrorAnalysis } from "./forecast-error-analysis";
+import {
+  buildParameterSensitivity,
+  serializeSensitivityParamsKey,
+} from "./parameter-sensitivity";
+import { runWalkForwardBacktest } from "./run-walk-forward-backtest";
 import { buildForecastQualityGate } from "./build-forecast-quality-gate";
 import {
   buildWeeklyForecast,
@@ -495,6 +500,26 @@ async function executeForecastPipeline(
     mapeThresholdPct: FORECAST_MAPE_THRESHOLD_PCT,
     unavailableReason: weeklyForecast.status === "ready" ? null : weeklyForecast.pendingReason,
   });
+  const backtestByParamsKey = new Map(
+    selection.candidateBacktests.map((candidate) => [
+      serializeSensitivityParamsKey(candidate.params),
+      candidate,
+    ]),
+  );
+  const parameterSensitivity = buildParameterSensitivity({
+    currentParams: selection.selectedParams,
+    currentBacktest: selection.selectedBacktest,
+    evaluatedAt: startedAt,
+    // 이미 평가한 후보는 재사용하고, Trend 후보처럼 없는 조합만 새로 계산한다.
+    evaluate: (params) =>
+      backtestByParamsKey.get(serializeSensitivityParamsKey(params)) ??
+      runWalkForwardBacktest({
+        weeklySeries,
+        indicatorSeries: indicatorWeeklySeries,
+        params,
+        horizonCount: FORECAST_WEEKLY_HORIZON_COUNT,
+      }),
+  });
   const approvalState = gate.approvalState;
   const degradedReason = gate.degradedReason;
   const weeklyForecastPoints =
@@ -563,6 +588,7 @@ async function executeForecastPipeline(
             selectedBacktest: selection.selectedBacktest,
             candidateBacktestsByModelId: selection.bestBacktestByModelId,
           }),
+          parameterSensitivity,
         },
         weeklyForecast: {
           status: weeklyForecast.status,
