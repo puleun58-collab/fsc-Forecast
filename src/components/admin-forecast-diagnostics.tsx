@@ -28,6 +28,7 @@ type AdminForecastDiagnosticsProps = {
 };
 
 const MISSING_METRIC_TEXT = '데이터 부족';
+const MODEL_HISTORY_PREVIEW_COUNT = 3;
 const ADMIN_DATE_FORMATTER = new Intl.DateTimeFormat('ko-KR', {
   timeZone: 'Asia/Seoul',
   year: 'numeric',
@@ -107,6 +108,57 @@ function describeRunResult(diagnostics: ForecastModelDiagnostics): string {
     : `Model ${diagnostics.previousModelId} → Model ${diagnostics.selectedParams.modelId} 승격`;
 }
 
+type ModelHistoryGroup = {
+  key: string;
+  dateLabel: string;
+  resultText: string;
+  reasonText: string;
+  promoted: boolean;
+  count: number;
+};
+
+/** 같은 날 같은 판단이 반복된 실행은 화면에서만 한 줄로 묶는다. */
+function groupModelHistory(history: readonly ForecastRunHistoryEntry[]): ModelHistoryGroup[] {
+  const groups: ModelHistoryGroup[] = [];
+
+  for (const entry of history) {
+    const dateLabel = formatDateTime(entry.completedAt);
+    const resultText = describeRunResult(entry.diagnostics);
+    const last = groups.at(-1);
+
+    if (last !== undefined && last.dateLabel === dateLabel && last.resultText === resultText) {
+      last.count += 1;
+      continue;
+    }
+
+    groups.push({
+      key: entry.runId,
+      dateLabel,
+      resultText,
+      reasonText: entry.diagnostics.promotionReasonText,
+      promoted: entry.diagnostics.promoted,
+      count: 1,
+    });
+  }
+
+  return groups;
+}
+
+function ModelHistoryRow({ group }: { group: ModelHistoryGroup }) {
+  return (
+    <li className="model-history-row">
+      <span className="model-history-row__date">{group.dateLabel}</span>
+      <strong className="model-history-row__result">
+        {group.count > 1 ? `${group.resultText} · ${group.count}회` : group.resultText}
+      </strong>
+      <span className="model-history-row__reason">{group.reasonText}</span>
+      <span className={`status-tag ${group.promoted ? 'status-tag--ok' : ''}`.trim()}>
+        {group.promoted ? '승격' : '유지'}
+      </span>
+    </li>
+  );
+}
+
 export function AdminForecastDiagnostics({
   latest,
   history,
@@ -126,6 +178,7 @@ export function AdminForecastDiagnostics({
 
   const { diagnostics } = latest;
   const { selectedParams } = diagnostics;
+  const modelHistoryGroups = groupModelHistory(history);
 
   return (
     <SectionCard
@@ -356,26 +409,35 @@ export function AdminForecastDiagnostics({
         )}
 
         <div className="admin-panel">
-          <strong>최근 모델 변경 이력</strong>
-          {history.length === 0 ? (
+          <strong>최근 모델 선택 이력</strong>
+          {modelHistoryGroups.length === 0 ? (
             <span>기록 없음</span>
           ) : (
-            <ul className="admin-list">
-              {history.map((entry) => (
-                <li key={entry.runId} className="admin-panel">
-                  <div className="admin-row">
-                    <strong>{formatDateTime(entry.completedAt)}</strong>
-                    <span
-                      className={`status-tag ${entry.diagnostics.promoted ? 'status-tag--ok' : ''}`.trim()}
-                    >
-                      {entry.diagnostics.promoted ? '승격' : '유지'}
+            <>
+              <ul className="model-history-list">
+                {modelHistoryGroups.slice(0, MODEL_HISTORY_PREVIEW_COUNT).map((group) => (
+                  <ModelHistoryRow key={group.key} group={group} />
+                ))}
+              </ul>
+              {modelHistoryGroups.length > MODEL_HISTORY_PREVIEW_COUNT ? (
+                <details className="admin-disclosure admin-disclosure--inline">
+                  <summary className="admin-disclosure__summary">
+                    <strong>전체 이력</strong>
+                    <span className="admin-disclosure__toggle" aria-hidden="true">
+                      <span className="admin-disclosure__toggle-closed">전체 이력 보기 ▾</span>
+                      <span className="admin-disclosure__toggle-open">전체 이력 접기 ▴</span>
                     </span>
+                  </summary>
+                  <div className="admin-disclosure__body">
+                    <ul className="model-history-list">
+                      {modelHistoryGroups.slice(MODEL_HISTORY_PREVIEW_COUNT).map((group) => (
+                        <ModelHistoryRow key={group.key} group={group} />
+                      ))}
+                    </ul>
                   </div>
-                  <span>{describeRunResult(entry.diagnostics)}</span>
-                  <span>{entry.diagnostics.promotionReasonText}</span>
-                </li>
-              ))}
-            </ul>
+                </details>
+              ) : null}
+            </>
           )}
         </div>
       </div>

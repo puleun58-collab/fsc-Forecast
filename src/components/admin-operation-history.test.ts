@@ -102,3 +102,33 @@ test('an empty operation history explains how entries appear', () => {
   assert.match(markup, /데이터 수집 또는 Forecast\/FSC 실행 후 이력이 표시됩니다/);
   assert.doesNotMatch(markup, /operation-history-row/);
 });
+
+test('only the five newest events stay visible and the rest move behind one disclosure', () => {
+  const events: AdminOperationEvent[] = Array.from({ length: 8 }, (_, index) => ({
+    ...EVENTS[2]!,
+    id: `ingest:run-${index}`,
+    summary: `수집 ${index}`,
+    occurredAt: new Date(Date.UTC(2026, 8, 1, 12 - index)).toISOString(),
+  }));
+  const markup = renderToStaticMarkup(createElement(AdminOperationHistory, { events }));
+  const disclosureStart = markup.indexOf('<details class="admin-disclosure admin-disclosure--inline">');
+  const preview = markup.slice(0, disclosureStart);
+  const rest = markup.slice(disclosureStart);
+
+  assert.match(markup, /최근 8건/);
+  assert.equal(preview.match(/<li class="operation-history-item /g)?.length, 5);
+  assert.equal(rest.match(/<li class="operation-history-item /g)?.length, 3);
+  assert.match(preview, /수집 4/);
+  assert.doesNotMatch(preview, /수집 5/);
+  assert.match(rest, /수집 7/);
+  assert.match(rest, /전체 이력 보기 ▾/);
+  assert.doesNotMatch(markup.slice(disclosureStart, disclosureStart + 70), /\sopen(?:=|>|\s)/);
+  assert.equal(markup.match(/상세 보기 ▾/g)?.length, 8);
+});
+
+test('five or fewer events render without the extra disclosure', () => {
+  const markup = renderToStaticMarkup(createElement(AdminOperationHistory, { events: EVENTS }));
+
+  assert.doesNotMatch(markup, /admin-disclosure--inline/);
+  assert.doesNotMatch(markup, /전체 이력 보기/);
+});

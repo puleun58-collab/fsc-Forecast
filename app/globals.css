@@ -1444,6 +1444,83 @@ summary.operation-history-row::-webkit-details-marker {
   }
 }
 
+.model-history-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.model-history-row {
+  display: grid;
+  grid-template-columns: minmax(110px, auto) minmax(150px, auto) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 14px;
+  padding: 10px 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.model-history-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.model-history-row:last-child {
+  padding-bottom: 0;
+}
+
+.model-history-row__date {
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.model-history-row__result {
+  font-size: 0.88rem;
+}
+
+.model-history-row__reason {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+}
+
+/* 카드 안에서 다시 패널처럼 보이지 않는 인라인 접기 영역. */
+.admin-disclosure--inline {
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 0;
+  background: transparent;
+}
+
+.admin-disclosure--inline .admin-disclosure__summary {
+  padding: 10px 0;
+}
+
+.admin-disclosure--inline .admin-disclosure__summary:hover {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.admin-disclosure--inline[open] .admin-disclosure__summary {
+  border-bottom: 0;
+}
+
+.admin-disclosure--inline .admin-disclosure__body {
+  padding: 0 0 4px;
+}
+
+@media (max-width: 700px) {
+  .model-history-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .model-history-row__reason {
+    grid-column: 1 / -1;
+  }
+}
+
+
 .week-composition-list {
   display: grid;
   margin: 0;

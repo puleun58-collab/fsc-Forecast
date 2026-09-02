@@ -213,3 +213,45 @@ test('a run without one-step diagnostics never substitutes the full-horizon metr
   assert.match(markup, /<span>MAPE<\/span><strong>9\.38%<\/strong>/);
   assert.match(markup, /<span>MAE<\/span><strong>179\.35원\/L<\/strong>/);
 });
+
+test('model selection history is compact, grouped by repeated outcome, and capped at three rows', () => {
+  const kept = createEntry({ promoted: false, promotionReason: 'kept_current_model_is_best' });
+  const promoted = createEntry();
+  const history = [
+    { ...kept, runId: 'run-a', completedAt: '2026-09-02T02:00:00.000Z' },
+    { ...kept, runId: 'run-b', completedAt: '2026-09-02T05:00:00.000Z' },
+    { ...kept, runId: 'run-c', completedAt: '2026-09-02T08:00:00.000Z' },
+    { ...kept, runId: 'run-d', completedAt: '2026-09-01T02:00:00.000Z' },
+    { ...promoted, runId: 'run-e', completedAt: '2026-08-31T02:00:00.000Z' },
+    { ...kept, runId: 'run-f', completedAt: '2026-08-30T02:00:00.000Z' },
+  ];
+  const markup = renderToStaticMarkup(
+    createElement(AdminForecastDiagnostics, { latest: promoted, history, reliability: RELIABILITY }),
+  );
+  const historyStart = markup.indexOf('최근 모델 선택 이력');
+  const disclosureStart = markup.indexOf('<details class="admin-disclosure admin-disclosure--inline">');
+  const preview = markup.slice(historyStart, disclosureStart);
+  const rest = markup.slice(disclosureStart);
+
+  assert.doesNotMatch(markup, /최근 모델 변경 이력/);
+  assert.ok(historyStart > 0 && disclosureStart > historyStart);
+  assert.equal(preview.match(/class="model-history-row"/g)?.length, 3);
+  assert.match(preview, /2026\.09\.02<\/span><strong class="model-history-row__result">Model C 유지 · 3회<\/strong>/);
+  assert.match(preview, /2026\.09\.01<\/span><strong class="model-history-row__result">Model C 유지<\/strong>/);
+  assert.match(preview, /2026\.08\.31<\/span><strong class="model-history-row__result">Model A → Model C 승격<\/strong>/);
+  assert.equal(rest.match(/class="model-history-row"/g)?.length, 1);
+  assert.match(rest, /2026\.08\.30/);
+  assert.match(rest, /전체 이력 보기 ▾/);
+  assert.doesNotMatch(markup.slice(disclosureStart, disclosureStart + 70), /\sopen(?:=|>|\s)/);
+});
+
+test('three or fewer model history rows render without the extra disclosure', () => {
+  const entry = createEntry();
+  const markup = renderToStaticMarkup(
+    createElement(AdminForecastDiagnostics, { latest: entry, history: [entry], reliability: RELIABILITY }),
+  );
+
+  assert.match(markup, /최근 모델 선택 이력/);
+  assert.equal(markup.match(/class="model-history-row"/g)?.length, 1);
+  assert.doesNotMatch(markup, /전체 이력 보기/);
+});

@@ -13,16 +13,57 @@ const STATUS_VIEW: Record<AdminOperationStatus, { label: string; className: stri
   pending: { label: '대기', className: '' },
 };
 
-function OperationRowContent({ event }: { event: AdminOperationEvent }) {
-  const statusView = STATUS_VIEW[event.status];
+const OPERATION_HISTORY_PREVIEW_COUNT = 5;
 
-  return (
+function OperationRow({ event }: { event: AdminOperationEvent }) {
+  const statusView = STATUS_VIEW[event.status];
+  const rowContent = (
     <>
       <span className="operation-history-row__time">{formatDashboardDateTime(event.occurredAt)}</span>
       <strong className="operation-history-row__label">{event.label}</strong>
       <span className={`status-tag ${statusView.className}`.trim()}>{statusView.label}</span>
       <span className="operation-history-row__summary">{event.summary}</span>
     </>
+  );
+
+  if (event.details.length === 0 && event.errorMessage === null) {
+    return (
+      <li className={`operation-history-item operation-history-item--${event.status}`}>
+        <div className="operation-history-row">{rowContent}</div>
+      </li>
+    );
+  }
+
+  return (
+    <li className={`operation-history-item operation-history-item--${event.status}`}>
+      <details className="operation-history-entry">
+        <summary className="operation-history-row">
+          {rowContent}
+          <span className="operation-history-row__toggle admin-disclosure__toggle" aria-hidden="true">
+            <span className="admin-disclosure__toggle-closed">상세 보기 ▾</span>
+            <span className="admin-disclosure__toggle-open">상세 접기 ▴</span>
+          </span>
+        </summary>
+        <div className="operation-history-detail">
+          {event.details.length > 0 ? (
+            <dl className="operation-history-detail__list">
+              {event.details.map((detail) => (
+                <div key={detail.label}>
+                  <dt>{detail.label}</dt>
+                  <dd>{detail.value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+          {event.errorMessage ? (
+            <p className="operation-history-detail__error">
+              <span>오류 사유</span>
+              <strong>{event.errorMessage}</strong>
+            </p>
+          ) : null}
+        </div>
+      </details>
+    </li>
   );
 }
 
@@ -48,52 +89,28 @@ export function AdminOperationHistory({ events }: { events: readonly AdminOperat
       className="admin-operation-history"
     >
       <ul className="operation-history-list">
-        {events.map((event) => {
-          const hasDetails = event.details.length > 0 || event.errorMessage !== null;
-
-          if (!hasDetails) {
-            return (
-              <li key={event.id} className={`operation-history-item operation-history-item--${event.status}`}>
-                <div className="operation-history-row">
-                  <OperationRowContent event={event} />
-                </div>
-              </li>
-            );
-          }
-
-          return (
-            <li key={event.id} className={`operation-history-item operation-history-item--${event.status}`}>
-              <details className="operation-history-entry">
-                <summary className="operation-history-row">
-                  <OperationRowContent event={event} />
-                  <span className="operation-history-row__toggle admin-disclosure__toggle" aria-hidden="true">
-                    <span className="admin-disclosure__toggle-closed">상세 보기 ▾</span>
-                    <span className="admin-disclosure__toggle-open">상세 접기 ▴</span>
-                  </span>
-                </summary>
-                <div className="operation-history-detail">
-                  {event.details.length > 0 ? (
-                    <dl className="operation-history-detail__list">
-                      {event.details.map((detail) => (
-                        <div key={detail.label}>
-                          <dt>{detail.label}</dt>
-                          <dd>{detail.value}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  ) : null}
-                  {event.errorMessage ? (
-                    <p className="operation-history-detail__error">
-                      <span>오류 사유</span>
-                      <strong>{event.errorMessage}</strong>
-                    </p>
-                  ) : null}
-                </div>
-              </details>
-            </li>
-          );
-        })}
+        {events.slice(0, OPERATION_HISTORY_PREVIEW_COUNT).map((event) => (
+          <OperationRow key={event.id} event={event} />
+        ))}
       </ul>
+      {events.length > OPERATION_HISTORY_PREVIEW_COUNT ? (
+        <details className="admin-disclosure admin-disclosure--inline">
+          <summary className="admin-disclosure__summary">
+            <strong>전체 이력</strong>
+            <span className="admin-disclosure__toggle" aria-hidden="true">
+              <span className="admin-disclosure__toggle-closed">전체 이력 보기 ▾</span>
+              <span className="admin-disclosure__toggle-open">전체 이력 접기 ▴</span>
+            </span>
+          </summary>
+          <div className="admin-disclosure__body">
+            <ul className="operation-history-list">
+              {events.slice(OPERATION_HISTORY_PREVIEW_COUNT).map((event) => (
+                <OperationRow key={event.id} event={event} />
+              ))}
+            </ul>
+          </div>
+        </details>
+      ) : null}
     </SectionCard>
   );
 }
