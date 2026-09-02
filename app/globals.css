@@ -1593,6 +1593,139 @@ summary.operation-history-row::-webkit-details-marker {
   }
 }
 
+.quality-trend-metric__delta {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.quality-trend-metric--improved .quality-trend-metric__delta {
+  color: var(--success-subtle-text);
+}
+
+.quality-trend-metric--worsened .quality-trend-metric__delta {
+  color: var(--warning);
+}
+
+.quality-trend-chart {
+  display: grid;
+  gap: 6px;
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--bg-muted);
+}
+
+.quality-trend-chart__caption {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.quality-trend-chart__svg {
+  /* viewBox를 가로로 늘려 그리므로 폭을 제한해 점이 과하게 눌리지 않게 한다. */
+  width: min(100%, 560px);
+  height: 72px;
+}
+
+.quality-trend-chart__line {
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+}
+
+.quality-trend-chart__point {
+  fill: var(--brand);
+}
+
+.quality-trend-chart__summary,
+.quality-trend-chart__empty {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.quality-trend-chart__empty {
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--bg-muted);
+}
+
+.quality-trend-status {
+  gap: 10px;
+  background: var(--bg-card);
+}
+
+.quality-trend-status__summary {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.quality-trend-status__reasons {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+}
+
+.quality-trend-status__notice {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.quality-trend-status__notice > strong {
+  color: var(--warning);
+  font-size: 0.8rem;
+}
+
+.quality-trend-status__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px 18px;
+  margin: 0;
+}
+
+.quality-trend-status__facts > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.quality-trend-status__facts dt {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.quality-trend-status__facts dd {
+  margin: 0;
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+@media (max-width: 700px) {
+  .quality-trend-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 380px) {
+  .quality-trend-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .quarter-management-list {
   display: grid;
   margin: 0;

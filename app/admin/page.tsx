@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { AdminDataHealthPanel } from '@/components/admin-data-health-panel';
 import { AdminForecastDiagnostics, type ForecastRunHistoryEntry } from '@/components/admin-forecast-diagnostics';
+import { AdminForecastQualityTrend } from '@/components/admin-forecast-quality-trend';
 import { AdminLogoutButton } from '@/components/admin-logout-button';
 import { AdminOperationHistory } from '@/components/admin-operation-history';
 import { AdminQuarterCard } from '@/components/admin-quarter-card';
@@ -11,6 +12,7 @@ import { getAdminSession } from '@/lib/auth/admin';
 import { db } from '@/lib/db';
 import { loadAdminDataHealth } from '@/lib/data-health/load-admin-data-health';
 import { loadAdminOperationHistory } from '@/lib/admin-operation-history/load-admin-operation-history';
+import { loadForecastQualityTrend } from '@/lib/forecast-quality-trend/load-forecast-quality-trend';
 
 import { findLatestBaseFscResultByQuarter } from '@/lib/fsc/load-latest-fsc-result';
 import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
@@ -36,7 +38,15 @@ export default async function AdminPage() {
 
 
   const activeQuarter = await ensureActiveQuarter();
-  const [quarters, activeResult, activeResultHistory, forecastRuns, dataHealth, operationHistory] = await Promise.all([
+  const [
+    quarters,
+    activeResult,
+    activeResultHistory,
+    forecastRuns,
+    dataHealth,
+    operationHistory,
+    qualityTrend,
+  ] = await Promise.all([
     db.quarterSetting.findMany({
       orderBy: [{ targetYear: 'desc' }, { targetQuarter: 'desc' }],
     }),
@@ -75,6 +85,7 @@ export default async function AdminPage() {
     }),
     loadAdminDataHealth(),
     loadAdminOperationHistory(),
+    loadForecastQualityTrend(activeQuarter.targetYear, activeQuarter.targetQuarter),
   ]);
 
   const activeResultDto = activeResult ? serializeFscResultDto(activeResult) : null;
@@ -127,6 +138,8 @@ export default async function AdminPage() {
                 }
           }
         />
+
+        <AdminForecastQualityTrend trend={qualityTrend} />
 
         <AdminQuarterCard
           quarterLabel={quarterLabel(activeQuarter.targetYear, activeQuarter.targetQuarter)}
