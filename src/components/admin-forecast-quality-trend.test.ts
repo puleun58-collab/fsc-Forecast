@@ -61,6 +61,8 @@ function render(
   return renderToStaticMarkup(
     createElement(AdminForecastQualityTrend, {
       trend: buildForecastQualityTrend(results, assessment(overrides)),
+      errorAnalysis: null,
+      backtestPoints: [],
     }),
   );
 }
@@ -75,20 +77,22 @@ test('the trend card shows five metrics with their change against the previous r
   assert.match(markup, /최근 26주 MAE<\/span><strong>24\.81원\/L<\/strong>/);
   assert.match(markup, /방향 정확도<\/span><strong>69\.2%<\/strong>/);
   assert.match(markup, /최근 Bias<\/span><strong>\+4\.21원\/L<\/strong>/);
-  assert.match(markup, /↓ 0\.12%p 개선/);
-  assert.match(markup, /↓ 2\.14원\/L 개선/);
-  assert.match(markup, /↑ 0\.85원\/L 악화/);
-  assert.match(markup, /↑ 7\.7%p 개선/);
-  assert.match(markup, /↓ 1\.32원\/L 개선/);
+  assert.match(markup, /↓ 0\.12%p <span class="quality-trend-metric__scope">직전 실행 <\/span>대비 개선/);
+  assert.match(markup, /↓ 2\.14원\/L <span class="quality-trend-metric__scope">직전 실행 <\/span>대비 개선/);
+  assert.match(markup, /↑ 0\.85원\/L <span class="quality-trend-metric__scope">직전 실행 <\/span>대비 악화/);
+  assert.match(markup, /↑ 7\.7%p <span class="quality-trend-metric__scope">직전 실행 <\/span>대비 개선/);
+  assert.match(markup, /↓ 1\.32원\/L <span class="quality-trend-metric__scope">직전 실행 <\/span>대비 개선/);
 });
 
 test('direction words accompany every arrow so colour is never the only cue', () => {
   const markup = render([result(), PREVIOUS]);
-  const arrows = markup.match(/[↓↑]\s[^<]*/g) ?? [];
+  const deltas = [...markup.matchAll(/quality-trend-metric__delta">([^<]*(?:<[^>]+>[^<]*)*?)<\/span><\/div>/g)]
+    .map((match) => (match[1] ?? '').replace(/<[^>]+>/g, ''))
+    .filter((text) => text.includes('↓') || text.includes('↑'));
 
-  assert.equal(arrows.length > 0, true);
+  assert.equal(deltas.length > 0, true);
   assert.equal(
-    arrows.every((text) => text.includes('개선') || text.includes('악화')),
+    deltas.every((text) => text.includes('대비 개선') || text.includes('대비 악화')),
     true,
   );
 });
@@ -161,11 +165,49 @@ test('recorded guardrail signals raise one attention badge with compact reasons'
   });
 
   assert.equal(markup.match(/class="status-tag status-tag--warning">주의</g)?.length, 1);
-  assert.match(markup, /최근 예측 품질에 확인이 필요한 변화가 있습니다/);
+  assert.match(markup, /최근 백테스트에서 품질 확인이 필요한 신호가 있습니다/);
   assert.equal(markup.match(/<li>/g)?.length, 2);
-  assert.match(markup, /최근 단기 오차 변동성이 커져 신뢰도 평가에 반영되었습니다/);
-  assert.match(markup, /장기 예측 성능의 안정성을 보수적으로 반영했습니다/);
+  assert.match(markup, /<li>최근 4주 오차 추세 주의<\/li>/);
+  assert.match(markup, /<li>장기 안정성 주의<\/li>/);
+  assert.doesNotMatch(markup, /최근 단기 오차 변동성이 커져/);
   assert.doesNotMatch(markup, /recent_4w_error_worsening|long_window_instability/);
+});
+
+test('unchanged metrics with an active guardrail explain the different comparison bases', () => {
+  const unchanged = result();
+  const markup = render([unchanged, { ...unchanged, id: 'fsc-0', createdAt: '2026-09-01T02:00:00.000Z' }], {
+    adjustmentReasons: ['recent_4w_error_worsening'],
+    recent4wErrorTrend: 'worsening',
+  });
+
+  assert.match(markup, /<span class="status-tag status-tag--warning">주의<\/span>/);
+  assert.match(markup, /현재 품질 지표는 직전 실행과 큰 변화가 없습니다\. 다만 백테스트에서 품질 확인 신호가 유지되고 있습니다/);
+  assert.match(markup, /<li>최근 4주 오차 추세 주의<\/li>/);
+  assert.equal(markup.match(/직전 실행 <\/span>대비 유지/g)?.length, 7);
+  assert.match(
+    markup,
+    /상단 상태는 직전 실행 대비 변화가 아니라 최근 백테스트 및 신뢰도 guardrail을 기준으로 표시합니다/,
+  );
+});
+
+test('unchanged metrics without guardrails stay stable', () => {
+  const unchanged = result();
+  const markup = render([unchanged, { ...unchanged, id: 'fsc-0', createdAt: '2026-09-01T02:00:00.000Z' }]);
+
+  assert.match(markup, /<span class="status-tag status-tag--ok">안정<\/span>/);
+  assert.match(markup, /최근 예측 품질에 유의할 만한 악화 신호가 없습니다/);
+  assert.match(markup, /직전 실행 <\/span>대비 유지/);
+});
+
+test('worsening metrics with a guardrail keep both signals visible', () => {
+  const markup = render([result({ recent13wWeeklyPriceMape: 1.82 }), PREVIOUS], {
+    adjustmentReasons: ['recent_4w_error_worsening'],
+    recent4wErrorTrend: 'worsening',
+  });
+
+  assert.match(markup, /<span class="status-tag status-tag--warning">주의<\/span>/);
+  assert.match(markup, /최근 백테스트에서 품질 확인이 필요한 신호가 있습니다/);
+  assert.match(markup, /↑ 0\.23%p <span class="quality-trend-metric__scope">직전 실행 <\/span>대비 악화/);
 });
 
 test('delayed data is a separate notice rather than a quality warning', () => {

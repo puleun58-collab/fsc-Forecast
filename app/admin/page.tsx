@@ -16,6 +16,8 @@ import { loadForecastQualityTrend } from '@/lib/forecast-quality-trend/load-fore
 
 import { findLatestBaseFscResultByQuarter } from '@/lib/fsc/load-latest-fsc-result';
 import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
+import { readBacktestOneStepPoints } from '@/lib/forecast/backtest-detail';
+import { readForecastErrorAnalysis } from '@/lib/forecast/forecast-error-analysis';
 import { readForecastModelDiagnostics } from '@/lib/forecast/forecast-diagnostics';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
 
@@ -139,7 +141,11 @@ export default async function AdminPage() {
           }
         />
 
-        <AdminForecastQualityTrend trend={qualityTrend} />
+        <AdminForecastQualityTrend
+          trend={qualityTrend}
+          backtestPoints={readBacktestOneStepPoints(forecastRuns[0]?.metadata)}
+          errorAnalysis={readForecastErrorAnalysis(forecastRuns[0]?.metadata)}
+        />
 
         <AdminQuarterCard
           quarterLabel={quarterLabel(activeQuarter.targetYear, activeQuarter.targetQuarter)}

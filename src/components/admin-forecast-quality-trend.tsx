@@ -1,4 +1,6 @@
 import { AdminDisclosureToggle } from './admin-disclosure-toggle';
+import { AdminBacktestDetail } from './admin-backtest-detail';
+import { AdminForecastErrorAnalysis } from './admin-forecast-error-analysis';
 import { formatSignedPriceText, mapReliabilityAdjustmentReason } from './dashboard/dashboard-format';
 import { SectionCard } from './section-card';
 
@@ -9,9 +11,12 @@ import type {
   ForecastQualityMetric,
   ForecastQualityTrend,
 } from '@/lib/forecast-quality-trend/forecast-quality-trend';
+import type { BacktestDetailPoint } from '@/lib/forecast/backtest-detail';
+import type { ForecastErrorAnalysis } from '@/lib/forecast/forecast-error-analysis';
 import type {
   ForecastQualityAssessment,
   ForecastQualityDataNoticeCode,
+  ForecastQualitySignalCode,
   ForecastQualityStatus,
 } from '@/lib/fsc/forecast-quality-signal';
 
@@ -27,13 +32,27 @@ const QUALITY_STATUS_VIEW: Record<
   attention: {
     label: '주의',
     className: 'status-tag--warning',
-    summary: '최근 예측 품질에 확인이 필요한 변화가 있습니다.',
+    summary: '최근 백테스트에서 품질 확인이 필요한 신호가 있습니다.',
   },
   unrated: {
     label: '산정 전',
     className: '',
     summary: '예측 품질을 판단할 데이터가 아직 충분하지 않습니다.',
   },
+};
+
+/** 상단 상태는 guardrail 기준이라 직전 실행 대비 변화가 없어도 주의가 유지될 수 있다. */
+const ATTENTION_WITHOUT_CHANGE_SUMMARY =
+  '현재 품질 지표는 직전 실행과 큰 변화가 없습니다. 다만 백테스트에서 품질 확인 신호가 유지되고 있습니다.';
+
+const QUALITY_BASIS_NOTE =
+  '상단 상태는 직전 실행 대비 변화가 아니라 최근 백테스트 및 신뢰도 guardrail을 기준으로 표시합니다.';
+
+const SIGNAL_TEXT: Record<ForecastQualitySignalCode, string> = {
+  recent_4w_error_worsening: '최근 4주 오차 추세 주의',
+  long_window_instability: '장기 안정성 주의',
+  long_window_caution: '장기 성능 확인 필요',
+  incomplete_guardrail_metrics: '안정성 지표 산정 중',
 };
 
 const DATA_NOTICE_TEXT: Record<ForecastQualityDataNoticeCode, string> = {
@@ -97,12 +116,27 @@ function formatMetricDelta(metric: ForecastQualityMetric): string {
   return `${metric.delta < 0 ? '↓' : '↑'} ${magnitudeText} ${DIRECTION_TEXT[metric.direction]}`;
 }
 
+/** 지표 변화는 직전 실행 대비 비교라는 점을 상태 badge와 구분해 알린다. */
+function MetricDeltaText({ metric }: { metric: ForecastQualityMetric }) {
+  if (metric.direction === 'unknown' || metric.delta === null) {
+    return <span className="quality-trend-metric__delta">{DIRECTION_TEXT.unknown}</span>;
+  }
+
+  return (
+    <span className="quality-trend-metric__delta">
+      {formatMetricDelta(metric).replace(` ${DIRECTION_TEXT[metric.direction]}`, '')}{' '}
+      <span className="quality-trend-metric__scope">직전 실행 </span>
+      대비 {DIRECTION_TEXT[metric.direction]}
+    </span>
+  );
+}
+
 function QualityMetricCell({ metric }: { metric: ForecastQualityMetric }) {
   return (
     <div className={`admin-metric quality-trend-metric quality-trend-metric--${metric.direction}`}>
       <span className="dashboard-shell__metric-label">{metric.label}</span>
       <strong>{formatMetricValue(metric)}</strong>
-      <span className="quality-trend-metric__delta">{formatMetricDelta(metric)}</span>
+      <MetricDeltaText metric={metric} />
     </div>
   );
 }
@@ -158,16 +192,24 @@ function QualityTrendChart({ points }: { points: ForecastQualityTrend['chart'] }
   );
 }
 
-function QualityStatusPanel({ assessment }: { assessment: ForecastQualityAssessment }) {
+function QualityStatusPanel({
+  assessment,
+  metricsChanged,
+}: {
+  assessment: ForecastQualityAssessment;
+  metricsChanged: boolean;
+}) {
   const view = QUALITY_STATUS_VIEW[assessment.status];
+  const summary =
+    assessment.status === 'attention' && !metricsChanged ? ATTENTION_WITHOUT_CHANGE_SUMMARY : view.summary;
 
   return (
     <div className="admin-panel quality-trend-status">
-      <p className="quality-trend-status__summary">{view.summary}</p>
+      <p className="quality-trend-status__summary">{summary}</p>
       {assessment.status === 'attention' && assessment.signals.length > 0 ? (
         <ul className="quality-trend-status__reasons">
           {assessment.signals.map((signal) => (
-            <li key={signal}>{mapReliabilityAdjustmentReason(signal)}</li>
+            <li key={signal}>{SIGNAL_TEXT[signal]}</li>
           ))}
         </ul>
       ) : null}
@@ -216,15 +258,27 @@ function QualityStatusPanel({ assessment }: { assessment: ForecastQualityAssessm
               </dd>
             </div>
           </dl>
+          <p className="admin-decision__note">{QUALITY_BASIS_NOTE}</p>
         </div>
       </details>
     </div>
   );
 }
 
-export function AdminForecastQualityTrend({ trend }: { trend: ForecastQualityTrend }) {
+export function AdminForecastQualityTrend({
+  trend,
+  backtestPoints,
+  errorAnalysis,
+}: {
+  trend: ForecastQualityTrend;
+  backtestPoints: readonly BacktestDetailPoint[];
+  errorAnalysis: ForecastErrorAnalysis | null;
+}) {
   const hasCurrentValue = trend.metrics.some((metric) => metric.current !== null);
   const assessment = trend.assessment;
+  const metricsChanged = trend.metrics.some(
+    (metric) => metric.direction === 'improved' || metric.direction === 'worsened',
+  );
 
   if (!hasCurrentValue) {
     return (
@@ -254,7 +308,7 @@ export function AdminForecastQualityTrend({ trend }: { trend: ForecastQualityTre
         {assessment === null ? (
           <p className="quality-trend-status__summary">{QUALITY_STATUS_VIEW.unrated.summary}</p>
         ) : (
-          <QualityStatusPanel assessment={assessment} />
+          <QualityStatusPanel assessment={assessment} metricsChanged={metricsChanged} />
         )}
 
         <div className="admin-metric-grid quality-trend-metrics">
@@ -278,6 +332,10 @@ export function AdminForecastQualityTrend({ trend }: { trend: ForecastQualityTre
             </div>
           </div>
         </details>
+
+        <AdminBacktestDetail points={backtestPoints} />
+
+        <AdminForecastErrorAnalysis analysis={errorAnalysis} />
       </div>
     </SectionCard>
   );

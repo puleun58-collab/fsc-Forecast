@@ -1718,6 +1718,141 @@ summary.operation-history-row::-webkit-details-marker {
   .quality-trend-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  /* 좁은 화면에서는 "대비 개선"처럼 축약해 지표 셀이 줄바꿈되지 않게 한다. */
+  .quality-trend-metric__scope {
+    display: none;
+  }
+}
+
+.backtest-detail__summary {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.backtest-detail__empty {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+}
+
+.backtest-detail__week {
+  display: grid;
+  gap: 2px;
+}
+
+.backtest-detail__week > span {
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 400;
+}
+
+.backtest-detail__row--peak td,
+.backtest-detail__row--peak th {
+  background: color-mix(in srgb, var(--forecast-row) 70%, transparent);
+}
+
+.error-analysis__facts,
+.error-analysis__models {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.error-analysis__facts > div {
+  display: grid;
+  gap: 2px;
+}
+
+.error-analysis__facts dt {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.error-analysis__facts dd {
+  margin: 0;
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.error-analysis__models > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.error-analysis__largest {
+  display: grid;
+  gap: 4px;
+  font-size: 0.84rem;
+}
+
+.error-analysis__largest ol {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-secondary);
+}
+
+.error-analysis__weeks {
+  display: grid;
+}
+
+.error-analysis__week {
+  border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+@media (max-width: 700px) {
+  .backtest-detail__table thead,
+  .error-analysis__table thead,
+  .error-analysis__model-table thead {
+    display: none;
+  }
+
+  .backtest-detail__table tbody tr,
+  .error-analysis__table tbody tr,
+  .error-analysis__model-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+    gap: 4px 12px;
+    padding: 10px 0;
+  }
+
+  .backtest-detail__table tbody th,
+  .backtest-detail__table tbody td,
+  .error-analysis__table tbody th,
+  .error-analysis__table tbody td,
+  .error-analysis__model-table tbody th,
+  .error-analysis__model-table tbody td {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    padding: 0;
+    white-space: normal;
+  }
+
+  .backtest-detail__table tbody th::before,
+  .backtest-detail__table tbody td::before,
+  .error-analysis__table tbody th::before,
+  .error-analysis__table tbody td::before,
+  .error-analysis__model-table tbody th::before,
+  .error-analysis__model-table tbody td::before {
+    content: attr(data-label);
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+    font-weight: 700;
+  }
 }
 
 @media (max-width: 380px) {

@@ -24,6 +24,13 @@ export interface WalkForwardEvaluationPoint {
   absolutePercentageErrorPct: number | null;
   actualDirection: ForecastDirection;
   forecastDirection: ForecastDirection;
+  /** 진단 전용 구성요소. 예측값 계산에는 이미 반영되어 있다. */
+  trendDeltaKrwPerL: number;
+  dubaiContributionRatio: number | null;
+  usdKrwContributionRatio: number | null;
+  rawExternalAdjustmentRatio: number;
+  externalAdjustmentRatio: number;
+  externalAdjustmentCapReached: boolean;
 }
 
 export interface WalkForwardWindowMetrics {
@@ -256,6 +263,13 @@ export function runWalkForwardBacktest(
           actual.pointKrwPerL === 0 ? null : (absoluteErrorKrwPerL / actual.pointKrwPerL) * 100,
         actualDirection: resolveDirection(forecast.anchorPriceKrwPerL, actual.pointKrwPerL),
         forecastDirection: resolveDirection(forecast.anchorPriceKrwPerL, point.pointKrwPerL),
+        trendDeltaKrwPerL: forecast.trendDeltaKrwPerL ?? 0,
+        dubaiContributionRatio: forecast.dubai?.contributionRatio ?? null,
+        usdKrwContributionRatio: forecast.usdKrw?.contributionRatio ?? null,
+        rawExternalAdjustmentRatio:
+          (forecast.dubai?.contributionRatio ?? 0) + (forecast.usdKrw?.contributionRatio ?? 0),
+        externalAdjustmentRatio: forecast.externalAdjustmentRatio,
+        externalAdjustmentCapReached: forecast.externalAdjustmentCapReached,
       });
 
       if (point.horizonIndex === 1) {

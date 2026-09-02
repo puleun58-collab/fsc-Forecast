@@ -17,6 +17,8 @@ import { externalIndicatorCodes } from "../external-indicators/catalog";
 import { env } from "../env";
 import { loadPublicConfirmedLatestDate } from "../opinet/resolve-public-confirmed-date";
 import { buildBaselineForecast } from "./build-baseline-forecast";
+import { serializeBacktestOneStepPoints } from "./backtest-detail";
+import { buildForecastErrorAnalysis } from "./forecast-error-analysis";
 import { buildForecastQualityGate } from "./build-forecast-quality-gate";
 import {
   buildWeeklyForecast,
@@ -554,6 +556,13 @@ async function executeForecastPipeline(
           recentOneStep: selection.selectedBacktest.recentOneStep,
           longOneStep: selection.selectedBacktest.longOneStep,
           currentModelRecentOneStep: selection.currentBacktest.recentOneStep,
+          backtestOneStepPoints: serializeBacktestOneStepPoints(selection.selectedBacktest.oneStepPoints),
+          errorAnalysis: buildForecastErrorAnalysis({
+            selectedModelId: selection.selectedParams.modelId,
+            selectedParams: selection.selectedParams,
+            selectedBacktest: selection.selectedBacktest,
+            candidateBacktestsByModelId: selection.bestBacktestByModelId,
+          }),
         },
         weeklyForecast: {
           status: weeklyForecast.status,

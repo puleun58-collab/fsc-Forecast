@@ -58,6 +58,22 @@ function roundPrice(value: number): number {
   return Math.round(value * 1000) / 1000;
 }
 
+/** 외부 보정은 항상 같은 cap 로직을 통과해야 counterfactual 결과가 실제 예측과 일치한다. */
+export function capExternalAdjustmentRatio(rawRatio: number, capRatio: number): number {
+  const cap = Math.abs(capRatio);
+  return Math.min(cap, Math.max(-cap, rawRatio));
+}
+
+export function projectWeeklyPrice(
+  anchorKrwPerL: number,
+  trendDeltaKrwPerL: number,
+  horizonIndex: number,
+  externalAdjustmentRatio: number,
+): number {
+  const baseForecast = anchorKrwPerL + trendDeltaKrwPerL * horizonIndex;
+  return roundPrice(Math.max(0, baseForecast * (1 + externalAdjustmentRatio)));
+}
+
 export function calculateWeeklyTrendDelta(points: readonly ForecastSeriesPoint[]): number | null {
   if (points.length < 2) {
     return null;
@@ -151,12 +167,16 @@ export function buildWeeklyForecast(input: BuildWeeklyForecastInput): BuildWeekl
       : resolveIndicatorContribution("usd-krw", input.indicatorSeries.usdKrw, input.params.usdKrw, anchor.targetDate);
   const rawAdjustmentRatio = (dubai?.contributionRatio ?? 0) + (usdKrw?.contributionRatio ?? 0);
   const cap = Math.abs(input.params.externalAdjustmentCapRatio);
-  const externalAdjustmentRatio = Math.min(cap, Math.max(-cap, rawAdjustmentRatio));
+  const externalAdjustmentRatio = capExternalAdjustmentRatio(rawAdjustmentRatio, cap);
   const points: ForecastProjectionPoint[] = [];
 
   for (let horizonIndex = 1; horizonIndex <= input.horizonCount; horizonIndex += 1) {
-    const baseForecast = anchor.pointKrwPerL + trendDeltaKrwPerL * horizonIndex;
-    const pointKrwPerL = roundPrice(Math.max(0, baseForecast * (1 + externalAdjustmentRatio)));
+    const pointKrwPerL = projectWeeklyPrice(
+      anchor.pointKrwPerL,
+      trendDeltaKrwPerL,
+      horizonIndex,
+      externalAdjustmentRatio,
+    );
     const absoluteError = input.absoluteErrorByHorizon?.get(horizonIndex) ?? null;
 
     points.push({

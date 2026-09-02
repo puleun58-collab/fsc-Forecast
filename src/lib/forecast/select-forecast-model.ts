@@ -55,6 +55,8 @@ export interface SelectForecastModelResult {
   maeImprovementRatio: number | null;
   mapeImprovementPctPoint: number | null;
   bestByModelId: Record<ForecastModelId, ForecastModelCandidateSummary | null>;
+  /** 진단용: 모델별 최고 후보의 walk-forward 결과. 선택 로직에는 사용하지 않는다. */
+  bestBacktestByModelId: Record<ForecastModelId, RunWalkForwardBacktestResult | null>;
   evaluatedCandidateCount: number;
 }
 
@@ -155,6 +157,11 @@ export function selectForecastModel(input: SelectForecastModelInput): SelectFore
     B: null,
     C: null,
   };
+  const bestBacktestByModelId: Record<ForecastModelId, RunWalkForwardBacktestResult | null> = {
+    A: null,
+    B: null,
+    C: null,
+  };
   const eligible: RunWalkForwardBacktestResult[] = [];
 
   for (const result of results) {
@@ -171,6 +178,7 @@ export function selectForecastModel(input: SelectForecastModelInput): SelectFore
         (incumbent.recentMaeKrwPerL ?? Number.POSITIVE_INFINITY)
     ) {
       bestByModelId[summary.modelId] = summary;
+      bestBacktestByModelId[summary.modelId] = result;
     }
 
     if (result.recent.sampleCount >= PROMOTION_MIN_SAMPLE_COUNT) {
@@ -211,6 +219,7 @@ export function selectForecastModel(input: SelectForecastModelInput): SelectFore
     maeImprovementRatio: null,
     mapeImprovementPctPoint: null,
     bestByModelId,
+    bestBacktestByModelId,
     evaluatedCandidateCount: results.length,
   };
 
@@ -242,6 +251,7 @@ export function selectForecastModel(input: SelectForecastModelInput): SelectFore
       maeImprovementRatio: null,
       mapeImprovementPctPoint: null,
       bestByModelId,
+      bestBacktestByModelId,
       evaluatedCandidateCount: results.length,
     };
   }
@@ -301,6 +311,7 @@ export function selectForecastModel(input: SelectForecastModelInput): SelectFore
     maeImprovementRatio,
     mapeImprovementPctPoint,
     bestByModelId,
+    bestBacktestByModelId,
     evaluatedCandidateCount: results.length,
   };
 }
