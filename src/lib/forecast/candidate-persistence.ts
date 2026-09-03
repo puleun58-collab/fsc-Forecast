@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { ForecastModelParams } from "./forecast-model-config";
+import { ForecastModelParamsSchema, type ForecastModelParams } from "./forecast-model-config";
 import { buildCandidateFingerprint, type ShadowCandidateInput } from "./shadow-validation";
 
 export const CANDIDATE_PERSISTENCE_VERSION = 1;
@@ -130,15 +130,7 @@ export function isShadowEntryConfirmed(
   );
 }
 
-const IndicatorParamsSchema = z.object({ lagWeeks: z.number(), weight: z.number() }).nullable();
-
-const ModelParamsSchema = z.object({
-  modelId: z.string(),
-  trendLookbackWeeks: z.number(),
-  dubai: IndicatorParamsSchema,
-  usdKrw: IndicatorParamsSchema,
-  externalAdjustmentCapRatio: z.number(),
-});
+const ModelParamsSchema = ForecastModelParamsSchema;
 
 const PersistenceMetadataSchema = z.object({
   model: z.object({

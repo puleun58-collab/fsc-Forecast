@@ -22,6 +22,8 @@ test('stored model parameters round-trip so the operating model can be reused', 
         dubai: { lagWeeks: 2, weight: 0.15 },
         usdKrw: { lagWeeks: 1, weight: 0.05 },
         externalAdjustmentCapRatio: 0.02,
+        biasCorrection: null,
+        dailySignal: null,
       }),
     },
   };

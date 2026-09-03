@@ -6,6 +6,9 @@ import { formatDashboardDate } from '@/lib/dashboard/dashboard-time';
 import { formatPriceText } from '@/lib/dashboard/display-format';
 import type { ForecastModelParams } from '@/lib/forecast/forecast-model-config';
 import type { TransitionBlockReason } from '@/lib/forecast/model-transition';
+import { describeBiasCorrection } from '@/lib/forecast/bias-correction';
+import { describeDailySignal } from '@/lib/forecast/daily-signal';
+import { describeIndicator, describeSensitivityParams } from '@/lib/forecast/parameter-sensitivity';
 import type { ShadowValidationSummary } from '@/lib/forecast/shadow-validation';
 
 export type TransitionViewStatus =
@@ -73,13 +76,9 @@ const FACTOR_ROWS: { label: string; read: (params: ForecastModelParams) => strin
     label: '외부 보정 Cap',
     read: (params) => `±${(params.externalAdjustmentCapRatio * 100).toFixed(0)}%`,
   },
+  { label: 'Bias 보정', read: (params) => describeBiasCorrection(params.biasCorrection) },
+  { label: '일별 단기 신호', read: (params) => describeDailySignal(params.dailySignal) },
 ];
-
-function describeIndicator(indicator: ForecastModelParams['dubai']): string {
-  return indicator === null
-    ? '미사용'
-    : `lag ${indicator.lagWeeks}주 · weight ${(indicator.weight * 100).toFixed(1)}%`;
-}
 
 export function ParameterDiffList({
   baselineParams,
@@ -296,11 +295,11 @@ export function AdminModelTransition({ view }: { view: ModelTransitionView }) {
         <div className="admin-panel transition-compare">
           <div>
             <span className="dashboard-shell__metric-label">현재 운영</span>
-            <p>{describeParams(view.baselineParams)}</p>
+            <p>{describeSensitivityParams(view.baselineParams)}</p>
           </div>
           <div>
             <span className="dashboard-shell__metric-label">전환 후보</span>
-            <p>{describeParams(view.candidateParams)}</p>
+            <p>{describeSensitivityParams(view.candidateParams)}</p>
           </div>
         </div>
 
@@ -355,14 +354,4 @@ export function AdminModelTransition({ view }: { view: ModelTransitionView }) {
       </div>
     </SectionCard>
   );
-}
-
-function describeParams(params: ForecastModelParams): string {
-  return [
-    `Model ${params.modelId}`,
-    `Trend ${params.trendLookbackWeeks}주`,
-    `Dubai ${describeIndicator(params.dubai)}`,
-    `USD/KRW ${describeIndicator(params.usdKrw)}`,
-    `Cap ±${(params.externalAdjustmentCapRatio * 100).toFixed(0)}%`,
-  ].join(' · ');
 }

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { ForecastModelParams } from "./forecast-model-config";
+import { ForecastModelParamsSchema, type ForecastModelParams } from "./forecast-model-config";
 import {
   buildCandidateFingerprint,
   recordShadowCycle,
@@ -54,15 +54,7 @@ export interface PostTransitionSummary {
   qualityChecks: ShadowQualityChecks;
 }
 
-const IndicatorParamsSchema = z.object({ lagWeeks: z.number(), weight: z.number() }).nullable();
-
-const ModelParamsSchema = z.object({
-  modelId: z.enum(["A", "B", "C"]),
-  trendLookbackWeeks: z.number(),
-  dubai: IndicatorParamsSchema,
-  usdKrw: IndicatorParamsSchema,
-  externalAdjustmentCapRatio: z.number(),
-});
+const ModelParamsSchema = ForecastModelParamsSchema;
 
 const DirectionSchema = z.enum(["up", "down", "flat"]);
 

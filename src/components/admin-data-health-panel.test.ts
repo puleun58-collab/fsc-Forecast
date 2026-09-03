@@ -6,6 +6,11 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import { AdminDataHealthPanel } from './admin-data-health-panel';
 import type { DataHealthSummary } from '@/lib/data-health/data-health';
+import { ForecastHorizonKind } from '@prisma/client';
+import {
+  buildForecastInputQuality,
+  type ForecastInputQuality,
+} from '@/lib/forecast/input-quality';
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
@@ -97,4 +102,47 @@ test('only the failed source exposes a sanitized error disclosure', () => {
   assert.match(markup, /Dubai 데이터 수집 요청 실패/);
   assert.match(markup, /최근 오류 2026\.09\.01 11:00 KST/);
   assert.doesNotMatch(markup, /DATABASE_URL|ADMIN_SESSION_SECRET|API[_ -]?KEY|stack/i);
+});
+
+function inputQuality(): ForecastInputQuality {
+  return buildForecastInputQuality({
+    weeklySeries: Array.from({ length: 8 }, (_, index) => ({
+      horizonKind: ForecastHorizonKind.weekly,
+      periodStart: new Date(Date.UTC(2026, 6, 5 + index * 7)),
+      periodEnd: new Date(Date.UTC(2026, 6, 9 + index * 7)),
+      targetDate: new Date(Date.UTC(2026, 6, 9 + index * 7)),
+      pointKrwPerL: 1900 + index,
+      sampleCount: 5,
+    })),
+    dailyPrices: Array.from({ length: 5 }, (_, index) => ({
+      priceDate: new Date(Date.UTC(2026, 7, 24 + index)),
+      observedPriceKrwPerL: 1950 + index,
+      currentRevisionId: `revision-${index}`,
+    })),
+    indicatorSeries: { dubai: [], usdKrw: [] },
+    dubaiLagWeeks: 3,
+    usdKrwLagWeeks: 3,
+    evaluatedAt: new Date('2026-08-28T00:00:00.000Z'),
+  });
+}
+
+test('the run input status is summarized and its detail stays collapsed', () => {
+  const markup = renderToStaticMarkup(
+    createElement(AdminDataHealthPanel, { summary: SUMMARY, inputQuality: inputQuality() }),
+  );
+  const detailStart = markup.indexOf('데이터 상태 상세 보기');
+
+  assert.match(markup, /이번 예측 입력 상태/);
+  assert.match(markup, /예측은 정상 생성되었지만 일부 보조 데이터를 사용하지 않았습니다/);
+  assert.ok(detailStart > 0);
+  assert.doesNotMatch(markup, /<details class="admin-disclosure admin-disclosure--inline"[^>]*\sopen/);
+  assert.match(markup, /<th scope="row" data-label="데이터">주간 경유가<\/th><td data-label="상태">정상<\/td>/);
+  assert.match(markup, /<th scope="row" data-label="데이터">Dubai<\/th><td data-label="상태">데이터 없음<\/td>/);
+  assert.equal(markup.match(/data-label="Forecast 사용">미사용/g)?.length, 2);
+});
+
+test('runs stored before the quality gate render the panel unchanged', () => {
+  const markup = renderToStaticMarkup(createElement(AdminDataHealthPanel, { summary: SUMMARY }));
+
+  assert.doesNotMatch(markup, /이번 예측 입력 상태/);
 });

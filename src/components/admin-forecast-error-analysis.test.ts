@@ -15,6 +15,8 @@ import type { WalkForwardEvaluationPoint } from '@/lib/forecast/run-walk-forward
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
 const PARAMS: ForecastModelParams = {
+  biasCorrection: null,
+  dailySignal: null,
   modelId: 'B',
   trendLookbackWeeks: 8,
   dubai: { lagWeeks: 1, weight: 0.2 },

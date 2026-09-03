@@ -12,10 +12,16 @@ import {
   TUNING_CANDIDATE_LIMIT,
   type ParameterSensitivity,
 } from './parameter-sensitivity';
-import { runWalkForwardBacktest, type RunWalkForwardBacktestResult } from './run-walk-forward-backtest';
-import type { ForecastSeriesPoint } from './types';
+import {
+  runWalkForwardBacktest,
+  type RunWalkForwardBacktestResult,
+  type WalkForwardEvaluationPoint,
+} from './run-walk-forward-backtest';
+import type { ForecastDailyPriceRow, ForecastSeriesPoint } from './types';
 
 const CURRENT: ForecastModelParams = {
+  biasCorrection: null,
+  dailySignal: null,
   modelId: 'B',
   trendLookbackWeeks: 8,
   dubai: { lagWeeks: 1, weight: 0.2 },
@@ -340,7 +346,7 @@ test('combinations pair two different factors and never grow past two changes', 
   assert.deepEqual(candidate?.params.dubai, { lagWeeks: 2, weight: 0.15 });
   assert.equal(candidate?.params.externalAdjustmentCapRatio, CURRENT.externalAdjustmentCapRatio);
   assert.equal(candidate?.params.usdKrw, null);
-  assert.equal(candidate?.label, 'Trend 6주 + Dubai lag 2주 · weight 15.0%');
+  assert.equal(candidate?.label, 'Trend 6주 + Dubai 반영 시차 2주 · 반영 비중 15%');
 });
 
 test('a stronger combination outranks the single candidates it was built from', () => {
@@ -485,5 +491,68 @@ test('diagnostic candidates never read data after their evaluation origin', () =
   assert.deepEqual(
     mutated.oneStepPoints.slice(0, 12).map((item) => item.forecastKrwPerL),
     baseline.oneStepPoints.slice(0, 12).map((item) => item.forecastKrwPerL),
+  );
+});
+
+function dailyRows(count: number, start = 1950, step = 6): ForecastDailyPriceRow[] {
+  return Array.from({ length: count }, (_, index) => ({
+    priceDate: new Date(Date.UTC(2026, 7, 1 + index)),
+    observedPriceKrwPerL: start + index * step,
+    currentRevisionId: `revision-${index}`,
+  }));
+}
+
+function buildWithDaily(dailyPrices: ForecastDailyPriceRow[], oneStepPoints: WalkForwardEvaluationPoint[] = []) {
+  const current = { ...backtest(CURRENT), oneStepPoints };
+
+  return buildParameterSensitivity({
+    currentParams: CURRENT,
+    currentBacktest: current,
+    evaluatedAt: new Date('2026-09-02T00:00:00.000Z'),
+    evaluate: (params) => ({ ...backtest(params), oneStepPoints }),
+    dailyPrices,
+  });
+}
+
+test('the daily signal group offers the current setting plus the two documented weights', () => {
+  const sensitivity = buildWithDaily(dailyRows(8));
+  const daily = sensitivity.groups.find((group) => group.key === 'dailySignal');
+
+  assert.equal(daily?.status, 'evaluated');
+  assert.deepEqual(
+    daily?.candidates.map((candidate) => candidate.label),
+    ['미사용', '최근 5개 · 25%', '최근 5개 · 50%'],
+  );
+  assert.equal(daily?.candidates.find((candidate) => candidate.isCurrent)?.label, '미사용');
+});
+
+test('fewer than five daily observations skip the daily signal group entirely', () => {
+  const sensitivity = buildWithDaily(dailyRows(3));
+  const daily = sensitivity.groups.find((group) => group.key === 'dailySignal');
+
+  assert.equal(daily?.status, 'not-applicable');
+  assert.deepEqual(daily?.candidates, []);
+  assert.match(daily?.notApplicableReason ?? '', /일별 데이터가 3개뿐이라/);
+});
+
+test('daily signal candidates reuse the base walk-forward instead of running a new one', () => {
+  const evaluated: string[] = [];
+  const dailyPrices = dailyRows(8);
+  const sensitivity = buildParameterSensitivity({
+    currentParams: CURRENT,
+    currentBacktest: backtest(CURRENT),
+    evaluatedAt: new Date('2026-09-02T00:00:00.000Z'),
+    evaluate: (params) => {
+      evaluated.push(serializeSensitivityParamsKey(params));
+      return backtest(params);
+    },
+    dailyPrices,
+  });
+  const daily = sensitivity.groups.find((group) => group.key === 'dailySignal');
+
+  assert.equal(daily?.candidates.length, 3);
+  assert.equal(
+    evaluated.filter((key) => key.endsWith('|5:0.25') || key.endsWith('|5:0.5')).length,
+    0,
   );
 });

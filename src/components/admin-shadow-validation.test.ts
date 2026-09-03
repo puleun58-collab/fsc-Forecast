@@ -15,6 +15,8 @@ import {
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
 const BASELINE: ForecastModelParams = {
+  biasCorrection: null,
+  dailySignal: null,
   modelId: 'B',
   trendLookbackWeeks: 8,
   dubai: { lagWeeks: 1, weight: 0.2 },
@@ -72,8 +74,8 @@ test('an in-flight session shows progress and marks the numbers as interim', () 
   assert.match(markup, /Shadow 튜닝 후보 검증/);
   assert.match(markup, /검증 중 · 2\/13/);
   assert.match(markup, /새 Actual을 기준으로 운영 모델과 Shadow 후보를 동시에 검증하고 있습니다/);
-  assert.match(markup, /Model B · Trend 8주 · Dubai lag 1주 · weight 20\.0%/);
-  assert.match(markup, /Model B · Trend 6주 · Dubai lag 1주 · weight 20\.0%/);
+  assert.match(markup, /Model B · Trend 8주 · Dubai 반영 시차 1주 · 반영 비중 20%/);
+  assert.match(markup, /Model B · Trend 6주 · Dubai 반영 시차 1주 · 반영 비중 20%/);
   assert.match(markup, /표본 13주가 확보되기 전까지는 중간 결과이며 우열을 판정하지 않습니다/);
   assert.doesNotMatch(markup, /운영 적용 검토 가능/);
 });

@@ -1304,6 +1304,54 @@ main {
   }
 }
 
+.input-quality {
+  display: grid;
+  gap: 8px;
+  margin-bottom: var(--space-3);
+}
+
+.input-quality__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.input-quality-table th,
+.input-quality-table td {
+  padding: 8px 24px 8px 0;
+  text-align: left;
+}
+
+@media (max-width: 700px) {
+  .input-quality-table thead {
+    display: none;
+  }
+
+  .input-quality-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+    gap: 4px 12px;
+    padding: 10px 0;
+  }
+
+  .input-quality-table tbody th,
+  .input-quality-table tbody td {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    padding: 0;
+  }
+
+  .input-quality-table tbody th::before,
+  .input-quality-table tbody td::before {
+    content: attr(data-label);
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+    font-weight: 700;
+  }
+}
+
 .operation-history-list {
   display: grid;
   margin: 0;
@@ -1995,8 +2043,44 @@ summary.operation-history-row::-webkit-details-marker {
   font-size: 0.88rem;
 }
 
+/* 값과 상태 배지는 한 덩어리로 흘러야 좁은 폭에서 배지만 다음 줄로 떨어지지 않는다. */
+.admin-table__inline {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
 .admin-table__flag {
   margin-left: 6px;
+  white-space: nowrap;
+}
+
+.admin-summary__next {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: var(--radius-control);
+  background: var(--bg-muted);
+}
+
+.admin-summary__next--action {
+  border-color: var(--warning-border);
+}
+
+@media (max-width: 700px) {
+  .admin-summary .admin-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.market-regime__summary {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  line-height: 1.6;
 }
 
 .sensitivity-candidate__checks {
@@ -2031,6 +2115,12 @@ summary.operation-history-row::-webkit-details-marker {
     color: var(--text-secondary);
     font-size: 0.74rem;
     font-weight: 700;
+  }
+
+  .sensitivity-table .admin-table__flag {
+    min-height: 20px;
+    padding: 1px 6px;
+    font-size: 0.7rem;
   }
 
   .diagnostics-metrics-table thead {
@@ -2110,6 +2200,12 @@ summary.operation-history-row::-webkit-details-marker {
     color: var(--text-secondary);
     font-size: 0.74rem;
     font-weight: 700;
+  }
+
+  .market-regime-table .admin-table__flag {
+    min-height: 22px;
+    padding: 2px 7px;
+    font-size: 0.72rem;
   }
 }
 
@@ -2772,6 +2868,21 @@ details[open] > summary .admin-disclosure__toggle-open {
   border-color: var(--success-border);
   background: var(--success-soft);
   color: var(--accent);
+}
+
+/* 1순위 후보는 한 화면에 하나뿐이라 가장 강한 강조를 쓴다. */
+.status-tag--accent {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg-card);
+}
+
+/* 최저/최고는 값에 붙는 보조 표시라 본문보다 작고 낮게 잡는다. */
+.sensitivity-flag {
+  min-height: 20px;
+  padding: 1px 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 
 .status-tag--warning {

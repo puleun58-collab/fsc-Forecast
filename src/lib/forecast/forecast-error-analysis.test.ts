@@ -15,6 +15,8 @@ import type { WalkForwardEvaluationPoint } from './run-walk-forward-backtest';
 import type { ForecastSeriesPoint } from './types';
 
 const PARAMS: ForecastModelParams = {
+  biasCorrection: null,
+  dailySignal: null,
   modelId: 'C',
   trendLookbackWeeks: 8,
   dubai: { lagWeeks: 1, weight: 0.2 },
@@ -182,6 +184,8 @@ test('counterfactuals never read data after the evaluated origin', () => {
   const prices = Array.from({ length: 20 }, (_, index) => 1800 + index * 5);
   const indicatorSeries = { dubai: [], usdKrw: [] };
   const params: ForecastModelParams = {
+    biasCorrection: null,
+    dailySignal: null,
     modelId: 'A',
     trendLookbackWeeks: 8,
     dubai: null,
@@ -216,6 +220,8 @@ test('counterfactuals never read data after the evaluated origin', () => {
 test('stored analysis reproduces the recorded one-step forecasts of the selected model', () => {
   const series = buildSeries(Array.from({ length: 24 }, (_, index) => 1800 + Math.sin(index) * 20));
   const params: ForecastModelParams = {
+    biasCorrection: null,
+    dailySignal: null,
     modelId: 'A',
     trendLookbackWeeks: 8,
     dubai: null,

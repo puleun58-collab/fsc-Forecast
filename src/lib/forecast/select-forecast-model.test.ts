@@ -111,6 +111,8 @@ test('model comparison keeps the current model when it is already the best candi
 
 test('a clearly better model is promoted only with recent improvement and long-window stability', () => {
   const currentParams: ForecastModelParams = {
+    biasCorrection: null,
+    dailySignal: null,
     modelId: 'C',
     trendLookbackWeeks: 8,
     dubai: { lagWeeks: 1, weight: 0.2 },
@@ -140,6 +142,8 @@ test('a clearly better model is promoted only with recent improvement and long-w
 
 test('promotion is blocked during the cooldown window even when a better model exists', () => {
   const currentParams: ForecastModelParams = {
+    biasCorrection: null,
+    dailySignal: null,
     modelId: 'C',
     trendLookbackWeeks: 8,
     dubai: { lagWeeks: 1, weight: 0.2 },
@@ -167,6 +171,8 @@ test('promotion is blocked during the cooldown window even when a better model e
 
 test('a marginally better candidate does not reach the minimum improvement threshold', () => {
   const currentParams: ForecastModelParams = {
+    biasCorrection: null,
+    dailySignal: null,
     modelId: 'B',
     trendLookbackWeeks: 8,
     dubai: { lagWeeks: 1, weight: 0.05 },

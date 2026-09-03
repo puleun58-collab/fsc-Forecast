@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  ForecastModelParamsSchema,
   PROMOTION_COOLDOWN_DAYS,
   PROMOTION_LONG_WINDOW_TOLERANCE_RATIO,
   PROMOTION_MAX_ERROR_TOLERANCE_RATIO,
@@ -74,18 +75,7 @@ export const FORECAST_PROMOTION_THRESHOLDS: readonly ForecastPromotionThreshold[
 
 const NullableNumber = z.number().nullish().transform((value) => value ?? null);
 
-const IndicatorParamsSchema = z
-  .object({ lagWeeks: z.number(), weight: z.number() })
-  .nullish()
-  .transform((value) => value ?? null);
-
-const ModelParamsSchema = z.object({
-  modelId: z.enum(["A", "B", "C"]),
-  trendLookbackWeeks: z.number(),
-  dubai: IndicatorParamsSchema,
-  usdKrw: IndicatorParamsSchema,
-  externalAdjustmentCapRatio: z.number(),
-});
+const ModelParamsSchema = ForecastModelParamsSchema;
 
 const WindowMetricsSchema = z
   .object({

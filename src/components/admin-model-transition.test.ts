@@ -11,6 +11,8 @@ import type { ShadowValidationSummary } from '@/lib/forecast/shadow-validation';
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
 const BASELINE: ForecastModelParams = {
+  biasCorrection: null,
+  dailySignal: null,
   modelId: 'B',
   trendLookbackWeeks: 8,
   dubai: { lagWeeks: 1, weight: 0.2 },
@@ -83,7 +85,7 @@ test('a reviewable shadow result exposes one explicit admin approval action', ()
   assert.match(markup, /전환 가능/);
   assert.match(markup, /Trend lookback/);
   assert.match(markup, /8주 → 6주/);
-  assert.match(markup, /lag 1주 · weight 20\.0% → lag 2주 · weight 15\.0%/);
+  assert.match(markup, /반영 시차 1주 · 반영 비중 20% → 반영 시차 2주 · 반영 비중 15%/);
   assert.match(markup, /24\.80원/);
   assert.match(markup, /18\.90원/);
   assert.match(markup, /운영 전환 승인/);

@@ -75,6 +75,8 @@ export function buildForecastModelCandidates(
       dubai: null,
       usdKrw: null,
       externalAdjustmentCapRatio: fallbackCapRatio,
+      biasCorrection: null,
+      dailySignal: null,
     },
   ];
 
@@ -91,6 +93,8 @@ export function buildForecastModelCandidates(
           dubai: { lagWeeks: dubaiLagWeeks, weight: dubaiWeight },
           usdKrw: null,
           externalAdjustmentCapRatio: capRatio,
+          biasCorrection: null,
+          dailySignal: null,
         });
 
         for (const usdKrwLagWeeks of USD_KRW_LAG_WEEK_CANDIDATES) {
@@ -105,6 +109,8 @@ export function buildForecastModelCandidates(
               dubai: { lagWeeks: dubaiLagWeeks, weight: dubaiWeight },
               usdKrw: { lagWeeks: usdKrwLagWeeks, weight: usdKrwWeight },
               externalAdjustmentCapRatio: capRatio,
+              biasCorrection: null,
+              dailySignal: null,
             });
           }
         }

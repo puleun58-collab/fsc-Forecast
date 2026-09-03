@@ -15,6 +15,8 @@ import {
 const MODEL_VERSION = 'weekly-anchor-trend-v2';
 
 const ROLLBACK_PARAMS: ForecastModelParams = {
+  biasCorrection: null,
+  dailySignal: null,
   modelId: 'B',
   trendLookbackWeeks: 8,
   dubai: { lagWeeks: 1, weight: 0.2 },

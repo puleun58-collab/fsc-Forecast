@@ -17,6 +17,8 @@ import type { RunWalkForwardBacktestResult } from '@/lib/forecast/run-walk-forwa
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
 const CURRENT: ForecastModelParams = {
+  biasCorrection: null,
+  dailySignal: null,
   modelId: 'B',
   trendLookbackWeeks: 8,
   dubai: { lagWeeks: 1, weight: 0.2 },
@@ -138,7 +140,7 @@ test('the card shows the operating parameters and one collapsed group per factor
   assert.match(markup, /결과는 참고용이며 자동으로 적용되지 않습니다/);
   assert.match(markup, /현재 모델<\/span><strong>Model B<\/strong>/);
   assert.match(markup, /Trend lookback<\/span><strong>8주<\/strong>/);
-  assert.match(markup, /Dubai<\/span><strong>lag 1주 · weight 20\.0%<\/strong>/);
+  assert.match(markup, /Dubai<\/span><strong>반영 시차 1주 · 반영 비중 20%<\/strong>/);
   assert.match(markup, /USD\/KRW<\/span><strong>미사용<\/strong>/);
   assert.match(markup, /외부 보정 Cap<\/span><strong>±3%<\/strong>/);
   assert.match(markup, /Trend lookback 민감도/);
@@ -151,7 +153,7 @@ test('the card shows the operating parameters and one collapsed group per factor
 test('candidate rows mark the current setting and show the change against it', () => {
   const markup = render();
 
-  assert.match(markup, /8주<span class="status-tag status-tag--ok">현재<\/span>/);
+  assert.match(markup, /8주<span class="status-tag status-tag--ok admin-table__flag">현재<\/span>/);
   assert.match(markup, /\(-4\.40\)/);
   assert.match(markup, /data-label="13주 MAE"/);
   assert.match(markup, /data-label="26주 MAE"/);
@@ -289,4 +291,60 @@ test('runs without stored sensitivity metadata fall back cleanly', () => {
   assert.match(markup, /다음 예측 실행부터 설정별 성능 비교가 시작됩니다/);
   assert.doesNotMatch(markup, /walk-forward/);
   assert.doesNotMatch(markup, /<table/);
+});
+
+test('the lowest value in each group is flagged, and ties all keep the flag', () => {
+  const markup = render();
+  const trendBlock = markup.slice(
+    markup.indexOf('Trend lookback 민감도'),
+    markup.indexOf('Dubai 민감도'),
+  );
+  const lowest = /<span class="status-tag admin-table__flag sensitivity-flag">최저<\/span>/;
+
+  assert.match(trendBlock, new RegExp(`18\\.40원/L \\(-4\\.40\\)${lowest.source}`));
+  assert.match(trendBlock, new RegExp(`1\\.02% \\(-0\\.24\\)${lowest.source}`));
+  assert.doesNotMatch(trendBlock, new RegExp(`23\\.50원/L \\(\\+0\\.70\\)${lowest.source}`));
+  // 방향 정확도는 모든 후보가 동률이라 전부 최고로 표시된다.
+  assert.equal(trendBlock.match(/최고<\/span>/g)?.length, 5);
+  assert.equal(trendBlock.match(/최저<\/span>/g)?.length, 4);
+});
+test('the top ranked tuning candidate is the only row marked as the first choice', () => {
+  const markup = render();
+
+  assert.equal(markup.match(/1순위 후보/g)?.length, 1);
+  assert.match(
+    markup,
+    /6주<span class="status-tag status-tag--accent admin-table__flag">1순위 후보<\/span>/,
+  );
+});
+
+test('the daily signal group states the observation window it compared', () => {
+  const dailyPrices = Array.from({ length: 6 }, (_, index) => ({
+    priceDate: new Date(Date.UTC(2026, 7, 25 + index)),
+    observedPriceKrwPerL: 1950 + index * 6,
+    currentRevisionId: `revision-${index}`,
+  }));
+  const sensitivity = buildParameterSensitivity({
+    currentParams: CURRENT,
+    currentBacktest: backtest(CURRENT, 22.8),
+    evaluatedAt: new Date('2026-09-02T00:00:00.000Z'),
+    evaluate: (params) => backtest(params, 23.5),
+    dailyPrices,
+  });
+  const markup = renderToStaticMarkup(
+    createElement(AdminParameterSensitivity, { sensitivity }),
+  );
+
+  assert.match(markup, /일별 단기 신호 민감도/);
+  assert.match(markup, /최근 단기 방향 · 상승 \+1\.2% · 2026\.08\.26~2026\.08\.30/);
+  assert.match(markup, /1,956\.00원\/L → 1,980\.00원\/L/);
+  assert.match(markup, /관측 5개/);
+  assert.match(markup, /최근 5개 · 25%/);
+});
+
+test('the current setting never carries the first choice badge', () => {
+  const markup = render(CURRENT, null);
+
+  assert.doesNotMatch(markup, /1순위 후보/);
+  assert.match(markup, /현재<\/span>/);
 });

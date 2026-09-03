@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  ForecastModelParamsSchema,
   PROMOTION_MAX_ERROR_TOLERANCE_RATIO,
   PROMOTION_MIN_MAE_IMPROVEMENT_RATIO,
   PROMOTION_MIN_MAPE_IMPROVEMENT_PCT_POINT,
@@ -77,15 +78,7 @@ export interface ShadowValidationSummary {
   qualityChecks: ShadowQualityChecks;
 }
 
-const IndicatorParamsSchema = z.object({ lagWeeks: z.number(), weight: z.number() }).nullable();
-
-const ModelParamsSchema = z.object({
-  modelId: z.enum(["A", "B", "C"]),
-  trendLookbackWeeks: z.number(),
-  dubai: IndicatorParamsSchema,
-  usdKrw: IndicatorParamsSchema,
-  externalAdjustmentCapRatio: z.number(),
-});
+const ModelParamsSchema = ForecastModelParamsSchema;
 
 const DirectionSchema = z.enum(["up", "down", "flat"]);
 
@@ -137,6 +130,12 @@ export function buildCandidateFingerprint(params: ForecastModelParams, modelVers
     dubai,
     usdKrw,
     params.externalAdjustmentCapRatio,
+    params.biasCorrection === null
+      ? "none"
+      : `${params.biasCorrection.lookbackWeeks}:${params.biasCorrection.weight}`,
+    params.dailySignal === null
+      ? "none"
+      : `${params.dailySignal.lookbackObservations}:${params.dailySignal.weight}`,
   ].join("|");
 }
 

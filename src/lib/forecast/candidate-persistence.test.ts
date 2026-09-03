@@ -19,6 +19,8 @@ import {
 const MODEL_VERSION = "test-v1";
 
 const BASELINE: ForecastModelParams = {
+  biasCorrection: null,
+  dailySignal: null,
   modelId: "B",
   trendLookbackWeeks: 8,
   dubai: { lagWeeks: 1, weight: 0.2 },

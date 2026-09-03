@@ -58,7 +58,13 @@ import {
   type ForecastIndicatorWeeklyPoint,
   type ForecastIndicatorWeeklySeries,
 } from "./build-weekly-forecast";
-import { FORECAST_MODEL_VERSION, FORECAST_RANGE_QUANTILE_LEVEL } from "./forecast-model-config";
+import {
+  DUBAI_LAG_WEEK_CANDIDATES,
+  FORECAST_MODEL_VERSION,
+  FORECAST_RANGE_QUANTILE_LEVEL,
+  USD_KRW_LAG_WEEK_CANDIDATES,
+} from "./forecast-model-config";
+import { buildForecastInputQuality } from "./input-quality";
 import {
   resolveForecastModelState,
   serializeForecastModelParams,
@@ -547,9 +553,30 @@ async function executeForecastPipeline(
     transitionDecision.action === "apply" ? transitionDecision.candidateParams : previousModelState.params;
   const effectivePromotedAt =
     appliedTransition === null ? previousModelState.promotedAt : startedAt;
+  // 모델 계산 직전에 한 번만 입력 품질을 판정하고, 운영·후보·Shadow가 같은 입력 세트를 쓴다.
+  const inputQuality = buildForecastInputQuality({
+    weeklySeries,
+    dailyPrices,
+    indicatorSeries: indicatorWeeklySeries,
+    dubaiLagWeeks: Math.max(...DUBAI_LAG_WEEK_CANDIDATES),
+    usdKrwLagWeeks: Math.max(...USD_KRW_LAG_WEEK_CANDIDATES),
+    evaluatedAt: startedAt,
+  });
+
+  if (!inputQuality.usableInputs.weeklyDiesel) {
+    throw new Error(
+      `Forecast pipeline requires usable weekly diesel prices, quality gate reported '${inputQuality.results[0].status}'.`,
+    );
+  }
+
+  const usableIndicatorSeries: ForecastIndicatorWeeklySeries = {
+    dubai: inputQuality.usableInputs.dubai ? indicatorWeeklySeries.dubai : [],
+    usdKrw: inputQuality.usableInputs.usdKrw ? indicatorWeeklySeries.usdKrw : [],
+  };
+  const usableDailyPrices = inputQuality.usableInputs.dailyDiesel ? dailyPrices : [];
   const selection = selectForecastModel({
     weeklySeries,
-    indicatorSeries: indicatorWeeklySeries,
+    indicatorSeries: usableIndicatorSeries,
     horizonCount: FORECAST_WEEKLY_HORIZON_COUNT,
     currentParams: effectiveParams,
     currentPromotedAt: effectivePromotedAt,
@@ -557,7 +584,7 @@ async function executeForecastPipeline(
   });
   const weeklyForecast = buildWeeklyForecast({
     weeklySeries,
-    indicatorSeries: indicatorWeeklySeries,
+    indicatorSeries: usableIndicatorSeries,
     params: selection.selectedParams,
     horizonCount: FORECAST_WEEKLY_HORIZON_COUNT,
     absoluteErrorByHorizon: selection.selectedBacktest.absoluteErrorByHorizon,
@@ -580,6 +607,8 @@ async function executeForecastPipeline(
     currentParams: selection.selectedParams,
     currentBacktest: selection.selectedBacktest,
     evaluatedAt: startedAt,
+    // 실행 시점까지 확정된 일별 데이터만 넘긴다. 후보마다 DB를 다시 읽지 않는다.
+    dailyPrices: usableDailyPrices,
     // 이미 평가한 후보는 재사용하고, Trend 후보처럼 없는 조합만 새로 계산한다.
     evaluate: (params) => {
       const key = serializeSensitivityParamsKey(params);
@@ -587,7 +616,7 @@ async function executeForecastPipeline(
         backtestByParamsKey.get(key) ??
         runWalkForwardBacktest({
           weeklySeries,
-          indicatorSeries: indicatorWeeklySeries,
+          indicatorSeries: usableIndicatorSeries,
           params,
           horizonCount: FORECAST_WEEKLY_HORIZON_COUNT,
         });
@@ -676,7 +705,7 @@ async function executeForecastPipeline(
       ? null
       : buildWeeklyForecast({
           weeklySeries,
-          indicatorSeries: indicatorWeeklySeries,
+          indicatorSeries: usableIndicatorSeries,
           params: shadowSession.candidateParams,
           horizonCount: 1,
         });
@@ -716,7 +745,7 @@ async function executeForecastPipeline(
       ? null
       : buildWeeklyForecast({
           weeklySeries,
-          indicatorSeries: indicatorWeeklySeries,
+          indicatorSeries: usableIndicatorSeries,
           params: monitoringSession.rollbackParams,
           horizonCount: 1,
         });

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { ForecastModelParams } from "./forecast-model-config";
+import { ForecastModelParamsSchema, type ForecastModelParams } from "./forecast-model-config";
 import type { ParameterSensitivity } from "./parameter-sensitivity";
 import {
   summarizePostTransitionMonitoring,
@@ -15,15 +15,7 @@ import {
   type ShadowValidationSummary,
 } from "./shadow-validation";
 
-const IndicatorParamsSchema = z.object({ lagWeeks: z.number(), weight: z.number() }).nullable();
-
-const ModelParamsSchema = z.object({
-  modelId: z.enum(["A", "B", "C"]),
-  trendLookbackWeeks: z.number(),
-  dubai: IndicatorParamsSchema,
-  usdKrw: IndicatorParamsSchema,
-  externalAdjustmentCapRatio: z.number(),
-});
+const ModelParamsSchema = ForecastModelParamsSchema;
 
 /** 저장된 전환 params는 항상 schema 검증 후 사용한다. */
 export function parseTransitionParams(value: unknown): ForecastModelParams {

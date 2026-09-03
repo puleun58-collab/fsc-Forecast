@@ -22,6 +22,8 @@ function window(maeKrwPerL: number, overrides: Record<string, number> = {}) {
 function backtest(full: number, oneStep: number): RunWalkForwardBacktestResult {
   return {
     params: {
+      biasCorrection: null,
+      dailySignal: null,
       modelId: "B",
       trendLookbackWeeks: 8,
       dubai: { lagWeeks: 1, weight: 0.2 },

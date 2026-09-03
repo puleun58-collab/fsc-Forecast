@@ -22,6 +22,17 @@ const ForecastModelStateSchema = z.object({
       dubai: IndicatorParamsSchema.optional().default(null),
       usdKrw: IndicatorParamsSchema.optional().default(null),
       externalAdjustmentCapRatio: z.number().min(0).max(0.2),
+      biasCorrection: z
+        .object({ lookbackWeeks: z.number().int().min(2).max(52), weight: z.number().gt(0).max(1) })
+        .nullish()
+        .transform((value) => value ?? null),
+      dailySignal: z
+        .object({
+          lookbackObservations: z.number().int().min(2).max(30),
+          weight: z.number().gt(0).max(1),
+        })
+        .nullish()
+        .transform((value) => value ?? null),
     }),
   }),
 });
@@ -48,6 +59,8 @@ export function readForecastModelState(metadata: unknown): StoredForecastModelSt
       dubai: model.params.dubai,
       usdKrw: model.params.usdKrw,
       externalAdjustmentCapRatio: model.params.externalAdjustmentCapRatio,
+      biasCorrection: model.params.biasCorrection,
+      dailySignal: model.params.dailySignal,
     },
     promotedAt: model.promotedAt ? new Date(model.promotedAt) : null,
     modelVersion: model.version ?? null,
@@ -73,5 +86,7 @@ export function serializeForecastModelParams(
     dubai: params.dubai === null ? null : { ...params.dubai },
     usdKrw: params.usdKrw === null ? null : { ...params.usdKrw },
     externalAdjustmentCapRatio: params.externalAdjustmentCapRatio,
+    biasCorrection: params.biasCorrection === null ? null : { ...params.biasCorrection },
+    dailySignal: params.dailySignal === null ? null : { ...params.dailySignal },
   };
 }

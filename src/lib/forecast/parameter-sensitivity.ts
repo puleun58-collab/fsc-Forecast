@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  ForecastModelParamsSchema,
   DUBAI_LAG_WEEK_CANDIDATES,
   DUBAI_WEIGHT_CANDIDATES,
   EXTERNAL_ADJUSTMENT_CAP_CANDIDATES,
@@ -14,13 +15,33 @@ import {
   type PromotionQualityChecks,
 } from "./promotion-quality";
 import type { RunWalkForwardBacktestResult } from "./run-walk-forward-backtest";
+import {
+  BIAS_CANDIDATE_WINDOW_WEEKS,
+  buildBiasCandidateParams,
+  buildBiasCorrectedBacktest,
+  describeBiasCorrection,
+  summarizeBiasState,
+} from "./bias-correction";
+import {
+  buildDailySignalBacktest,
+  buildDailySignalCandidateParams,
+  describeDailySignal,
+  summarizeDailySignalState,
+} from "./daily-signal";
+import type { ForecastDailyPriceRow } from "./types";
 
 /** 진단 전용 Trend 후보. 운영 candidate 탐색 범위에는 연결하지 않는다. */
 export const DIAGNOSTIC_TREND_LOOKBACK_CANDIDATES = [4, 6, 8, 10, 12] as const;
 export const PARAMETER_SENSITIVITY_VERSION = 3;
 export const TUNING_CANDIDATE_LIMIT = 3;
 
-export type ParameterSensitivityGroupKey = "trendLookback" | "dubai" | "usdKrw" | "cap";
+export type ParameterSensitivityGroupKey =
+  | "trendLookback"
+  | "dubai"
+  | "usdKrw"
+  | "cap"
+  | "bias"
+  | "dailySignal";
 
 export interface SensitivityWindowMetrics {
   sampleCount: number;
@@ -87,6 +108,17 @@ export interface CombinationAnalysis {
   evaluatedCandidateCount: number;
 }
 
+/** 재현을 위해 후보 평가에 사용한 일별 관측 구간을 그대로 남긴다. */
+export interface DailySignalDiagnostics {
+  observationCount: number;
+  sufficient: boolean;
+  startDate: string | null;
+  endDate: string | null;
+  firstPriceKrwPerL: number | null;
+  latestPriceKrwPerL: number | null;
+  trendRatio: number | null;
+}
+
 export interface ParameterSensitivity {
   version: number;
   evaluatedAt: string;
@@ -100,6 +132,8 @@ export interface ParameterSensitivity {
   /** v1 metadata에는 존재하지 않는다. */
   combinationAnalysis: CombinationAnalysis | null;
   tuningCandidates: TuningCandidate[];
+  /** v3 이전 metadata에는 없다. */
+  dailySignal: DailySignalDiagnostics | null;
 }
 
 const WindowMetricsSchema = z.object({
@@ -111,15 +145,7 @@ const WindowMetricsSchema = z.object({
   forecastChurnKrwPerL: z.number().nullable(),
 });
 
-const IndicatorParamsSchema = z.object({ lagWeeks: z.number(), weight: z.number() }).nullable();
-
-const ModelParamsSchema = z.object({
-  modelId: z.enum(["A", "B", "C"]),
-  trendLookbackWeeks: z.number(),
-  dubai: IndicatorParamsSchema,
-  usdKrw: IndicatorParamsSchema,
-  externalAdjustmentCapRatio: z.number(),
-});
+const ModelParamsSchema = ForecastModelParamsSchema;
 
 const QualityChecksSchema = z.object({
   maeImprovementRatio: z.number().nullable(),
@@ -130,7 +156,7 @@ const QualityChecksSchema = z.object({
   churnStable: z.boolean(),
 });
 
-const GroupKeySchema = z.enum(["trendLookback", "dubai", "usdKrw", "cap"]);
+const GroupKeySchema = z.enum(["trendLookback", "dubai", "usdKrw", "cap", "bias", "dailySignal"]);
 
 const SensitivityMetadataSchema = z.object({
   model: z.object({
@@ -145,7 +171,7 @@ const SensitivityMetadataSchema = z.object({
       sampleSufficient: z.boolean(),
       groups: z.array(
         z.object({
-          key: z.enum(["trendLookback", "dubai", "usdKrw", "cap"]),
+          key: GroupKeySchema,
           status: z.enum(["evaluated", "not-applicable"]),
           notApplicableReason: z.string().nullable(),
           candidates: z.array(
@@ -208,6 +234,18 @@ const SensitivityMetadataSchema = z.object({
             factorKeys: candidate.factorKeys ?? [candidate.groupKey],
           })),
       ),
+      dailySignal: z
+        .object({
+          observationCount: z.number(),
+          sufficient: z.boolean(),
+          startDate: z.string().nullable(),
+          endDate: z.string().nullable(),
+          firstPriceKrwPerL: z.number().nullable(),
+          latestPriceKrwPerL: z.number().nullable(),
+          trendRatio: z.number().nullable(),
+        })
+        .nullish()
+        .transform((value) => value ?? null),
     }),
   }),
 });
@@ -235,11 +273,24 @@ export function serializeSensitivityParamsKey(params: ForecastModelParams): stri
     dubai,
     usdKrw,
     params.externalAdjustmentCapRatio,
+    params.biasCorrection === null
+      ? "none"
+      : `${params.biasCorrection.lookbackWeeks}:${params.biasCorrection.weight}`,
+    params.dailySignal === null
+      ? "none"
+      : `${params.dailySignal.lookbackObservations}:${params.dailySignal.weight}`,
   ].join("|");
 }
 
-function describeIndicator(indicator: ForecastModelParams["dubai"]): string {
-  return indicator === null ? "미사용" : `lag ${indicator.lagWeeks}주 · weight ${(indicator.weight * 100).toFixed(1)}%`;
+/** 관리자 화면 표기는 lag/weight 대신 뜻이 드러나는 한국어를 쓴다. */
+export function describeIndicator(indicator: ForecastModelParams["dubai"]): string {
+  return indicator === null
+    ? "미사용"
+    : `반영 시차 ${indicator.lagWeeks}주 · 반영 비중 ${formatWeightPercent(indicator.weight)}`;
+}
+
+function formatWeightPercent(weight: number): string {
+  return `${Number((weight * 100).toFixed(1))}%`;
 }
 
 function resolveModelId(params: ForecastModelParams): ForecastModelParams["modelId"] {
@@ -260,6 +311,8 @@ const FACTOR_KEYS: readonly ParameterSensitivityGroupKey[] = [
   "dubai",
   "usdKrw",
   "cap",
+  "bias",
+  "dailySignal",
 ];
 
 function describeFactorValue(
@@ -275,6 +328,10 @@ function describeFactorValue(
       return `USD/KRW ${describeIndicator(params.usdKrw)}`;
     case "cap":
       return `Cap ±${(params.externalAdjustmentCapRatio * 100).toFixed(0)}%`;
+    case "bias":
+      return `Bias ${describeBiasCorrection(params.biasCorrection)}`;
+    case "dailySignal":
+      return `일별 단기 신호 ${describeDailySignal(params.dailySignal)}`;
   }
 }
 
@@ -303,6 +360,10 @@ function applyFactor(
       return withParams(base, { usdKrw: source.usdKrw });
     case "cap":
       return withParams(base, { externalAdjustmentCapRatio: source.externalAdjustmentCapRatio });
+    case "bias":
+      return withParams(base, { biasCorrection: source.biasCorrection });
+    case "dailySignal":
+      return withParams(base, { dailySignal: source.dailySignal });
   }
 }
 
@@ -352,7 +413,7 @@ function buildGroupParams(
     { label: "미사용", params: withParams(currentParams, { dubai: null, usdKrw: null }) },
     ...DUBAI_LAG_WEEK_CANDIDATES.flatMap((lagWeeks) =>
       dubaiWeights.map((weight) => ({
-        label: `lag ${lagWeeks}주 · weight ${(weight * 100).toFixed(1)}%`,
+        label: describeIndicator({ lagWeeks, weight }),
         params: withParams(currentParams, { dubai: { lagWeeks, weight } }),
       })),
     ),
@@ -362,7 +423,7 @@ function buildGroupParams(
     { label: "미사용", params: withParams(currentParams, { usdKrw: null }) },
     ...USD_KRW_LAG_WEEK_CANDIDATES.flatMap((lagWeeks) =>
       usdKrwWeights.map((weight) => ({
-        label: `lag ${lagWeeks}주 · weight ${(weight * 100).toFixed(1)}%`,
+        label: describeIndicator({ lagWeeks, weight }),
         params: withParams(currentParams, { usdKrw: { lagWeeks, weight } }),
       })),
     ),
@@ -372,7 +433,16 @@ function buildGroupParams(
     params: withParams(currentParams, { externalAdjustmentCapRatio: ratio }),
   }));
 
-  return { trendLookback, dubai, usdKrw, cap };
+  const bias = buildBiasCandidateParams(currentParams).map((candidate) => ({
+    label: candidate.label,
+    params: withParams(currentParams, { biasCorrection: candidate.params.biasCorrection }),
+  }));
+  const dailySignal = buildDailySignalCandidateParams(currentParams).map((candidate) => ({
+    label: candidate.label,
+    params: withParams(currentParams, { dailySignal: candidate.params.dailySignal }),
+  }));
+
+  return { trendLookback, dubai, usdKrw, cap, bias, dailySignal };
 }
 
 export interface BuildParameterSensitivityInput {
@@ -381,6 +451,8 @@ export interface BuildParameterSensitivityInput {
   /** 이미 평가된 후보를 재사용하고, 없을 때만 새 walk-forward를 실행한다. */
   evaluate: (params: ForecastModelParams) => RunWalkForwardBacktestResult | null;
   evaluatedAt: Date;
+  /** 일별 단기 신호 후보 평가용. 파이프라인 시작 때 한 번 읽은 값을 그대로 넘긴다. */
+  dailyPrices?: readonly ForecastDailyPriceRow[];
 }
 
 interface BuildCombinationAnalysisInput {
@@ -511,7 +583,10 @@ export function buildParameterSensitivity({
   currentBacktest,
   evaluate,
   evaluatedAt,
+  dailyPrices = [],
 }: BuildParameterSensitivityInput): ParameterSensitivity {
+  const recentWindowWeeks = currentBacktest.recentOneStep.windowWeeks;
+  const longWindowWeeks = currentBacktest.longOneStep.windowWeeks;
   const backtestCache = new Map<string, RunWalkForwardBacktestResult | null>();
   // 같은 params는 1단계·2단계를 통틀어 한 번만 walk-forward를 실행한다.
   const evaluateCached = (params: ForecastModelParams): RunWalkForwardBacktestResult | null => {
@@ -522,7 +597,31 @@ export function buildParameterSensitivity({
       return cached;
     }
 
-    const evaluated = evaluate(params);
+    // Bias·일별 후보는 기본 모델 결과를 사후 보정해 만든다. walk-forward를 다시 돌리지 않는다.
+    const postCorrected = params.biasCorrection !== null || params.dailySignal !== null;
+    let evaluated = postCorrected
+      ? evaluateCached({ ...params, biasCorrection: null, dailySignal: null })
+      : evaluate(params);
+
+    if (evaluated !== null && params.biasCorrection !== null) {
+      evaluated = buildBiasCorrectedBacktest({
+        base: evaluated,
+        bias: params.biasCorrection,
+        recentWindowWeeks,
+        longWindowWeeks,
+      });
+    }
+
+    if (evaluated !== null && params.dailySignal !== null) {
+      evaluated = buildDailySignalBacktest({
+        base: evaluated,
+        dailyPrices,
+        signal: params.dailySignal,
+        recentWindowWeeks,
+        longWindowWeeks,
+      });
+    }
+
     backtestCache.set(key, evaluated);
 
     return evaluated;
@@ -530,14 +629,44 @@ export function buildParameterSensitivity({
   const currentKey = serializeSensitivityParamsKey(currentParams);
   const groupParams = buildGroupParams(currentParams);
   const usdKrwEvaluable = currentParams.dubai !== null || currentParams.usdKrw !== null;
+  const biasState = summarizeBiasState(currentBacktest.oneStepPoints);
+  const dailySignalState = summarizeDailySignalState(dailyPrices, evaluatedAt);
   const groups: ParameterSensitivityGroup[] = (
-    ["trendLookback", "dubai", "usdKrw", "cap"] as ParameterSensitivityGroupKey[]
+    [
+      "trendLookback",
+      "dubai",
+      "usdKrw",
+      "cap",
+      "bias",
+      "dailySignal",
+    ] as ParameterSensitivityGroupKey[]
   ).map((key) => {
     if (key === "usdKrw" && !usdKrwEvaluable) {
       return {
         key,
         status: "not-applicable",
         notApplicableReason: "USD/KRW 민감도는 Dubai 보정을 사용하는 모델에서 평가할 수 있습니다.",
+        candidates: [],
+      };
+    }
+
+    if (key === "bias" && !biasState.persistent) {
+      return {
+        key,
+        status: "not-applicable",
+        notApplicableReason:
+          biasState.sampleCount < BIAS_CANDIDATE_WINDOW_WEEKS
+            ? "Bias 보정을 평가할 만큼 최근 예측 결과가 쌓이지 않았습니다."
+            : "최근 예측이 한쪽 방향으로 치우쳐 있지 않아 Bias 보정 후보를 만들지 않습니다.",
+        candidates: [],
+      };
+    }
+
+    if (key === "dailySignal" && !dailySignalState.sufficient) {
+      return {
+        key,
+        status: "not-applicable",
+        notApplicableReason: `일별 데이터가 ${dailySignalState.observationCount}개뿐이라 일별 단기 신호 후보를 평가하지 않습니다.`,
         candidates: [],
       };
     }
@@ -639,6 +768,15 @@ export function buildParameterSensitivity({
     groups,
     combinationAnalysis,
     tuningCandidates,
+    dailySignal: {
+      observationCount: dailySignalState.observationCount,
+      sufficient: dailySignalState.sufficient,
+      startDate: dailySignalState.startDate?.toISOString() ?? null,
+      endDate: dailySignalState.endDate?.toISOString() ?? null,
+      firstPriceKrwPerL: dailySignalState.firstPriceKrwPerL,
+      latestPriceKrwPerL: dailySignalState.latestPriceKrwPerL,
+      trendRatio: dailySignalState.trendRatio,
+    },
   };
 }
 
@@ -655,5 +793,8 @@ export function describeSensitivityParams(params: ForecastModelParams): string {
     `Dubai ${describeIndicator(params.dubai)}`,
     `USD/KRW ${describeIndicator(params.usdKrw)}`,
     `Cap ±${(params.externalAdjustmentCapRatio * 100).toFixed(0)}%`,
+    // 사용 중일 때만 덧붙여 기본 설정의 표기가 길어지지 않게 한다.
+    ...(params.biasCorrection === null ? [] : [`Bias ${describeBiasCorrection(params.biasCorrection)}`]),
+    ...(params.dailySignal === null ? [] : [`일별 단기 신호 ${describeDailySignal(params.dailySignal)}`]),
   ].join(" · ");
 }

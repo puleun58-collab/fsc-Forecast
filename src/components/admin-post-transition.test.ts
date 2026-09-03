@@ -14,6 +14,8 @@ import type {
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
 const PREVIOUS: ForecastModelParams = {
+  biasCorrection: null,
+  dailySignal: null,
   modelId: 'B',
   trendLookbackWeeks: 8,
   dubai: { lagWeeks: 1, weight: 0.2 },

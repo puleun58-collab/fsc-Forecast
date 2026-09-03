@@ -91,14 +91,30 @@ function render(analysis: MarketRegimeAnalysis | null = ANALYSIS): string {
   return renderToStaticMarkup(createElement(AdminMarketRegime, { analysis }));
 }
 
-test('the card keeps a fixed regime order and always shows sample counts', () => {
+test('the collapsed card leads with a one-line regime summary', () => {
+  const markup = render();
+  const summary = markup.slice(
+    markup.indexOf('market-regime__summary'),
+    markup.indexOf('</p>', markup.indexOf('market-regime__summary')),
+  );
+
+  assert.match(summary, /시장 국면 · 현재 고변동/);
+  assert.match(summary, /안정 MAE 12\.40원\/L/);
+  assert.match(summary, /하락 추세 MAE 25\.30원\/L/);
+  assert.match(summary, /상승 추세 표본 부족/);
+  assert.doesNotMatch(summary, /상승 추세 MAE/);
+  assert.match(markup, /시장 국면별 성능 보기/);
+  assert.doesNotMatch(markup, /<details[^>]*\sopen/);
+});
+
+test('the detail disclosure keeps a fixed regime order and always shows sample counts', () => {
   const markup = render();
   const rows = [...markup.matchAll(/data-label="국면">([^<]+)</g)].map((match) => match[1]);
 
   assert.deepEqual(rows.slice(0, 4), ['안정', '상승 추세', '하락 추세', '고변동']);
-  assert.match(markup, /data-label="표본">8주/);
+  assert.match(markup, /data-label="표본"><span class="admin-table__inline">8주/);
   assert.match(markup, /data-label="MAE">12\.40원\/L/);
-  assert.match(markup, /최근 26주 1주 예측 기준/);
+  assert.match(markup, /최근 26주 다음 주 예측 기준/);
   assert.match(markup, /전체 MAE 24\.20원\/L \(표본 20주\)/);
 });
 
@@ -120,11 +136,9 @@ test('the current market block reports the regime and its two features', () => {
   assert.match(markup, /최근 4주 변동성<\/span><strong>1\.4%<\/strong>/);
 });
 
-test('regime details stay collapsed and stay a reference, not a cause', () => {
+test('the detail view stays a reference, not a cause', () => {
   const markup = render();
 
-  assert.doesNotMatch(markup, /<details[^>]*\sopen/);
-  assert.match(markup, /국면별 상세/);
   assert.match(markup, /8월 1주차/);
   assert.match(markup, /data-label="오차">-47\.00원\/L/);
   assert.match(markup, /적중/);

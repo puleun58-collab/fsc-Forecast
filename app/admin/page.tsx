@@ -10,6 +10,7 @@ import { AdminOperationHistory } from '@/components/admin-operation-history';
 import { AdminQuarterCard } from '@/components/admin-quarter-card';
 import { AdminShadowValidation } from '@/components/admin-shadow-validation';
 import { AdminModelTransition } from '@/components/admin-model-transition';
+import { AdminOperationsSummary } from '@/components/admin-operations-summary';
 import { AdminPostTransition } from '@/components/admin-post-transition';
 import { AdminQuarterManagement } from '@/components/admin-quarter-management';
 import { AdminWeekComposition } from '@/components/admin-week-composition';
@@ -25,10 +26,11 @@ import { readBacktestOneStepPoints } from '@/lib/forecast/backtest-detail';
 import { readForecastErrorAnalysis } from '@/lib/forecast/forecast-error-analysis';
 import { readCandidatePersistence } from '@/lib/forecast/candidate-persistence';
 import { readCandidateRegimeComparisons } from '@/lib/forecast/candidate-regime-comparison';
+import { readForecastInputQuality } from '@/lib/forecast/input-quality';
 import { readMarketRegimeAnalysis } from '@/lib/forecast/market-regime';
 import { readParameterSensitivity } from '@/lib/forecast/parameter-sensitivity';
-import { loadAdminTransitionSection } from '@/lib/forecast/load-model-transition-view';
 import { readShadowValidation } from '@/lib/forecast/shadow-validation';
+import { loadAdminTransitionSection } from '@/lib/forecast/load-model-transition-view';
 import { readForecastModelDiagnostics } from '@/lib/forecast/forecast-diagnostics';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
 
@@ -131,7 +133,29 @@ export default async function AdminPage() {
       </section>
 
       <div className="dashboard-shell__grid">
-        <AdminDataHealthPanel summary={dataHealth} />
+        <AdminOperationsSummary
+          modelParams={forecastDiagnosticsEntries[0]?.diagnostics.selectedParams ?? null}
+          recentMapePct={forecastDiagnosticsEntries[0]?.diagnostics.recentOneStep?.mapePct ?? null}
+          recentMaeKrwPerL={
+            forecastDiagnosticsEntries[0]?.diagnostics.recentOneStep?.maeKrwPerL ?? null
+          }
+          recentSampleCount={
+            forecastDiagnosticsEntries[0]?.diagnostics.recentOneStep?.sampleCount ?? null
+          }
+          reliabilityGrade={activeResultDto?.reliabilityGrade ?? null}
+          persistence={readCandidatePersistence(forecastRuns[0]?.metadata)}
+          tuningCandidateCount={
+            readParameterSensitivity(forecastRuns[0]?.metadata)?.tuningCandidates.length ?? 0
+          }
+          shadow={readShadowValidation(forecastRuns[0]?.metadata)}
+          transition={transitionSection.transition}
+          postTransition={transitionSection.postTransition}
+        />
+
+        <AdminDataHealthPanel
+          summary={dataHealth}
+          inputQuality={readForecastInputQuality(forecastRuns[0]?.metadata)}
+        />
 
         <AdminForecastDiagnostics
           latest={forecastDiagnosticsEntries[0] ?? null}
