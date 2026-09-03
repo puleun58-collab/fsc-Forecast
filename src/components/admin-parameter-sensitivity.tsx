@@ -19,6 +19,32 @@ const GROUP_LABEL: Record<ParameterSensitivityGroupKey, string> = {
   cap: '외부 보정 Cap 민감도',
 };
 
+const TUNING_FLOW_STEPS = [
+  '자동 비교',
+  '후보 최대 3개',
+  '1순위 후보 Shadow 검증',
+  '새 실제 데이터 13주',
+  '운영 적용 검토',
+];
+
+function TuningFlowGuide() {
+  return (
+    <div className="tuning-flow">
+      <h3 className="tuning-flow__title">자동 튜닝 흐름</h3>
+      <p className="tuning-flow__copy">
+        최신 데이터가 반영될 때 여러 예측 설정을 자동으로 비교합니다. 현재보다 나은 후보가 있으면 최대
+        3개까지 선정하고, 1순위 후보 1개를 Shadow에서 새 실제 데이터 13주로 검증합니다. 검증 중인 후보는
+        중간에 변경하지 않으며, 검증 결과가 좋아도 자동으로 운영에 적용되지는 않습니다.
+      </p>
+      <ol className="tuning-flow__steps">
+        {TUNING_FLOW_STEPS.map((step) => (
+          <li key={step}>{step}</li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 function formatMae(value: number | null): string {
   return value === null ? '산정 전' : formatPriceText(value);
 }
@@ -259,6 +285,7 @@ export function AdminParameterSensitivity({
       className="admin-sensitivity"
     >
       <div className="admin-detail-stack">
+        <TuningFlowGuide />
         <div className="admin-metric-grid">
           {[
             ['현재 모델', `Model ${currentParams.modelId}`],

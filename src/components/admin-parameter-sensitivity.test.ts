@@ -95,8 +95,24 @@ test('tuning candidates are labelled as review items that are never applied auto
   assert.match(markup, /13주 MAE 22\.80원\/L → 18\.40원\/L/);
   assert.match(markup, /기존 승격 품질 기준 충족/);
   assert.match(markup, /조합 후보도 실제 적용 전에 새 실제 데이터를 이용한 검증을 거치며/);
-  assert.doesNotMatch(markup, /추천 설정|적용 예정|자동 튜닝/);
+  assert.doesNotMatch(markup, /추천 설정|적용 예정|자동으로 적용됩니다/);
   assert.doesNotMatch(markup, /<button/);
+});
+
+test('the card leads with the automatic tuning flow guide', () => {
+  const markup = render();
+
+  assert.match(markup, /자동 튜닝 흐름/);
+  assert.match(
+    markup,
+    /최신 데이터가 반영될 때 여러 예측 설정을 자동으로 비교합니다\. 현재보다 나은 후보가 있으면 최대 3개까지 선정하고, 1순위 후보 1개를 Shadow에서 새 실제 데이터 13주로 검증합니다\. 검증 중인 후보는 중간에 변경하지 않으며, 검증 결과가 좋아도 자동으로 운영에 적용되지는 않습니다\./,
+  );
+  const steps = markup.slice(markup.indexOf('tuning-flow__steps'));
+  assert.match(
+    steps,
+    /<li>자동 비교<\/li><li>후보 최대 3개<\/li><li>1순위 후보 Shadow 검증<\/li><li>새 실제 데이터 13주<\/li><li>운영 적용 검토<\/li>/,
+  );
+  assert.doesNotMatch(steps.slice(0, steps.indexOf('</ol>')), /→/);
 });
 
 test('a model without Dubai reports that USD/KRW cannot be evaluated', () => {

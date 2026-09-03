@@ -103,7 +103,7 @@ export function calculateQuantile(sortedValues: readonly number[], level: number
   return sortedValues[lowerIndex] * (1 - weight) + sortedValues[upperIndex] * weight;
 }
 
-function summarizeWindow(
+export function summarizeWindow(
   points: readonly WalkForwardEvaluationPoint[],
   windowWeeks: number,
   churnKrwPerL: number | null,

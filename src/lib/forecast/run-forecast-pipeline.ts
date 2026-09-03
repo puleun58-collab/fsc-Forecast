@@ -21,6 +21,7 @@ import { loadPublicConfirmedLatestDate } from "../opinet/resolve-public-confirme
 import { buildBaselineForecast } from "./build-baseline-forecast";
 import { serializeBacktestOneStepPoints } from "./backtest-detail";
 import { buildForecastErrorAnalysis } from "./forecast-error-analysis";
+import { buildMarketRegimeAnalysis } from "./market-regime";
 import {
   buildParameterSensitivity,
   serializeSensitivityParamsKey,
@@ -778,6 +779,11 @@ async function executeForecastPipeline(
             selectedParams: selection.selectedParams,
             selectedBacktest: selection.selectedBacktest,
             candidateBacktestsByModelId: selection.bestBacktestByModelId,
+          }),
+          marketRegimeAnalysis: buildMarketRegimeAnalysis({
+            oneStepPoints: selection.selectedBacktest.oneStepPoints,
+            weeklySeries,
+            evaluatedAt: startedAt,
           }),
           parameterSensitivity,
           shadowValidation,

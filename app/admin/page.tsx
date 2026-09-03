@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { AdminDataHealthPanel } from '@/components/admin-data-health-panel';
 import { AdminForecastDiagnostics, type ForecastRunHistoryEntry } from '@/components/admin-forecast-diagnostics';
+import { AdminMarketRegime } from '@/components/admin-market-regime';
 import { AdminForecastQualityTrend } from '@/components/admin-forecast-quality-trend';
 import { AdminLogoutButton } from '@/components/admin-logout-button';
 import { AdminParameterSensitivity } from '@/components/admin-parameter-sensitivity';
@@ -22,6 +23,7 @@ import { findLatestBaseFscResultByQuarter } from '@/lib/fsc/load-latest-fsc-resu
 import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
 import { readBacktestOneStepPoints } from '@/lib/forecast/backtest-detail';
 import { readForecastErrorAnalysis } from '@/lib/forecast/forecast-error-analysis';
+import { readMarketRegimeAnalysis } from '@/lib/forecast/market-regime';
 import { readParameterSensitivity } from '@/lib/forecast/parameter-sensitivity';
 import { loadAdminTransitionSection } from '@/lib/forecast/load-model-transition-view';
 import { readShadowValidation } from '@/lib/forecast/shadow-validation';
@@ -155,6 +157,8 @@ export default async function AdminPage() {
           backtestPoints={readBacktestOneStepPoints(forecastRuns[0]?.metadata)}
           errorAnalysis={readForecastErrorAnalysis(forecastRuns[0]?.metadata)}
         />
+
+        <AdminMarketRegime analysis={readMarketRegimeAnalysis(forecastRuns[0]?.metadata)} />
 
         <AdminParameterSensitivity
           sensitivity={readParameterSensitivity(forecastRuns[0]?.metadata)}
