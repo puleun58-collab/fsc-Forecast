@@ -71,6 +71,8 @@ export interface RunWalkForwardBacktestResult {
   longOneStep: WalkForwardWindowMetrics;
   horizons: WalkForwardHorizonMetrics[];
   absoluteErrorByHorizon: Map<number, number>;
+  /** 진단용: 모든 horizon의 평가 지점. 예측 거리별 성능·범위 분석에서 재사용한다. */
+  evaluationPoints: WalkForwardEvaluationPoint[];
   oneStepPoints: WalkForwardEvaluationPoint[];
 }
 
@@ -327,6 +329,11 @@ export function runWalkForwardBacktest(
     longOneStep: summarizeWindow(oneStepLongPoints, longWindowWeeks, recentChurn),
     horizons,
     absoluteErrorByHorizon,
+    evaluationPoints: [...evaluationPoints].sort(
+      (left, right) =>
+        left.targetDate.getTime() - right.targetDate.getTime() ||
+        left.horizonIndex - right.horizonIndex,
+    ),
     oneStepPoints: evaluationPoints
       .filter((point) => point.horizonIndex === 1)
       .sort((left, right) => left.targetDate.getTime() - right.targetDate.getTime()),

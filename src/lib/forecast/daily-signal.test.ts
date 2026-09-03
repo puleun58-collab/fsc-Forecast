@@ -148,6 +148,7 @@ test("an origin without five prior observations keeps the base forecast untouche
 
 test("the candidate backtest is rebuilt from the corrected next-week points only", () => {
   const base: RunWalkForwardBacktestResult = {
+    evaluationPoints: [],
     params: FALLBACK_FORECAST_MODEL_PARAMS,
     recent: null as never,
     long: null as never,

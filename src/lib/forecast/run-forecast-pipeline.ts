@@ -65,7 +65,9 @@ import {
   USD_KRW_LAG_WEEK_CANDIDATES,
   type ForecastModelParams,
 } from "./forecast-model-config";
+import { buildHorizonPerformance } from "./horizon-performance";
 import { buildForecastInputQuality } from "./input-quality";
+import { buildPredictionIntervalCalibration } from "./prediction-interval";
 import { ablateSignal, buildSignalContribution } from "./signal-contribution";
 import {
   readSignalForwardValidation,
@@ -786,6 +788,17 @@ async function executeForecastPipeline(
                   issuedAt: startedAt,
                 },
         });
+  // 진단 전용: 예측 거리별 성능과 예측 범위 적중률. 운영 예측값은 그대로 둔다.
+  const horizonPerformance = buildHorizonPerformance({
+    evaluationPoints: selection.selectedBacktest.evaluationPoints,
+    horizonCount: FORECAST_WEEKLY_HORIZON_COUNT,
+    evaluatedAt: startedAt,
+  });
+  const predictionInterval = buildPredictionIntervalCalibration({
+    evaluationPoints: selection.selectedBacktest.evaluationPoints,
+    horizonCount: FORECAST_WEEKLY_HORIZON_COUNT,
+    evaluatedAt: startedAt,
+  });
   // 진단 전용: 현재 설정에서 신호를 하나씩 빼 과거 성능과 실제 발행 예측을 비교한다.
   const signalContribution = buildSignalContribution({
     currentParams: selection.selectedParams,

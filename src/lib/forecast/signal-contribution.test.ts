@@ -71,6 +71,7 @@ function backtest(
   });
 
   return {
+    evaluationPoints: [],
     params,
     recent: window(13),
     long: window(26),

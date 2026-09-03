@@ -86,6 +86,7 @@ test("each origin only reverses the bias measured before it", () => {
 
 test("the corrected backtest keeps the base run intact and only rescores next-week points", () => {
   const base: RunWalkForwardBacktestResult = {
+    evaluationPoints: [],
     params: FALLBACK_FORECAST_MODEL_PARAMS,
     recent: null as never,
     long: null as never,

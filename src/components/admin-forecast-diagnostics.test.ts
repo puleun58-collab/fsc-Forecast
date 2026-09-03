@@ -195,7 +195,7 @@ test('performance blocks separate the reliability basis from the full-horizon ba
 
   assert.match(markup.slice(horizonStart, horizonStart + 60), /<details class="admin-panel admin-disclosure">/);
   assert.doesNotMatch(markup.slice(horizonStart, horizonStart + 80), /\sopen(?:=|>|\s)/);
-  assert.match(horizonBlock, /1~13주 전체 예측 성능 · 참고/);
+  assert.match(horizonBlock, /전체 horizon 평균 · 참고/);
   assert.match(horizonBlock, /<span>전체 예측 MAPE<\/span><strong>9\.38%<\/strong>/);
   assert.match(horizonBlock, /<span>전체 예측 MAE<\/span><strong>179\.35원\/L<\/strong>/);
   assert.match(horizonBlock, /다음 주부터 최대 13주 후까지의 예측을 모두 포함한 성능입니다/);

@@ -51,6 +51,7 @@ function backtest(
   const recent = metrics(overrides);
 
   return {
+    evaluationPoints: [],
     params,
     recent,
     long: metrics({ windowWeeks: 26, maeKrwPerL: (overrides.maeKrwPerL ?? 22.8) + 1.7 }),
@@ -203,6 +204,7 @@ function splitBacktest(
   oneStepLongMae = (oneStep.maeKrwPerL ?? 22.8) + 1.7,
 ): RunWalkForwardBacktestResult {
   return {
+    evaluationPoints: [],
     params,
     recent: metrics(full),
     long: metrics({ windowWeeks: 26, maeKrwPerL: (full.maeKrwPerL ?? 22.8) + 1.7 }),

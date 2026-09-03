@@ -43,6 +43,7 @@ function metrics(mae: number, overrides: Record<string, number | null> = {}) {
 
 function backtest(params: ForecastModelParams, mae: number): RunWalkForwardBacktestResult {
   return {
+    evaluationPoints: [],
     params,
     recent: metrics(mae),
     long: metrics(mae + 1.7, { windowWeeks: 26 }),

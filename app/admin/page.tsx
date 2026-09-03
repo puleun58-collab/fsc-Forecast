@@ -9,6 +9,7 @@ import { AdminParameterSensitivity } from '@/components/admin-parameter-sensitiv
 import { AdminOperationHistory } from '@/components/admin-operation-history';
 import { AdminQuarterCard } from '@/components/admin-quarter-card';
 import { AdminShadowValidation } from '@/components/admin-shadow-validation';
+import { AdminHorizonProfile } from '@/components/admin-horizon-profile';
 import { AdminSignalReview } from '@/components/admin-signal-review';
 import { AdminTuningTimeline } from '@/components/admin-tuning-timeline';
 import { AdminModelTransition } from '@/components/admin-model-transition';
@@ -29,6 +30,8 @@ import { readForecastErrorAnalysis } from '@/lib/forecast/forecast-error-analysi
 import { readCandidatePersistence } from '@/lib/forecast/candidate-persistence';
 import { readCandidateRegimeComparisons } from '@/lib/forecast/candidate-regime-comparison';
 import { readForecastInputQuality } from '@/lib/forecast/input-quality';
+import { readHorizonPerformance } from '@/lib/forecast/horizon-performance';
+import { readPredictionIntervalCalibration } from '@/lib/forecast/prediction-interval';
 import { readSignalContribution } from '@/lib/forecast/signal-contribution';
 import { readSignalForwardValidation } from '@/lib/forecast/signal-forward-validation';
 import { buildSignalReview } from '@/lib/forecast/signal-review';
@@ -133,6 +136,8 @@ export default async function AdminPage() {
   const shadowSession = readShadowValidation(latestRunMetadata);
   const sensitivity = readParameterSensitivity(latestRunMetadata);
   const inputQuality = readForecastInputQuality(latestRunMetadata);
+  const horizonPerformance = readHorizonPerformance(latestRunMetadata);
+  const predictionInterval = readPredictionIntervalCalibration(latestRunMetadata);
   const signalContribution = readSignalContribution(latestRunMetadata);
   const signalForwardValidation = readSignalForwardValidation(latestRunMetadata);
   const signalReview = buildSignalReview({
@@ -225,6 +230,8 @@ export default async function AdminPage() {
           regimeComparisons={readCandidateRegimeComparisons(forecastRuns[0]?.metadata) ?? []}
           stageLabel={tuningStage.label}
         />
+
+        <AdminHorizonProfile performance={horizonPerformance} interval={predictionInterval} />
 
         <AdminSignalReview
           contribution={signalContribution}

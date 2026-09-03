@@ -21,6 +21,7 @@ function window(maeKrwPerL: number, overrides: Record<string, number> = {}) {
 
 function backtest(full: number, oneStep: number): RunWalkForwardBacktestResult {
   return {
+    evaluationPoints: [],
     params: {
       biasCorrection: null,
       dailySignal: null,

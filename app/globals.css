@@ -2172,6 +2172,55 @@ summary.operation-history-row::-webkit-details-marker {
   }
 }
 
+.horizon-profile__sample {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.horizon-profile__bands {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.horizon-profile__bands li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+@media (max-width: 700px) {
+  .horizon-profile-table thead {
+    display: none;
+  }
+
+  .horizon-profile-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+    gap: 4px 12px;
+    padding: 10px 0;
+  }
+
+  .horizon-profile-table tbody th,
+  .horizon-profile-table tbody td {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    padding: 0;
+  }
+
+  .horizon-profile-table tbody th::before,
+  .horizon-profile-table tbody td::before {
+    content: attr(data-label);
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+    font-weight: 700;
+  }
+}
+
 .admin-table__flag {
   margin-left: 6px;
   white-space: nowrap;

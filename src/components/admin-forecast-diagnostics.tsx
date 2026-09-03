@@ -349,7 +349,7 @@ export function AdminForecastDiagnostics({
 
         <details className="admin-panel admin-disclosure">
           <summary className="admin-disclosure__summary">
-            <strong>1~13주 전체 예측 성능 · 참고</strong>
+            <strong>전체 horizon 평균 · 참고</strong>
             <AdminDisclosureToggle />
           </summary>
           <div className="admin-disclosure__body">
