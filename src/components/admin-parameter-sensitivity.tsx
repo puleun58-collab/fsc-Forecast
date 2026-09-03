@@ -2,6 +2,7 @@ import { AdminDisclosureToggle } from './admin-disclosure-toggle';
 import { SectionCard } from './section-card';
 
 import { formatPriceText } from '@/lib/dashboard/display-format';
+import type { CandidatePersistence } from '@/lib/forecast/candidate-persistence';
 import type {
   ParameterSensitivity,
   ParameterSensitivityGroup,
@@ -22,7 +23,8 @@ const GROUP_LABEL: Record<ParameterSensitivityGroupKey, string> = {
 const TUNING_FLOW_STEPS = [
   '자동 비교',
   '후보 최대 3개',
-  '1순위 Shadow 검증',
+  '1순위 2주 확인',
+  'Shadow 검증',
   '새 실제 데이터 13주',
   '운영 적용 검토',
 ];
@@ -34,8 +36,8 @@ function TuningFlowGuide() {
       <div className="tuning-flow__copy">
         <p>최신 데이터가 반영되면 여러 예측 설정을 자동 비교해 현재보다 나은 후보를 찾습니다.</p>
         <p>
-          후보가 있으면 1순위 1개를 Shadow에서 새 실제 데이터 13주로 검증하며, 결과가 좋아도 자동
-          적용되지는 않습니다.
+          같은 후보가 새 주간 데이터에서 2주 연속 확인되면 Shadow에서 새 실제 데이터 13주로 검증하며,
+          결과가 좋아도 자동 적용되지는 않습니다.
         </p>
       </div>
       <ol className="tuning-flow__steps">
@@ -46,6 +48,38 @@ function TuningFlowGuide() {
         ))}
       </ol>
       <p className="tuning-flow__note">검증 중인 후보는 중간에 변경하지 않습니다.</p>
+    </div>
+  );
+}
+
+function ShadowEntryStatus({ persistence }: { persistence: CandidatePersistence }) {
+  if (persistence.candidateFingerprint === null) {
+    return (
+      <p className="admin-decision__note">
+        {persistence.status === 'reset'
+          ? '1순위 후보가 사라져 Shadow 진입 확인을 다시 시작합니다.'
+          : '기준을 통과한 1순위 후보가 확인되면 Shadow 진입 확인을 시작합니다.'}
+      </p>
+    );
+  }
+
+  const confirmed = persistence.confirmedCount >= persistence.requiredCount;
+
+  return (
+    <div className="shadow-entry">
+      <span className={`status-tag ${confirmed ? 'status-tag--ok' : ''}`.trim()}>
+        {`Shadow 진입 확인 · ${persistence.confirmedCount}/${persistence.requiredCount}주${
+          confirmed ? ' 완료' : ''
+        }`}
+      </span>
+      <p className="admin-decision__note">
+        {confirmed
+          ? '같은 후보가 새 주간 데이터에서 2회 연속 확인되어 Shadow 검증을 시작할 수 있습니다.'
+          : '같은 후보가 다음 새 주간 데이터에서도 기준을 통과하면 Shadow 검증을 시작합니다.'}
+      </p>
+      {persistence.status === 'reset' ? (
+        <p className="admin-decision__note">최신 1순위 후보가 변경되어 확인을 다시 시작합니다.</p>
+      ) : null}
     </div>
   );
 }
@@ -260,8 +294,10 @@ function CombinationAnalysisPanel({ analysis }: { analysis: CombinationAnalysis 
 
 export function AdminParameterSensitivity({
   sensitivity,
+  persistence = null,
 }: {
   sensitivity: ParameterSensitivity | null;
+  persistence?: CandidatePersistence | null;
 }) {
   if (sensitivity === null) {
     return (
@@ -344,6 +380,7 @@ export function AdminParameterSensitivity({
               ))}
             </ol>
           )}
+          {persistence === null ? null : <ShadowEntryStatus persistence={persistence} />}
           <p className="admin-decision__note">
             후보는 과거 데이터 비교 결과입니다. 조합 후보도 실제 적용 전에 새 실제 데이터를 이용한 검증을
             거치며, 이 화면에서 운영 모델이나 파라미터를 변경하지 않습니다.

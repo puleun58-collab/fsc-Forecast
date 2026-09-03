@@ -36,9 +36,16 @@ import {
   resolvePostTransitionMonitoring,
 } from "./post-transition-monitoring";
 import {
+  isShadowEntryConfirmed,
+  readCandidatePersistence,
+  resolveCandidatePersistence,
+  selectPersistenceCandidate,
+} from "./candidate-persistence";
+import {
   readShadowValidation,
   recordShadowCycle,
   resolveShadowSession,
+  type ShadowCandidateInput,
 } from "./shadow-validation";
 import { runWalkForwardBacktest } from "./run-walk-forward-backtest";
 import { buildForecastQualityGate } from "./build-forecast-quality-gate";
@@ -596,20 +603,38 @@ async function executeForecastPipeline(
   const shadowCandidatesAllowed =
     appliedTransition === null &&
     (monitoringSession === null || monitoringSession.status !== "rollback_reviewable");
+  const shadowCandidates: ShadowCandidateInput[] = shadowCandidatesAllowed
+    ? parameterSensitivity.tuningCandidates.map((candidate) => ({
+        params: candidate.params,
+        meetsPromotionQuality: candidate.meetsPromotionQuality,
+        source:
+          candidate.kind === "combination"
+            ? `parameter-combination:${candidate.factorKeys.join("+")}`
+            : `parameter-sensitivity:${candidate.groupKey}`,
+      }))
+    : [];
+  const persistenceCandidate = selectPersistenceCandidate(
+    shadowCandidates,
+    selection.selectedParams,
+    FORECAST_MODEL_VERSION,
+  );
+  // 같은 후보가 서로 다른 새 주간 데이터에서 두 번 확인되어야 Shadow 슬롯을 차지한다.
+  const candidatePersistence = resolveCandidatePersistence({
+    previous: readCandidatePersistence(previousRun?.metadata ?? null),
+    candidate: persistenceCandidate,
+    modelVersion: FORECAST_MODEL_VERSION,
+    latestWeekEndDate: weeklySeries[weeklySeries.length - 1]?.targetDate ?? null,
+    now: startedAt,
+  });
   const shadowSession = resolveShadowSession({
     previousSession: readShadowValidation(previousRun?.metadata ?? null),
     modelVersion: FORECAST_MODEL_VERSION,
     baselineParams: selection.selectedParams,
-    candidates: shadowCandidatesAllowed
-      ? parameterSensitivity.tuningCandidates.map((candidate) => ({
-          params: candidate.params,
-          meetsPromotionQuality: candidate.meetsPromotionQuality,
-          source:
-            candidate.kind === "combination"
-              ? `parameter-combination:${candidate.factorKeys.join("+")}`
-              : `parameter-sensitivity:${candidate.groupKey}`,
-        }))
-      : [],
+    candidates:
+      persistenceCandidate !== null &&
+      isShadowEntryConfirmed(candidatePersistence, persistenceCandidate, FORECAST_MODEL_VERSION)
+        ? [persistenceCandidate]
+        : [],
     now: startedAt,
   });
   // Shadow는 운영 예측과 완전히 같은 입력으로 1주 ahead 예측만 추가로 만든다.
@@ -786,6 +811,7 @@ async function executeForecastPipeline(
             evaluatedAt: startedAt,
           }),
           parameterSensitivity,
+          candidatePersistence,
           shadowValidation,
           postTransitionMonitoring,
         },

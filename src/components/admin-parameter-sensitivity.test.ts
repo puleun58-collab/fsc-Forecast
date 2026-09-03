@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import { AdminParameterSensitivity } from './admin-parameter-sensitivity';
 import type { ForecastModelParams } from '@/lib/forecast/forecast-model-config';
+import type { CandidatePersistence } from '@/lib/forecast/candidate-persistence';
 import { buildParameterSensitivity } from '@/lib/forecast/parameter-sensitivity';
 import type { RunWalkForwardBacktestResult } from '@/lib/forecast/run-walk-forward-backtest';
 
@@ -47,7 +48,11 @@ function backtest(params: ForecastModelParams, mae: number): RunWalkForwardBackt
   };
 }
 
-function render(currentParams = CURRENT, betterTrendWeeks: number | null = 6) {
+function render(
+  currentParams = CURRENT,
+  betterTrendWeeks: number | null = 6,
+  persistence: CandidatePersistence | null = null,
+) {
   const sensitivity = buildParameterSensitivity({
     currentParams,
     currentBacktest: backtest(currentParams, 22.8),
@@ -56,7 +61,25 @@ function render(currentParams = CURRENT, betterTrendWeeks: number | null = 6) {
       backtest(params, params.trendLookbackWeeks === betterTrendWeeks ? 18.4 : 23.5),
   });
 
-  return renderToStaticMarkup(createElement(AdminParameterSensitivity, { sensitivity }));
+  return renderToStaticMarkup(
+    createElement(AdminParameterSensitivity, { sensitivity, persistence }),
+  );
+}
+
+function persistenceState(overrides: Partial<CandidatePersistence> = {}): CandidatePersistence {
+  return {
+    version: 1,
+    status: 'confirming',
+    candidateFingerprint: 'v1|B|6|1:0.2|none|0.03',
+    candidateParams: { ...CURRENT, trendLookbackWeeks: 6 },
+    candidateSource: 'parameter-sensitivity:trendLookback',
+    confirmedCount: 1,
+    requiredCount: 2,
+    lastConfirmedWeekEndDate: '2026-08-19T00:00:00.000Z',
+    startedAt: '2026-08-19T01:00:00.000Z',
+    updatedAt: '2026-08-19T01:00:00.000Z',
+    ...overrides,
+  };
 }
 
 test('the card shows the operating parameters and one collapsed group per factor', () => {
@@ -109,7 +132,7 @@ test('the card leads with the automatic tuning flow guide', () => {
   );
   assert.match(
     markup,
-    /<p>후보가 있으면 1순위 1개를 Shadow에서 새 실제 데이터 13주로 검증하며, 결과가 좋아도 자동 적용되지는 않습니다\.<\/p>/,
+    /<p>같은 후보가 새 주간 데이터에서 2주 연속 확인되면 Shadow에서 새 실제 데이터 13주로 검증하며, 결과가 좋아도 자동 적용되지는 않습니다\.<\/p>/,
   );
 
   const steps = markup.slice(markup.indexOf('tuning-flow__steps'));
@@ -120,12 +143,50 @@ test('the card leads with the automatic tuning flow guide', () => {
   assert.deepEqual(stepLabels, [
     '자동 비교',
     '후보 최대 3개',
-    '1순위 Shadow 검증',
+    '1순위 2주 확인',
+    'Shadow 검증',
     '새 실제 데이터 13주',
     '운영 적용 검토',
   ]);
   assert.doesNotMatch(steps.slice(0, steps.indexOf('</ol>')), /→/);
   assert.match(markup, /class="tuning-flow__note">검증 중인 후보는 중간에 변경하지 않습니다\./);
+});
+
+test('shadow entry progress is visible while the candidate is being confirmed', () => {
+  const markup = render(CURRENT, 6, persistenceState());
+
+  assert.match(markup, /Shadow 진입 확인 · 1\/2주</);
+  assert.match(markup, /같은 후보가 다음 새 주간 데이터에서도 기준을 통과하면 Shadow 검증을 시작합니다/);
+  assert.doesNotMatch(markup, /최신 1순위 후보가 변경되어/);
+});
+
+test('a completed confirmation and a restarted one read differently', () => {
+  const done = render(CURRENT, 6, persistenceState({ status: 'confirmed', confirmedCount: 2 }));
+  const restarted = render(CURRENT, 6, persistenceState({ status: 'reset' }));
+
+  assert.match(done, /Shadow 진입 확인 · 2\/2주 완료</);
+  assert.match(done, /status-tag status-tag--ok/);
+  assert.match(restarted, /Shadow 진입 확인 · 1\/2주</);
+  assert.match(restarted, /최신 1순위 후보가 변경되어 확인을 다시 시작합니다/);
+});
+
+test('without an eligible candidate the gate explains that nothing is being confirmed', () => {
+  const markup = render(
+    CURRENT,
+    null,
+    persistenceState({
+      status: 'waiting',
+      candidateFingerprint: null,
+      candidateParams: null,
+      candidateSource: null,
+      confirmedCount: 0,
+      lastConfirmedWeekEndDate: null,
+      startedAt: null,
+    }),
+  );
+
+  assert.match(markup, /기준을 통과한 1순위 후보가 확인되면 Shadow 진입 확인을 시작합니다/);
+  assert.doesNotMatch(markup, /Shadow 진입 확인 · /);
 });
 
 test('a model without Dubai reports that USD/KRW cannot be evaluated', () => {

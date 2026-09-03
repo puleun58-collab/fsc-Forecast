@@ -1920,6 +1920,14 @@ summary.operation-history-row::-webkit-details-marker {
   font-size: 0.78rem;
 }
 
+.shadow-entry {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
 .sensitivity-candidates {
   gap: 10px;
   background: var(--bg-card);
