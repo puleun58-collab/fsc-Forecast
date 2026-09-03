@@ -41,13 +41,17 @@ import {
   resolveCandidatePersistence,
   selectPersistenceCandidate,
 } from "./candidate-persistence";
+import { buildCandidateRegimeComparisons } from "./candidate-regime-comparison";
 import {
   readShadowValidation,
   recordShadowCycle,
   resolveShadowSession,
   type ShadowCandidateInput,
 } from "./shadow-validation";
-import { runWalkForwardBacktest } from "./run-walk-forward-backtest";
+import {
+  runWalkForwardBacktest,
+  type RunWalkForwardBacktestResult,
+} from "./run-walk-forward-backtest";
 import { buildForecastQualityGate } from "./build-forecast-quality-gate";
 import {
   buildWeeklyForecast,
@@ -570,19 +574,48 @@ async function executeForecastPipeline(
       candidate,
     ]),
   );
+  // 민감도 분석이 실제로 사용한 walk-forward 결과를 그대로 붙잡아 국면 비교에 재사용한다.
+  const evaluatedBacktests = new Map<string, RunWalkForwardBacktestResult>();
   const parameterSensitivity = buildParameterSensitivity({
     currentParams: selection.selectedParams,
     currentBacktest: selection.selectedBacktest,
     evaluatedAt: startedAt,
     // 이미 평가한 후보는 재사용하고, Trend 후보처럼 없는 조합만 새로 계산한다.
-    evaluate: (params) =>
-      backtestByParamsKey.get(serializeSensitivityParamsKey(params)) ??
-      runWalkForwardBacktest({
-        weeklySeries,
-        indicatorSeries: indicatorWeeklySeries,
-        params,
-        horizonCount: FORECAST_WEEKLY_HORIZON_COUNT,
-      }),
+    evaluate: (params) => {
+      const key = serializeSensitivityParamsKey(params);
+      const backtest =
+        backtestByParamsKey.get(key) ??
+        runWalkForwardBacktest({
+          weeklySeries,
+          indicatorSeries: indicatorWeeklySeries,
+          params,
+          horizonCount: FORECAST_WEEKLY_HORIZON_COUNT,
+        });
+
+      evaluatedBacktests.set(key, backtest);
+
+      return backtest;
+    },
+  });
+  const candidateRegimeComparisons = buildCandidateRegimeComparisons({
+    weeklySeries,
+    currentOneStepPoints: selection.selectedBacktest.oneStepPoints,
+    candidates: parameterSensitivity.tuningCandidates.flatMap((candidate) => {
+      const backtest = evaluatedBacktests.get(serializeSensitivityParamsKey(candidate.params));
+
+      return backtest === undefined
+        ? []
+        : [
+            {
+              label: candidate.label,
+              kind: candidate.kind,
+              params: candidate.params,
+              oneStepPoints: backtest.oneStepPoints,
+            },
+          ];
+    }),
+    modelVersion: FORECAST_MODEL_VERSION,
+    evaluatedAt: startedAt,
   });
   const monitoringSession = resolvePostTransitionMonitoring({
     previous: readPostTransitionMonitoring(previousRun?.metadata ?? null),
@@ -811,6 +844,7 @@ async function executeForecastPipeline(
             evaluatedAt: startedAt,
           }),
           parameterSensitivity,
+          candidateRegimeComparisons,
           candidatePersistence,
           shadowValidation,
           postTransitionMonitoring,

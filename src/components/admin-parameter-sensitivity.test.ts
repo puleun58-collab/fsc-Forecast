@@ -7,7 +7,11 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { AdminParameterSensitivity } from './admin-parameter-sensitivity';
 import type { ForecastModelParams } from '@/lib/forecast/forecast-model-config';
 import type { CandidatePersistence } from '@/lib/forecast/candidate-persistence';
-import { buildParameterSensitivity } from '@/lib/forecast/parameter-sensitivity';
+import type { CandidateRegimeComparison } from '@/lib/forecast/candidate-regime-comparison';
+import {
+  buildParameterSensitivity,
+  serializeSensitivityParamsKey,
+} from '@/lib/forecast/parameter-sensitivity';
 import type { RunWalkForwardBacktestResult } from '@/lib/forecast/run-walk-forward-backtest';
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
@@ -52,6 +56,7 @@ function render(
   currentParams = CURRENT,
   betterTrendWeeks: number | null = 6,
   persistence: CandidatePersistence | null = null,
+  regimeComparisons: readonly CandidateRegimeComparison[] = [],
 ) {
   const sensitivity = buildParameterSensitivity({
     currentParams,
@@ -62,8 +67,52 @@ function render(
   });
 
   return renderToStaticMarkup(
-    createElement(AdminParameterSensitivity, { sensitivity, persistence }),
+    createElement(AdminParameterSensitivity, { sensitivity, persistence, regimeComparisons }),
   );
+}
+
+function regimeRow(
+  regime: CandidateRegimeComparison['regimes'][number]['regime'],
+  sampleCount: number,
+  currentMae: number,
+  candidateMae: number,
+  verdict: CandidateRegimeComparison['regimes'][number]['verdict'],
+): CandidateRegimeComparison['regimes'][number] {
+  return {
+    regime,
+    sampleCount,
+    currentMaeKrwPerL: currentMae,
+    candidateMaeKrwPerL: candidateMae,
+    maeDeltaKrwPerL: Math.round((candidateMae - currentMae) * 100) / 100,
+    currentMapePct: currentMae / 18,
+    candidateMapePct: candidateMae / 18,
+    currentDirectionAccuracyRatio: 0.62,
+    candidateDirectionAccuracyRatio: 0.7,
+    verdict,
+  };
+}
+
+function comparison(
+  overrides: Partial<CandidateRegimeComparison> = {},
+): CandidateRegimeComparison {
+  return {
+    version: 1,
+    evaluatedAt: '2026-09-02T00:00:00.000Z',
+    windowWeeks: 26,
+    label: 'Trend lookback 6주',
+    kind: 'single',
+    paramsKey: serializeSensitivityParamsKey({ ...CURRENT, trendLookbackWeeks: 6 }),
+    candidateFingerprint: 'v1|B|6|1:0.2|none|0.03',
+    comparedSampleCount: 21,
+    regimes: [
+      regimeRow('stable', 8, 22.1, 18.7, 'improved'),
+      regimeRow('rising', 2, 28.3, 25.4, 'insufficient-sample'),
+      regimeRow('falling', 6, 24.5, 24.5, 'similar'),
+      regimeRow('high-volatility', 5, 35.2, 51.8, 'worsened'),
+    ],
+    weakestRegime: 'high-volatility',
+    ...overrides,
+  };
 }
 
 function persistenceState(overrides: Partial<CandidatePersistence> = {}): CandidatePersistence {
@@ -144,8 +193,7 @@ test('the card leads with the automatic tuning flow guide', () => {
     '자동 비교',
     '후보 최대 3개',
     '1순위 2주 확인',
-    'Shadow 검증',
-    '새 실제 데이터 13주',
+    'Shadow 검증 · 새 실제 데이터 13주',
     '운영 적용 검토',
   ]);
   assert.doesNotMatch(steps.slice(0, steps.indexOf('</ol>')), /→/);
@@ -187,6 +235,33 @@ test('without an eligible candidate the gate explains that nothing is being conf
 
   assert.match(markup, /기준을 통과한 1순위 후보가 확인되면 Shadow 진입 확인을 시작합니다/);
   assert.doesNotMatch(markup, /Shadow 진입 확인 · /);
+});
+
+test('a candidate exposes its market regime comparison behind a collapsed disclosure', () => {
+  const markup = render(CURRENT, 6, null, [comparison()]);
+  const panel = markup.slice(markup.indexOf('candidate-regime'));
+
+  assert.match(markup, /시장 국면별 성능 보기/);
+  assert.doesNotMatch(markup, /<details[^>]*\sopen/);
+  assert.match(panel, /최근 26주 중 현재 설정과 동일한 평가 주차 21주 기준/);
+  assert.match(panel, /data-label="현재 MAE">22\.10원\/L/);
+  assert.match(panel, /data-label="후보 MAE">18\.70원\/L/);
+  assert.match(panel, /data-label="MAE 차이">\+16\.60원\/L/);
+  assert.match(panel, /안정 개선/);
+  assert.match(panel, /상승 추세 표본 부족/);
+  assert.match(panel, /하락 추세 유사/);
+  assert.match(panel, /고변동 악화/);
+  assert.match(panel, /주의 · 고변동 구간에서 현재 설정보다 오차가 큽니다/);
+  assert.match(panel, /현재 후보 선정 또는 Shadow 진입 조건에는 사용되지 않습니다/);
+  assert.doesNotMatch(panel, /high-volatility|insufficient-sample/);
+});
+
+test('a candidate without a stored comparison renders no regime disclosure', () => {
+  const markup = render(CURRENT, 6, null, [
+    comparison({ paramsKey: 'other-candidate', weakestRegime: null }),
+  ]);
+
+  assert.doesNotMatch(markup, /시장 국면별 성능 보기/);
 });
 
 test('a model without Dubai reports that USD/KRW cannot be evaluated', () => {

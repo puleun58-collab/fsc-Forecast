@@ -1928,6 +1928,49 @@ summary.operation-history-row::-webkit-details-marker {
   border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
 }
 
+.candidate-regime {
+  margin-top: 8px;
+}
+
+.candidate-regime__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 700px) {
+  .candidate-regime-table thead {
+    display: none;
+  }
+
+  .candidate-regime-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+    gap: 4px 12px;
+    padding: 10px 0;
+  }
+
+  .candidate-regime-table tbody th,
+  .candidate-regime-table tbody td {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    padding: 0;
+    white-space: normal;
+  }
+
+  .candidate-regime-table tbody th::before,
+  .candidate-regime-table tbody td::before {
+    content: attr(data-label);
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+    font-weight: 700;
+  }
+}
+
 .sensitivity-candidates {
   gap: 10px;
   background: var(--bg-card);

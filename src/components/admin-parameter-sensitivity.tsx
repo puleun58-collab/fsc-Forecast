@@ -4,13 +4,19 @@ import { SectionCard } from './section-card';
 import { formatPriceText } from '@/lib/dashboard/display-format';
 import type { CandidatePersistence } from '@/lib/forecast/candidate-persistence';
 import type {
-  ParameterSensitivity,
-  ParameterSensitivityGroup,
-  ParameterSensitivityGroupKey,
-  CombinationAnalysis,
-  SensitivityCandidate,
-  SensitivityWindowMetrics,
-  TuningCandidate,
+  CandidateRegimeComparison,
+  CandidateRegimeVerdict,
+} from '@/lib/forecast/candidate-regime-comparison';
+import type { MarketRegime } from '@/lib/forecast/market-regime';
+import {
+  serializeSensitivityParamsKey,
+  type ParameterSensitivity,
+  type ParameterSensitivityGroup,
+  type ParameterSensitivityGroupKey,
+  type CombinationAnalysis,
+  type SensitivityCandidate,
+  type SensitivityWindowMetrics,
+  type TuningCandidate,
 } from '@/lib/forecast/parameter-sensitivity';
 
 const GROUP_LABEL: Record<ParameterSensitivityGroupKey, string> = {
@@ -24,8 +30,7 @@ const TUNING_FLOW_STEPS = [
   '자동 비교',
   '후보 최대 3개',
   '1순위 2주 확인',
-  'Shadow 검증',
-  '새 실제 데이터 13주',
+  'Shadow 검증 · 새 실제 데이터 13주',
   '운영 적용 검토',
 ];
 
@@ -188,14 +193,107 @@ function SensitivityGroup({
   );
 }
 
+const REGIME_LABEL: Record<MarketRegime, string> = {
+  stable: '안정',
+  rising: '상승 추세',
+  falling: '하락 추세',
+  'high-volatility': '고변동',
+  unclassified: '분류 전',
+};
+
+const VERDICT_LABEL: Record<CandidateRegimeVerdict, string> = {
+  improved: '개선',
+  similar: '유사',
+  worsened: '악화',
+  'insufficient-sample': '표본 부족',
+};
+
+function CandidateRegimePanel({ comparison }: { comparison: CandidateRegimeComparison }) {
+  return (
+    <details className="admin-disclosure admin-disclosure--inline candidate-regime">
+      <summary className="admin-disclosure__summary">
+        <strong>시장 국면별 성능 보기</strong>
+        <AdminDisclosureToggle />
+      </summary>
+      <div className="admin-disclosure__body">
+        <ul className="candidate-regime__badges">
+          {comparison.regimes.map((row) => (
+            <li key={row.regime}>
+              <span className="status-tag">
+                {REGIME_LABEL[row.regime]} {VERDICT_LABEL[row.verdict]}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <div className="admin-table-wrap">
+          <table className="admin-table candidate-regime-table">
+            <caption className="admin-table__caption">
+              최근 {comparison.windowWeeks}주 중 현재 설정과 동일한 평가 주차 {comparison.comparedSampleCount}주
+              기준
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">국면</th>
+                <th scope="col">표본</th>
+                <th scope="col">현재 MAE</th>
+                <th scope="col">후보 MAE</th>
+                <th scope="col">MAE 차이</th>
+                <th scope="col">현재 MAPE</th>
+                <th scope="col">후보 MAPE</th>
+                <th scope="col">방향 적중률</th>
+                <th scope="col">판정</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparison.regimes.map((row) => (
+                <tr key={row.regime}>
+                  <th scope="row" data-label="국면">
+                    {REGIME_LABEL[row.regime]}
+                  </th>
+                  <td data-label="표본">{row.sampleCount}주</td>
+                  <td data-label="현재 MAE">{formatMae(row.currentMaeKrwPerL)}</td>
+                  <td data-label="후보 MAE">{formatMae(row.candidateMaeKrwPerL)}</td>
+                  <td data-label="MAE 차이">
+                    {row.maeDeltaKrwPerL === null
+                      ? '산정 전'
+                      : `${row.maeDeltaKrwPerL > 0 ? '+' : ''}${formatMae(row.maeDeltaKrwPerL)}`}
+                  </td>
+                  <td data-label="현재 MAPE">{formatMape(row.currentMapePct)}</td>
+                  <td data-label="후보 MAPE">{formatMape(row.candidateMapePct)}</td>
+                  <td data-label="방향 적중률">
+                    {formatDirectionAccuracy(row.currentDirectionAccuracyRatio)} →{' '}
+                    {formatDirectionAccuracy(row.candidateDirectionAccuracyRatio)}
+                  </td>
+                  <td data-label="판정">{VERDICT_LABEL[row.verdict]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {comparison.weakestRegime === null ? null : (
+          <p className="admin-decision__note">
+            주의 · {REGIME_LABEL[comparison.weakestRegime]} 구간에서 현재 설정보다 오차가 큽니다.
+          </p>
+        )}
+        <p className="admin-decision__note">
+          시장 국면별 비교는 후보의 취약 구간을 확인하기 위한 참고 분석이며, 현재 후보 선정 또는 Shadow
+          진입 조건에는 사용되지 않습니다.
+        </p>
+      </div>
+    </details>
+  );
+}
+
 function TuningCandidateRow({
   candidate,
   index,
   sensitivity,
+  comparison,
 }: {
   candidate: TuningCandidate;
   index: number;
   sensitivity: ParameterSensitivity;
+  comparison: CandidateRegimeComparison | null;
 }) {
   return (
     <li className="sensitivity-candidate">
@@ -214,6 +312,7 @@ function TuningCandidateRow({
         {formatMae(candidate.longOneStep.maeKrwPerL)}
       </span>
       <span className="sensitivity-candidate__checks">기존 승격 품질 기준 충족</span>
+      {comparison === null ? null : <CandidateRegimePanel comparison={comparison} />}
     </li>
   );
 }
@@ -295,9 +394,11 @@ function CombinationAnalysisPanel({ analysis }: { analysis: CombinationAnalysis 
 export function AdminParameterSensitivity({
   sensitivity,
   persistence = null,
+  regimeComparisons = [],
 }: {
   sensitivity: ParameterSensitivity | null;
   persistence?: CandidatePersistence | null;
+  regimeComparisons?: readonly CandidateRegimeComparison[];
 }) {
   if (sensitivity === null) {
     return (
@@ -376,6 +477,12 @@ export function AdminParameterSensitivity({
                   candidate={candidate}
                   index={index}
                   sensitivity={sensitivity}
+                  comparison={
+                    regimeComparisons.find(
+                      (comparison) =>
+                        comparison.paramsKey === serializeSensitivityParamsKey(candidate.params),
+                    ) ?? null
+                  }
                 />
               ))}
             </ol>

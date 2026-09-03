@@ -24,6 +24,7 @@ import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
 import { readBacktestOneStepPoints } from '@/lib/forecast/backtest-detail';
 import { readForecastErrorAnalysis } from '@/lib/forecast/forecast-error-analysis';
 import { readCandidatePersistence } from '@/lib/forecast/candidate-persistence';
+import { readCandidateRegimeComparisons } from '@/lib/forecast/candidate-regime-comparison';
 import { readMarketRegimeAnalysis } from '@/lib/forecast/market-regime';
 import { readParameterSensitivity } from '@/lib/forecast/parameter-sensitivity';
 import { loadAdminTransitionSection } from '@/lib/forecast/load-model-transition-view';
@@ -164,6 +165,7 @@ export default async function AdminPage() {
         <AdminParameterSensitivity
           sensitivity={readParameterSensitivity(forecastRuns[0]?.metadata)}
           persistence={readCandidatePersistence(forecastRuns[0]?.metadata)}
+          regimeComparisons={readCandidateRegimeComparisons(forecastRuns[0]?.metadata) ?? []}
         />
 
         <AdminShadowValidation session={readShadowValidation(forecastRuns[0]?.metadata)} />
