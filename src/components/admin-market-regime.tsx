@@ -68,7 +68,7 @@ function RegimeRow({ summary }: { summary: MarketRegimeSummary }) {
       </th>
       <td data-label="표본">
         {summary.sampleCount}주
-        {lowSample ? <span className="status-tag">표본 부족</span> : null}
+        {lowSample ? <span className="status-tag admin-table__flag">표본 부족</span> : null}
       </td>
       <td data-label="MAE">{formatMae(summary.maeKrwPerL)}</td>
       <td data-label="MAPE">{formatMape(summary.mapePct)}</td>

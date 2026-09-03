@@ -402,6 +402,9 @@ export function AdminForecastDiagnostics({
               시점이 멀어질수록 오차가 커질 수 있어 기본 후보 비교와 신뢰도
               판단에는 다음 주 예측 성능을 사용합니다.
             </p>
+            <p className="admin-decision__note">
+              전체 예측 성능은 참고용이며 튜닝 후보 선정에는 사용하지 않습니다.
+            </p>
             {diagnostics.candidates.length === 0 ? null : (
               <div className="admin-table-wrap">
                 <table className="admin-table diagnostics-metrics-table">

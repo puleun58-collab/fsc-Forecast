@@ -6,7 +6,10 @@ import {
   PROMOTION_MIN_MAPE_IMPROVEMENT_PCT_POINT,
   PROMOTION_VOLATILITY_TOLERANCE_RATIO,
 } from "./forecast-model-config";
-import type { RunWalkForwardBacktestResult } from "./run-walk-forward-backtest";
+import type {
+  RunWalkForwardBacktestResult,
+  WalkForwardWindowMetrics,
+} from "./run-walk-forward-backtest";
 
 const DAY_MS = 86_400_000;
 
@@ -42,13 +45,14 @@ export interface PromotionQualityChecks {
   churnStable: boolean;
 }
 
-/**
- * 모델 승격에 쓰는 품질 기준을 한 곳에서 계산한다.
- * 승격 판단과 관리자 진단이 서로 다른 임계값을 쓰지 않도록 공유한다.
- */
-export function evaluatePromotionQuality(
-  current: Pick<RunWalkForwardBacktestResult, "recent" | "long">,
-  candidate: Pick<RunWalkForwardBacktestResult, "recent" | "long">,
+interface QualityWindows {
+  recent: WalkForwardWindowMetrics;
+  long: WalkForwardWindowMetrics;
+}
+
+function evaluateQualityWindows(
+  current: QualityWindows,
+  candidate: QualityWindows,
 ): PromotionQualityChecks {
   const currentMae = current.recent.maeKrwPerL;
   const currentMape = current.recent.mapePct;
@@ -83,4 +87,28 @@ export function evaluatePromotionQuality(
       candidate.recent.forecastChurnKrwPerL <=
         current.recent.forecastChurnKrwPerL * PROMOTION_VOLATILITY_TOLERANCE_RATIO,
   };
+}
+
+/**
+ * 모델 승격 기준. 1~13주 전체 예측 성능을 사용하며 Model A/B/C 자동 선택 의미를 유지한다.
+ */
+export function evaluatePromotionQuality(
+  current: Pick<RunWalkForwardBacktestResult, "recent" | "long">,
+  candidate: Pick<RunWalkForwardBacktestResult, "recent" | "long">,
+): PromotionQualityChecks {
+  return evaluateQualityWindows(current, candidate);
+}
+
+/**
+ * 튜닝 후보는 정렬·표시와 같은 다음 주 예측 성능으로 판정한다.
+ * 임계값은 승격 기준과 동일하고 적용 구간만 one-step이다.
+ */
+export function evaluateTuningCandidateQuality(
+  current: Pick<RunWalkForwardBacktestResult, "recentOneStep" | "longOneStep">,
+  candidate: Pick<RunWalkForwardBacktestResult, "recentOneStep" | "longOneStep">,
+): PromotionQualityChecks {
+  return evaluateQualityWindows(
+    { recent: current.recentOneStep, long: current.longOneStep },
+    { recent: candidate.recentOneStep, long: candidate.longOneStep },
+  );
 }

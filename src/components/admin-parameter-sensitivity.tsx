@@ -489,6 +489,10 @@ export function AdminParameterSensitivity({
           )}
           {persistence === null ? null : <ShadowEntryStatus persistence={persistence} />}
           <p className="admin-decision__note">
+            후보는 최근 13주의 다음 주 예측 성능을 중심으로 비교하며, 최근 26주의 다음 주 예측 결과로
+            장기 안정성을 함께 확인합니다.
+          </p>
+          <p className="admin-decision__note">
             후보는 과거 데이터 비교 결과입니다. 조합 후보도 실제 적용 전에 새 실제 데이터를 이용한 검증을
             거치며, 이 화면에서 운영 모델이나 파라미터를 변경하지 않습니다.
           </p>

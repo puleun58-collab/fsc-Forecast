@@ -199,6 +199,7 @@ test('performance blocks separate the reliability basis from the full-horizon ba
   assert.match(horizonBlock, /<span>전체 예측 MAPE<\/span><strong>9\.38%<\/strong>/);
   assert.match(horizonBlock, /<span>전체 예측 MAE<\/span><strong>179\.35원\/L<\/strong>/);
   assert.match(horizonBlock, /다음 주부터 최대 13주 후까지의 예측을 모두 포함한 성능입니다/);
+  assert.match(horizonBlock, /전체 예측 성능은 참고용이며 튜닝 후보 선정에는 사용하지 않습니다/);
   assert.match(horizonBlock, /전체 예측 MAE/);
   assert.match(horizonBlock, /전체 예측 MAPE/);
   assert.equal(horizonBlock.match(/diagnostics-metrics-table/g)?.length, 1);

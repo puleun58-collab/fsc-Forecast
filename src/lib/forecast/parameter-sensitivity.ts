@@ -9,12 +9,15 @@ import {
   USD_KRW_WEIGHT_CANDIDATES,
   type ForecastModelParams,
 } from "./forecast-model-config";
-import { evaluatePromotionQuality, type PromotionQualityChecks } from "./promotion-quality";
+import {
+  evaluateTuningCandidateQuality,
+  type PromotionQualityChecks,
+} from "./promotion-quality";
 import type { RunWalkForwardBacktestResult } from "./run-walk-forward-backtest";
 
 /** 진단 전용 Trend 후보. 운영 candidate 탐색 범위에는 연결하지 않는다. */
 export const DIAGNOSTIC_TREND_LOOKBACK_CANDIDATES = [4, 6, 8, 10, 12] as const;
-export const PARAMETER_SENSITIVITY_VERSION = 2;
+export const PARAMETER_SENSITIVITY_VERSION = 3;
 export const TUNING_CANDIDATE_LIMIT = 3;
 
 export type ParameterSensitivityGroupKey = "trendLookback" | "dubai" | "usdKrw" | "cap";
@@ -87,6 +90,8 @@ export interface CombinationAnalysis {
 export interface ParameterSensitivity {
   version: number;
   evaluatedAt: string;
+  /** 후보 품질 판정에 사용한 성능 구간. v1/v2 metadata는 full-horizon이다. */
+  qualityBasis: "full-horizon" | "one-step";
   currentParams: ForecastModelParams;
   currentRecentOneStep: SensitivityWindowMetrics;
   currentLongOneStep: SensitivityWindowMetrics;
@@ -132,6 +137,8 @@ const SensitivityMetadataSchema = z.object({
     parameterSensitivity: z.object({
       version: z.number(),
       evaluatedAt: z.string(),
+      /** v3부터 one-step 기준으로 후보 품질을 판정한다. 과거 run에는 없다. */
+      qualityBasis: z.enum(["full-horizon", "one-step"]).default("full-horizon"),
       currentParams: ModelParamsSchema,
       currentRecentOneStep: WindowMetricsSchema,
       currentLongOneStep: WindowMetricsSchema,
@@ -469,7 +476,11 @@ function buildCombinationAnalysis({
         continue;
       }
 
-      const qualityChecks = evaluatePromotionQuality(currentBacktest, backtest);
+      const qualityChecks = evaluateTuningCandidateQuality(currentBacktest, backtest);
+
+      if (backtest.recentOneStep.sampleCount < PROMOTION_MIN_SAMPLE_COUNT) {
+        continue;
+      }
 
       candidates.push({
         label: `${describeFactorValue(first.groupKey, params)} + ${describeFactorValue(second.groupKey, params)}`,
@@ -547,7 +558,7 @@ export function buildParameterSensitivity({
           isCurrent,
           recentOneStep: toWindowMetrics(backtest.recentOneStep),
           longOneStep: toWindowMetrics(backtest.longOneStep),
-          qualityChecks: isCurrent ? null : evaluatePromotionQuality(currentBacktest, backtest),
+          qualityChecks: isCurrent ? null : evaluateTuningCandidateQuality(currentBacktest, backtest),
         },
       ];
     });
@@ -559,7 +570,9 @@ export function buildParameterSensitivity({
     ? []
     : groups.flatMap((group) =>
         group.candidates.flatMap((candidate) =>
-          candidate.isCurrent || candidate.qualityChecks === null
+          candidate.isCurrent ||
+          candidate.qualityChecks === null ||
+          candidate.recentOneStep.sampleCount < PROMOTION_MIN_SAMPLE_COUNT
             ? []
             : [
                 {
@@ -618,6 +631,7 @@ export function buildParameterSensitivity({
   return {
     version: PARAMETER_SENSITIVITY_VERSION,
     evaluatedAt: evaluatedAt.toISOString(),
+    qualityBasis: "one-step",
     currentParams,
     currentRecentOneStep: toWindowMetrics(currentBacktest.recentOneStep),
     currentLongOneStep: toWindowMetrics(currentBacktest.longOneStep),

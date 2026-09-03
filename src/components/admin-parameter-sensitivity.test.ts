@@ -237,6 +237,15 @@ test('without an eligible candidate the gate explains that nothing is being conf
   assert.doesNotMatch(markup, /Shadow 진입 확인 · /);
 });
 
+test('the candidate panel states the next-week evaluation basis', () => {
+  const markup = render();
+
+  assert.match(
+    markup,
+    /후보는 최근 13주의 다음 주 예측 성능을 중심으로 비교하며, 최근 26주의 다음 주 예측 결과로 장기 안정성을 함께 확인합니다\./,
+  );
+});
+
 test('a candidate exposes its market regime comparison behind a collapsed disclosure', () => {
   const markup = render(CURRENT, 6, null, [comparison()]);
   const panel = markup.slice(markup.indexOf('candidate-regime'));

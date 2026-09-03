@@ -10,6 +10,7 @@ import {
   readParameterSensitivity,
   serializeSensitivityParamsKey,
   TUNING_CANDIDATE_LIMIT,
+  type ParameterSensitivity,
 } from './parameter-sensitivity';
 import { runWalkForwardBacktest, type RunWalkForwardBacktestResult } from './run-walk-forward-backtest';
 import type { ForecastSeriesPoint } from './types';
@@ -185,6 +186,115 @@ test('metadata round-trips through the reader', () => {
   assert.equal(
     readParameterSensitivity({ model: { parameterSensitivity: sensitivity } })?.currentParams.modelId,
     'B',
+  );
+});
+
+/** 전체 예측(recent/long)과 다음 주 예측(recentOneStep/longOneStep)이 서로 다른 후보. */
+function splitBacktest(
+  params: ForecastModelParams,
+  full: Partial<RunWalkForwardBacktestResult['recent']>,
+  oneStep: Partial<RunWalkForwardBacktestResult['recentOneStep']>,
+  oneStepLongMae = (oneStep.maeKrwPerL ?? 22.8) + 1.7,
+): RunWalkForwardBacktestResult {
+  return {
+    params,
+    recent: metrics(full),
+    long: metrics({ windowWeeks: 26, maeKrwPerL: (full.maeKrwPerL ?? 22.8) + 1.7 }),
+    recentOneStep: metrics(oneStep),
+    longOneStep: metrics({ windowWeeks: 26, maeKrwPerL: oneStepLongMae }),
+    horizons: [],
+    absoluteErrorByHorizon: new Map(),
+    oneStepPoints: [],
+  };
+}
+
+function buildWithTrendCandidate(
+  candidateFull: Partial<RunWalkForwardBacktestResult['recent']>,
+  candidateOneStep: Partial<RunWalkForwardBacktestResult['recentOneStep']>,
+  candidateOneStepLongMae?: number,
+): ParameterSensitivity {
+  return build(CURRENT, (params) =>
+    params.trendLookbackWeeks === 6
+      ? splitBacktest(params, candidateFull, candidateOneStep, candidateOneStepLongMae)
+      : backtest(params),
+  );
+}
+
+function includesTrendSix(sensitivity: ParameterSensitivity): boolean {
+  return sensitivity.tuningCandidates.some((candidate) => candidate.params.trendLookbackWeeks === 6);
+}
+
+test('a candidate that only improves the full horizon is not a tuning candidate', () => {
+  const sensitivity = buildWithTrendCandidate({ maeKrwPerL: 14, mapePct: 0.8 }, { maeKrwPerL: 24.5 });
+
+  assert.equal(sensitivity.qualityBasis, 'one-step');
+  assert.equal(includesTrendSix(sensitivity), false);
+});
+
+test('a candidate that only improves the next-week forecast is a tuning candidate', () => {
+  const sensitivity = buildWithTrendCandidate(
+    { maeKrwPerL: 40, mapePct: 2.4, maxAbsoluteErrorKrwPerL: 120, forecastChurnKrwPerL: 30 },
+    { maeKrwPerL: 18.4, mapePct: 1.02 },
+  );
+  const candidate = sensitivity.tuningCandidates.find(
+    (entry) => entry.params.trendLookbackWeeks === 6,
+  );
+
+  assert.equal(candidate?.meetsPromotionQuality, true);
+  assert.equal(candidate?.recentOneStep.maeKrwPerL, 18.4);
+});
+
+test('a candidate without thirteen next-week samples is excluded', () => {
+  const sensitivity = buildWithTrendCandidate(
+    { maeKrwPerL: 18.4 },
+    { maeKrwPerL: 12, sampleCount: 12 },
+  );
+
+  assert.equal(sensitivity.sampleSufficient, true);
+  assert.equal(includesTrendSix(sensitivity), false);
+});
+
+test('next-week MAPE improvement alone qualifies a candidate', () => {
+  const sensitivity = buildWithTrendCandidate({ maeKrwPerL: 22.8 }, { maeKrwPerL: 22.0, mapePct: 1.1 });
+  const candidate = sensitivity.tuningCandidates.find(
+    (entry) => entry.params.trendLookbackWeeks === 6,
+  );
+
+  assert.ok((candidate?.qualityChecks.maeImprovementRatio ?? 0) < 0.05);
+  assert.equal(candidate?.qualityChecks.meetsMinimumImprovement, true);
+  assert.equal(candidate?.meetsPromotionQuality, true);
+});
+
+test('next-week long window, max error, and churn guardrails exclude candidates', () => {
+  const longUnstable = buildWithTrendCandidate({ maeKrwPerL: 18.4 }, { maeKrwPerL: 18.4 }, 26);
+  const maxErrorUnstable = buildWithTrendCandidate(
+    { maeKrwPerL: 18.4 },
+    { maeKrwPerL: 18.4, maxAbsoluteErrorKrwPerL: 58.5 * 1.2 },
+  );
+  const churnUnstable = buildWithTrendCandidate(
+    { maeKrwPerL: 18.4 },
+    { maeKrwPerL: 18.4, forecastChurnKrwPerL: 11 },
+  );
+
+  assert.equal(includesTrendSix(longUnstable), false);
+  assert.equal(includesTrendSix(maxErrorUnstable), false);
+  assert.equal(includesTrendSix(churnUnstable), false);
+});
+
+test('older sensitivity metadata reads as the full-horizon basis', () => {
+  const sensitivity = build();
+  const legacy = JSON.parse(JSON.stringify(sensitivity)) as Record<string, unknown>;
+
+  delete legacy.qualityBasis;
+  legacy.version = 2;
+
+  assert.equal(
+    readParameterSensitivity({ model: { parameterSensitivity: legacy } })?.qualityBasis,
+    'full-horizon',
+  );
+  assert.equal(
+    readParameterSensitivity({ model: { parameterSensitivity: sensitivity } })?.qualityBasis,
+    'one-step',
   );
 });
 
