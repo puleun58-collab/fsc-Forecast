@@ -9,6 +9,7 @@ import { AdminParameterSensitivity } from '@/components/admin-parameter-sensitiv
 import { AdminOperationHistory } from '@/components/admin-operation-history';
 import { AdminQuarterCard } from '@/components/admin-quarter-card';
 import { AdminShadowValidation } from '@/components/admin-shadow-validation';
+import { AdminSignalReview } from '@/components/admin-signal-review';
 import { AdminTuningTimeline } from '@/components/admin-tuning-timeline';
 import { AdminModelTransition } from '@/components/admin-model-transition';
 import { AdminOperationsSummary, resolveNextStep } from '@/components/admin-operations-summary';
@@ -28,6 +29,9 @@ import { readForecastErrorAnalysis } from '@/lib/forecast/forecast-error-analysi
 import { readCandidatePersistence } from '@/lib/forecast/candidate-persistence';
 import { readCandidateRegimeComparisons } from '@/lib/forecast/candidate-regime-comparison';
 import { readForecastInputQuality } from '@/lib/forecast/input-quality';
+import { readSignalContribution } from '@/lib/forecast/signal-contribution';
+import { readSignalForwardValidation } from '@/lib/forecast/signal-forward-validation';
+import { buildSignalReview } from '@/lib/forecast/signal-review';
 import { buildTuningTimeline } from '@/lib/forecast/tuning-timeline';
 import { readMarketRegimeAnalysis } from '@/lib/forecast/market-regime';
 import { readParameterSensitivity } from '@/lib/forecast/parameter-sensitivity';
@@ -128,6 +132,14 @@ export default async function AdminPage() {
   const persistence = readCandidatePersistence(latestRunMetadata);
   const shadowSession = readShadowValidation(latestRunMetadata);
   const sensitivity = readParameterSensitivity(latestRunMetadata);
+  const inputQuality = readForecastInputQuality(latestRunMetadata);
+  const signalContribution = readSignalContribution(latestRunMetadata);
+  const signalForwardValidation = readSignalForwardValidation(latestRunMetadata);
+  const signalReview = buildSignalReview({
+    contribution: signalContribution,
+    forwardValidation: signalForwardValidation,
+    inputQuality,
+  });
   // 요약 카드와 자동 튜닝 카드가 같은 진행 단계 판정을 공유한다.
   const tuningTimeline = buildTuningTimeline({
     runs: forecastRuns.map((run) => ({
@@ -175,7 +187,7 @@ export default async function AdminPage() {
 
         <AdminDataHealthPanel
           summary={dataHealth}
-          inputQuality={readForecastInputQuality(forecastRuns[0]?.metadata)}
+          inputQuality={inputQuality}
         />
 
         <AdminForecastDiagnostics
@@ -212,6 +224,12 @@ export default async function AdminPage() {
           persistence={persistence}
           regimeComparisons={readCandidateRegimeComparisons(forecastRuns[0]?.metadata) ?? []}
           stageLabel={tuningStage.label}
+        />
+
+        <AdminSignalReview
+          contribution={signalContribution}
+          forwardValidation={signalForwardValidation}
+          review={signalReview}
         />
 
         <AdminShadowValidation session={shadowSession} />

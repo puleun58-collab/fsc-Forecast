@@ -63,8 +63,16 @@ import {
   FORECAST_MODEL_VERSION,
   FORECAST_RANGE_QUANTILE_LEVEL,
   USD_KRW_LAG_WEEK_CANDIDATES,
+  type ForecastModelParams,
 } from "./forecast-model-config";
 import { buildForecastInputQuality } from "./input-quality";
+import { ablateSignal, buildSignalContribution } from "./signal-contribution";
+import {
+  readSignalForwardValidation,
+  recordSignalForwardCycle,
+  selectForwardSignals,
+  type SignalForwardPrediction,
+} from "./signal-forward-validation";
 import {
   resolveForecastModelState,
   serializeForecastModelParams,
@@ -603,6 +611,21 @@ async function executeForecastPipeline(
   );
   // 민감도 분석이 실제로 사용한 walk-forward 결과를 그대로 붙잡아 국면 비교에 재사용한다.
   const evaluatedBacktests = new Map<string, RunWalkForwardBacktestResult>();
+  const evaluateBacktest = (params: ForecastModelParams): RunWalkForwardBacktestResult => {
+    const key = serializeSensitivityParamsKey(params);
+    const backtest =
+      backtestByParamsKey.get(key) ??
+      runWalkForwardBacktest({
+        weeklySeries,
+        indicatorSeries: usableIndicatorSeries,
+        params,
+        horizonCount: FORECAST_WEEKLY_HORIZON_COUNT,
+      });
+
+    evaluatedBacktests.set(key, backtest);
+
+    return backtest;
+  };
   const parameterSensitivity = buildParameterSensitivity({
     currentParams: selection.selectedParams,
     currentBacktest: selection.selectedBacktest,
@@ -610,21 +633,7 @@ async function executeForecastPipeline(
     // 실행 시점까지 확정된 일별 데이터만 넘긴다. 후보마다 DB를 다시 읽지 않는다.
     dailyPrices: usableDailyPrices,
     // 이미 평가한 후보는 재사용하고, Trend 후보처럼 없는 조합만 새로 계산한다.
-    evaluate: (params) => {
-      const key = serializeSensitivityParamsKey(params);
-      const backtest =
-        backtestByParamsKey.get(key) ??
-        runWalkForwardBacktest({
-          weeklySeries,
-          indicatorSeries: usableIndicatorSeries,
-          params,
-          horizonCount: FORECAST_WEEKLY_HORIZON_COUNT,
-        });
-
-      evaluatedBacktests.set(key, backtest);
-
-      return backtest;
-    },
+    evaluate: evaluateBacktest,
   });
   const candidateRegimeComparisons = buildCandidateRegimeComparisons({
     weeklySeries,
@@ -777,6 +786,69 @@ async function executeForecastPipeline(
                   issuedAt: startedAt,
                 },
         });
+  // 진단 전용: 현재 설정에서 신호를 하나씩 빼 과거 성능과 실제 발행 예측을 비교한다.
+  const signalContribution = buildSignalContribution({
+    currentParams: selection.selectedParams,
+    currentBacktest: selection.selectedBacktest,
+    evaluate: evaluateBacktest,
+    dailyPrices: usableDailyPrices,
+    evaluatedAt: startedAt,
+  });
+  const baselineForecastPoint =
+    weeklyForecast.status === "ready" &&
+    weeklyForecast.anchorWeekEndDate !== null &&
+    weeklyForecast.points[0] !== undefined
+      ? {
+          originWeekEndDate: weeklyForecast.anchorWeekEndDate,
+          targetDate: weeklyForecast.points[0].targetDate,
+          pointKrwPerL: weeklyForecast.points[0].pointKrwPerL,
+        }
+      : null;
+  const forwardPredictions: SignalForwardPrediction[] =
+    baselineForecastPoint === null
+      ? []
+      : selectForwardSignals(selection.selectedParams).flatMap((signal) => {
+          const ablatedParams = ablateSignal(selection.selectedParams, signal);
+
+          if (ablatedParams === null) {
+            return [];
+          }
+
+          const ablatedForecast = buildWeeklyForecast({
+            weeklySeries,
+            indicatorSeries: usableIndicatorSeries,
+            params: ablatedParams,
+            horizonCount: 1,
+          });
+          const ablatedPoint = ablatedForecast.points[0];
+
+          // 이번 주 실제로 예측이 달라지지 않았다면 신호가 쓰이지 않은 것이라 표본이 아니다.
+          return ablatedForecast.status !== "ready" ||
+            ablatedPoint === undefined ||
+            ablatedPoint.pointKrwPerL === baselineForecastPoint.pointKrwPerL
+            ? []
+            : [
+                {
+                  signal,
+                  originWeekEndDate: baselineForecastPoint.originWeekEndDate,
+                  targetDate: baselineForecastPoint.targetDate,
+                  issuedAt: startedAt,
+                  baselineForecastKrwPerL: baselineForecastPoint.pointKrwPerL,
+                  ablatedForecastKrwPerL: ablatedPoint.pointKrwPerL,
+                },
+              ];
+        });
+  const signalForwardValidation = recordSignalForwardCycle({
+    previous: readSignalForwardValidation(previousRun?.metadata ?? null),
+    baselineParams: selection.selectedParams,
+    modelVersion: FORECAST_MODEL_VERSION,
+    predictions: forwardPredictions,
+    confirmedWeeks: weeklySeries.map((point) => ({
+      targetDate: point.targetDate,
+      actualKrwPerL: point.pointKrwPerL,
+    })),
+    now: startedAt,
+  });
   const approvalState = gate.approvalState;
   const degradedReason = gate.degradedReason;
   const weeklyForecastPoints =

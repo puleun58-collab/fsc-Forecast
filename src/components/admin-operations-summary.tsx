@@ -198,8 +198,10 @@ export function AdminOperationsSummary({
         </div>
 
         <p className="admin-decision__note">
-          최근 13주의 다음 주 예측 결과를 기준으로 산정한 성능입니다. MAE는 실제 가격과 평균 몇 원/L
-          차이였는지, MAPE는 평균 몇 % 차이였는지를 뜻합니다.
+          최근 13주의 다음 주 예측 결과를 기준으로 산정한 성능입니다.
+        </p>
+        <p className="admin-decision__note">
+          MAE는 실제 가격과 평균 몇 원/L 차이였는지, MAPE는 평균 몇 % 차이였는지를 뜻합니다.
         </p>
       </div>
     </SectionCard>

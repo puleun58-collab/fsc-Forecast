@@ -18,12 +18,14 @@ import type { RunWalkForwardBacktestResult } from "./run-walk-forward-backtest";
 import {
   BIAS_CANDIDATE_WINDOW_WEEKS,
   buildBiasCandidateParams,
-  buildBiasCorrectedBacktest,
   describeBiasCorrection,
   summarizeBiasState,
 } from "./bias-correction";
 import {
-  buildDailySignalBacktest,
+  createCandidateEvaluator,
+  serializeSensitivityParamsKey,
+} from "./candidate-backtest";
+import {
   buildDailySignalCandidateParams,
   describeDailySignal,
   summarizeDailySignalState,
@@ -263,24 +265,7 @@ function toWindowMetrics(
   };
 }
 
-export function serializeSensitivityParamsKey(params: ForecastModelParams): string {
-  const dubai = params.dubai === null ? "none" : `${params.dubai.lagWeeks}:${params.dubai.weight}`;
-  const usdKrw = params.usdKrw === null ? "none" : `${params.usdKrw.lagWeeks}:${params.usdKrw.weight}`;
-
-  return [
-    params.modelId,
-    params.trendLookbackWeeks,
-    dubai,
-    usdKrw,
-    params.externalAdjustmentCapRatio,
-    params.biasCorrection === null
-      ? "none"
-      : `${params.biasCorrection.lookbackWeeks}:${params.biasCorrection.weight}`,
-    params.dailySignal === null
-      ? "none"
-      : `${params.dailySignal.lookbackObservations}:${params.dailySignal.weight}`,
-  ].join("|");
-}
+export { serializeSensitivityParamsKey };
 
 /** 관리자 화면 표기는 lag/weight 대신 뜻이 드러나는 한국어를 쓴다. */
 export function describeIndicator(indicator: ForecastModelParams["dubai"]): string {
@@ -585,47 +570,13 @@ export function buildParameterSensitivity({
   evaluatedAt,
   dailyPrices = [],
 }: BuildParameterSensitivityInput): ParameterSensitivity {
-  const recentWindowWeeks = currentBacktest.recentOneStep.windowWeeks;
-  const longWindowWeeks = currentBacktest.longOneStep.windowWeeks;
-  const backtestCache = new Map<string, RunWalkForwardBacktestResult | null>();
   // 같은 params는 1단계·2단계를 통틀어 한 번만 walk-forward를 실행한다.
-  const evaluateCached = (params: ForecastModelParams): RunWalkForwardBacktestResult | null => {
-    const key = serializeSensitivityParamsKey(params);
-    const cached = backtestCache.get(key);
-
-    if (cached !== undefined) {
-      return cached;
-    }
-
-    // Bias·일별 후보는 기본 모델 결과를 사후 보정해 만든다. walk-forward를 다시 돌리지 않는다.
-    const postCorrected = params.biasCorrection !== null || params.dailySignal !== null;
-    let evaluated = postCorrected
-      ? evaluateCached({ ...params, biasCorrection: null, dailySignal: null })
-      : evaluate(params);
-
-    if (evaluated !== null && params.biasCorrection !== null) {
-      evaluated = buildBiasCorrectedBacktest({
-        base: evaluated,
-        bias: params.biasCorrection,
-        recentWindowWeeks,
-        longWindowWeeks,
-      });
-    }
-
-    if (evaluated !== null && params.dailySignal !== null) {
-      evaluated = buildDailySignalBacktest({
-        base: evaluated,
-        dailyPrices,
-        signal: params.dailySignal,
-        recentWindowWeeks,
-        longWindowWeeks,
-      });
-    }
-
-    backtestCache.set(key, evaluated);
-
-    return evaluated;
-  };
+  const evaluateCached = createCandidateEvaluator({
+    evaluate,
+    dailyPrices,
+    recentWindowWeeks: currentBacktest.recentOneStep.windowWeeks,
+    longWindowWeeks: currentBacktest.longOneStep.windowWeeks,
+  });
   const currentKey = serializeSensitivityParamsKey(currentParams);
   const groupParams = buildGroupParams(currentParams);
   const usdKrwEvaluable = currentParams.dubai !== null || currentParams.usdKrw !== null;

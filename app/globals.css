@@ -2129,6 +2129,49 @@ summary.operation-history-row::-webkit-details-marker {
   font-size: 0.86rem;
 }
 
+.signal-review__list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.signal-review__item {
+  display: grid;
+  gap: 4px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.signal-review__item:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.signal-review__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.signal-review__windows {
+  display: grid;
+  gap: 12px;
+}
+
+.signal-review__window p {
+  margin: 2px 0 0;
+  font-size: 0.84rem;
+}
+
+@media (min-width: 701px) {
+  .signal-review__windows {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .admin-table__flag {
   margin-left: 6px;
   white-space: nowrap;
