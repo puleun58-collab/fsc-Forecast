@@ -105,14 +105,27 @@ test('the card leads with the automatic tuning flow guide', () => {
   assert.match(markup, /자동 튜닝 흐름/);
   assert.match(
     markup,
-    /최신 데이터가 반영될 때 여러 예측 설정을 자동으로 비교합니다\. 현재보다 나은 후보가 있으면 최대 3개까지 선정하고, 1순위 후보 1개를 Shadow에서 새 실제 데이터 13주로 검증합니다\. 검증 중인 후보는 중간에 변경하지 않으며, 검증 결과가 좋아도 자동으로 운영에 적용되지는 않습니다\./,
+    /<p>최신 데이터가 반영되면 여러 예측 설정을 자동 비교해 현재보다 나은 후보를 찾습니다\.<\/p>/,
   );
-  const steps = markup.slice(markup.indexOf('tuning-flow__steps'));
   assert.match(
-    steps,
-    /<li>자동 비교<\/li><li>후보 최대 3개<\/li><li>1순위 후보 Shadow 검증<\/li><li>새 실제 데이터 13주<\/li><li>운영 적용 검토<\/li>/,
+    markup,
+    /<p>후보가 있으면 1순위 1개를 Shadow에서 새 실제 데이터 13주로 검증하며, 결과가 좋아도 자동 적용되지는 않습니다\.<\/p>/,
   );
+
+  const steps = markup.slice(markup.indexOf('tuning-flow__steps'));
+  const stepLabels = [...steps.slice(0, steps.indexOf('</ol>')).matchAll(/tuning-flow__step">([^<]+)</g)].map(
+    (match) => match[1],
+  );
+
+  assert.deepEqual(stepLabels, [
+    '자동 비교',
+    '후보 최대 3개',
+    '1순위 Shadow 검증',
+    '새 실제 데이터 13주',
+    '운영 적용 검토',
+  ]);
   assert.doesNotMatch(steps.slice(0, steps.indexOf('</ol>')), /→/);
+  assert.match(markup, /class="tuning-flow__note">검증 중인 후보는 중간에 변경하지 않습니다\./);
 });
 
 test('a model without Dubai reports that USD/KRW cannot be evaluated', () => {

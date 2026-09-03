@@ -22,7 +22,7 @@ const GROUP_LABEL: Record<ParameterSensitivityGroupKey, string> = {
 const TUNING_FLOW_STEPS = [
   '자동 비교',
   '후보 최대 3개',
-  '1순위 후보 Shadow 검증',
+  '1순위 Shadow 검증',
   '새 실제 데이터 13주',
   '운영 적용 검토',
 ];
@@ -31,16 +31,21 @@ function TuningFlowGuide() {
   return (
     <div className="tuning-flow">
       <h3 className="tuning-flow__title">자동 튜닝 흐름</h3>
-      <p className="tuning-flow__copy">
-        최신 데이터가 반영될 때 여러 예측 설정을 자동으로 비교합니다. 현재보다 나은 후보가 있으면 최대
-        3개까지 선정하고, 1순위 후보 1개를 Shadow에서 새 실제 데이터 13주로 검증합니다. 검증 중인 후보는
-        중간에 변경하지 않으며, 검증 결과가 좋아도 자동으로 운영에 적용되지는 않습니다.
-      </p>
+      <div className="tuning-flow__copy">
+        <p>최신 데이터가 반영되면 여러 예측 설정을 자동 비교해 현재보다 나은 후보를 찾습니다.</p>
+        <p>
+          후보가 있으면 1순위 1개를 Shadow에서 새 실제 데이터 13주로 검증하며, 결과가 좋아도 자동
+          적용되지는 않습니다.
+        </p>
+      </div>
       <ol className="tuning-flow__steps">
         {TUNING_FLOW_STEPS.map((step) => (
-          <li key={step}>{step}</li>
+          <li key={step}>
+            <span className="tuning-flow__step">{step}</span>
+          </li>
         ))}
       </ol>
+      <p className="tuning-flow__note">검증 중인 후보는 중간에 변경하지 않습니다.</p>
     </div>
   );
 }

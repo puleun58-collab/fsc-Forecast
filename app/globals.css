@@ -1856,8 +1856,8 @@ summary.operation-history-row::-webkit-details-marker {
 
 .tuning-flow {
   display: grid;
-  gap: 6px;
-  padding: 10px 12px;
+  gap: 10px;
+  padding: 12px 14px;
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   border-radius: var(--radius-control);
   background: var(--bg-muted);
@@ -1866,36 +1866,58 @@ summary.operation-history-row::-webkit-details-marker {
 .tuning-flow__title {
   margin: 0;
   color: var(--text-primary);
-  font-size: 0.82rem;
+  font-size: 0.86rem;
   font-weight: 700;
 }
 
 .tuning-flow__copy {
-  margin: 0;
+  display: grid;
+  gap: 4px;
   color: var(--text-secondary);
-  font-size: 0.8rem;
-  line-height: 1.55;
+  font-size: 0.86rem;
+  line-height: 1.72;
+}
+
+.tuning-flow__copy p {
+  margin: 0;
 }
 
 .tuning-flow__steps {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 8px;
+  align-items: center;
+  gap: 6px 10px;
   margin: 0;
   padding: 0;
-  color: var(--text-secondary);
-  font-size: 0.76rem;
   list-style: none;
 }
 
 .tuning-flow__steps li {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
+}
+
+.tuning-flow__step {
+  padding: 4px 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .tuning-flow__steps li + li::before {
   content: "→";
   color: color-mix(in srgb, var(--text-secondary) 65%, transparent);
+}
+
+.tuning-flow__note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
 }
 
 .sensitivity-candidates {
