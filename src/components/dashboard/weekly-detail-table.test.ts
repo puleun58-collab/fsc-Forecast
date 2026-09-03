@@ -159,3 +159,61 @@ test('a forecast boundary replaces the month divider when both fall on the same 
   assert.match(markup, /weekly-table__boundary/);
   assert.doesNotMatch(markup, /weekly-table__row--month-start/);
 });
+
+test('a forecast week shows the expected range only when its horizon is published', () => {
+  const forecastWeek: FscDashboardWeekItem = {
+    ...HISTORICAL_WEEK,
+    sequenceNo: 2,
+    priceKind: 'forecast',
+    priceKrwPerL: '2050.00',
+    actualPriceKrwPerL: null,
+    forecastPriceKrwPerL: '2050.00',
+    forecastLowerBoundKrwPerL: '1992.00',
+    forecastUpperBoundKrwPerL: '2117.00',
+    forecastSourceKind: 'weekly_point',
+    officialWeekLabel: null,
+  };
+  const hidden = renderToStaticMarkup(
+    createElement(WeeklyDetailTable, {
+      weeks: [forecastWeek],
+      previousWeekPriceKrwPerL: null,
+    }),
+  );
+  const published = renderToStaticMarkup(
+    createElement(WeeklyDetailTable, {
+      weeks: [forecastWeek],
+      previousWeekPriceKrwPerL: null,
+      publishableIntervalHorizonWeeks: [1],
+    }),
+  );
+
+  assert.doesNotMatch(hidden, /예상 범위/);
+  assert.match(published, /예상 범위 1,992\.00원\/L ~ 2,117\.00원\/L/);
+  assert.doesNotMatch(published, /최저|최고 예상가|확정 범위/);
+});
+
+test('a horizon that is not published keeps its centre forecast', () => {
+  const first: FscDashboardWeekItem = {
+    ...HISTORICAL_WEEK,
+    sequenceNo: 2,
+    priceKind: 'forecast',
+    priceKrwPerL: '2050.00',
+    actualPriceKrwPerL: null,
+    forecastPriceKrwPerL: '2050.00',
+    forecastLowerBoundKrwPerL: '1992.00',
+    forecastUpperBoundKrwPerL: '2117.00',
+    forecastSourceKind: 'weekly_point',
+    officialWeekLabel: null,
+  };
+  const second: FscDashboardWeekItem = { ...first, sequenceNo: 3, priceKrwPerL: '2070.00' };
+  const markup = renderToStaticMarkup(
+    createElement(WeeklyDetailTable, {
+      weeks: [first, second],
+      previousWeekPriceKrwPerL: null,
+      publishableIntervalHorizonWeeks: [1],
+    }),
+  );
+
+  assert.equal(markup.match(/예상 범위/g)?.length, 1);
+  assert.match(markup, /2,070\.00/);
+});

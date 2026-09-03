@@ -3782,6 +3782,14 @@ details[open] > summary .admin-disclosure__toggle-open {
   font-weight: 700;
 }
 
+.weekly-table__interval {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  word-break: keep-all;
+}
+
 .weekly-table__period > span:first-of-type {
   margin-inline: 6px;
   color: var(--text-secondary);
@@ -4682,4 +4690,26 @@ details[open] > summary .admin-disclosure__toggle-open {
   .button:hover:not(:disabled) {
     transform: none;
   }
+}
+
+.operations-status__primary {
+  display: grid;
+  gap: 4px;
+}
+
+.operations-status__list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0 0 0 18px;
+}
+
+.operations-status__item {
+  display: grid;
+  gap: 2px;
+  word-break: keep-all;
+}
+
+.operations-status__item strong {
+  font-size: 0.92rem;
 }

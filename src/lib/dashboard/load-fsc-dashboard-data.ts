@@ -2,6 +2,11 @@ import { RunStatus } from '@prisma/client';
 
 import { buildSeriesSnapshot, NATIONAL_AVERAGE_DATASET_KEY } from '@/lib/aggregates';
 import { db } from '@/lib/db';
+import { env } from '@/lib/env';
+import {
+  readIntervalForwardValidation,
+  selectPublishableHorizonWeeks,
+} from '@/lib/forecast/interval-forward-validation';
 import {
   findLatestBaseFscResultByQuarter,
   findStoredBaseFscResultByQuarter,
@@ -625,6 +630,20 @@ export async function loadFscDashboardData(
       targetYear: result.targetYear,
       targetQuarter: result.targetQuarter,
     });
+    // 공개 스위치가 켜져 있고 실전 검증을 통과한 예측 거리에만 예상 범위를 노출한다.
+    const publishableHorizonWeeks = selectPublishableHorizonWeeks(
+      readIntervalForwardValidation(
+        result.forecastRunId === null
+          ? null
+          : (
+              await db.forecastRun.findUnique({
+                where: { id: result.forecastRunId },
+                select: { metadata: true },
+              })
+            )?.metadata ?? null,
+      ),
+      env.predictionIntervalPublic,
+    );
     const forecastChange = buildForecastChangeSummary({
       currentQuarterAverageKrwPerL: Number(result.quarterAverageKrwPerL),
       previousQuarterAverageKrwPerL:
@@ -670,6 +689,7 @@ export async function loadFscDashboardData(
         recent4wErrorTrend: fsc.qualityMetrics.recent4wErrorTrend,
         previousWeekPriceKrwPerL: readPreviousWeekPrice(result.calculationPayload),
         weeks: fsc.weeks,
+        publishableIntervalHorizonWeeks: publishableHorizonWeeks,
         referenceQuarterAverageKrwPerL: monthlyBasis?.quarterAverageKrwPerL ?? null,
         referenceMonthlyBasis: monthlyBasis?.monthRows ?? [],
         forecastChange,

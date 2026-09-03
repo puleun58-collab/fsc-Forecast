@@ -188,6 +188,8 @@ export interface FscDashboardResultSection {
   recent4wErrorTrend: string | null;
   previousWeekPriceKrwPerL: string | null;
   weeks: FscDashboardWeekItem[];
+  /** 실전 검증을 통과해 예상 범위를 공개할 수 있는 예측 거리(주). 비공개면 빈 배열이다. */
+  publishableIntervalHorizonWeeks: number[];
   referenceQuarterAverageKrwPerL: string | null;
   referenceMonthlyBasis: Array<{
     monthLabel: string;

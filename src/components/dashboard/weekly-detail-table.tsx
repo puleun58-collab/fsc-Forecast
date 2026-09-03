@@ -17,18 +17,21 @@ import {
 } from './dashboard-format';
 
 import type { FscDashboardWeekItem } from '@/lib/dashboard/fsc-types';
-import { getChangeDirection } from '@/lib/dashboard/display-format';
+import { formatPriceText, getChangeDirection } from '@/lib/dashboard/display-format';
 
 type WeeklyDetailTableProps = {
   weeks: readonly FscDashboardWeekItem[];
   previousWeekPriceKrwPerL: string | null;
   useStoredWeekRange?: boolean;
+  /** 실전 검증을 통과해 예상 범위를 노출할 예측 거리(주). 기본은 비공개다. */
+  publishableIntervalHorizonWeeks?: readonly number[];
 };
 
 export function WeeklyDetailTable({
   weeks,
   previousWeekPriceKrwPerL,
   useStoredWeekRange = false,
+  publishableIntervalHorizonWeeks = [],
 }: WeeklyDetailTableProps) {
   const firstForecastIndex = getFirstForecastIndex(weeks);
   const firstForecastSequenceNo = firstForecastIndex >= 0 ? weeks[firstForecastIndex]?.sequenceNo ?? null : null;
@@ -38,6 +41,12 @@ export function WeeklyDetailTable({
       week.sequenceNo,
       index > 0 ? weeks[index - 1]?.priceKrwPerL ?? null : previousWeekPriceKrwPerL,
     ]),
+  );
+  // 예측 주차 순서가 곧 예측 거리이며, 검증을 통과한 거리에만 범위를 노출한다.
+  const publishableSequenceNos = new Set(
+    forecastWeeks
+      .filter((_, index) => publishableIntervalHorizonWeeks.includes(index + 1))
+      .map((week) => week.sequenceNo),
   );
 
   return (
@@ -75,6 +84,7 @@ export function WeeklyDetailTable({
                     previousPriceKrwPerL={previousWeekBySequenceNo.get(week.sequenceNo) ?? null}
                     useStoredWeekRange={useStoredWeekRange}
                     isMonthStart={!isForecastBoundary && startsNewDisplayMonth(weeks, index)}
+                    showIntervalRange={publishableSequenceNos.has(week.sequenceNo)}
                   />
                 </Fragment>
               );
@@ -124,17 +134,26 @@ function formatStoredWeekRange(week: FscDashboardWeekItem, compact = false): str
   return `${Number(startMonth)}.${Number(startDay)}–${Number(endMonth)}.${Number(endDay)}`;
 }
 
+function formatIntervalRange(week: FscDashboardWeekItem): string | null {
+  return week.forecastLowerBoundKrwPerL === null || week.forecastUpperBoundKrwPerL === null
+    ? null
+    : `예상 범위 ${formatPriceText(week.forecastLowerBoundKrwPerL)} ~ ${formatPriceText(week.forecastUpperBoundKrwPerL)}`;
+}
+
 function WeekTableRow({
   week,
   previousPriceKrwPerL,
   useStoredWeekRange,
   isMonthStart,
+  showIntervalRange,
 }: {
   week: FscDashboardWeekItem;
   previousPriceKrwPerL: string | null;
   useStoredWeekRange: boolean;
   isMonthStart: boolean;
+  showIntervalRange: boolean;
 }) {
+  const intervalRange = showIntervalRange ? formatIntervalRange(week) : null;
   const isPendingForecast = week.priceKind === 'forecast' && week.priceKrwPerL === null;
   const sourceText = isPendingForecast ? '예측값 산정 중' : mapForecastSourceKind(week.forecastSourceKind);
 
@@ -158,6 +177,9 @@ function WeekTableRow({
       </td>
       <td className="numeric-cell">
         <PriceValue value={week.priceKrwPerL} fallback="-" size="compact" />
+        {intervalRange === null ? null : (
+          <span className="weekly-table__interval">{intervalRange}</span>
+        )}
       </td>
       <td
         className={`numeric-cell directional-value directional-value--${getChangeDirection(

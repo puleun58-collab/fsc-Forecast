@@ -68,6 +68,7 @@ export function PriceScenarioSections({
         weeks={scenarioFsc.weeks}
         previousWeekPriceKrwPerL={scenarioFsc.previousWeekPriceKrwPerL}
         useStoredWeekRange={!isActiveQuarterSelected}
+        publishableIntervalHorizonWeeks={scenarioFsc.publishableIntervalHorizonWeeks}
       />
     </>
   );

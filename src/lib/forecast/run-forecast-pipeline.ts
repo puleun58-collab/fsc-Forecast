@@ -68,7 +68,18 @@ import {
 import { buildHorizonPerformance } from "./horizon-performance";
 import { buildForecastInputQuality } from "./input-quality";
 import { buildPerformanceDrift, readPerformanceDrift } from "./performance-drift";
-import { buildPredictionIntervalCalibration } from "./prediction-interval";
+import {
+  buildPredictionIntervalBounds,
+  buildPredictionIntervalCalibration,
+  collectCalibrationResiduals,
+  PREDICTION_INTERVAL_TARGET_COVERAGE,
+  PREDICTION_INTERVAL_VERSION,
+} from "./prediction-interval";
+import {
+  readIntervalForwardValidation,
+  recordIntervalForwardCycle,
+  type IssuedIntervalPoint,
+} from "./interval-forward-validation";
 import { ablateSignal, buildSignalContribution } from "./signal-contribution";
 import {
   readSignalForwardValidation,
@@ -789,6 +800,49 @@ async function executeForecastPipeline(
                   issuedAt: startedAt,
                 },
         });
+  // 발행 시점까지 확정된 residual만으로 예측 거리별 범위를 만들고 그대로 고정한다.
+  const issuedIntervalPoints: IssuedIntervalPoint[] =
+    weeklyForecast.status !== "ready" || weeklyForecast.anchorWeekEndDate === null
+      ? []
+      : weeklyForecast.points.flatMap((point) => {
+          const anchorWeekEndDate = weeklyForecast.anchorWeekEndDate as Date;
+          const history = selection.selectedBacktest.evaluationPoints.filter(
+            (candidate) => candidate.targetDate.getTime() <= anchorWeekEndDate.getTime(),
+          );
+          const calibration = collectCalibrationResiduals(history, point.horizonIndex);
+          const bounds = buildPredictionIntervalBounds(
+            point.pointKrwPerL,
+            calibration.residuals,
+            calibration.source,
+          );
+
+          return bounds === null
+            ? []
+            : [
+                {
+                  horizonWeeks: point.horizonIndex,
+                  originWeekEndDate: anchorWeekEndDate,
+                  targetDate: point.targetDate,
+                  issuedAt: startedAt,
+                  forecastKrwPerL: point.pointKrwPerL,
+                  lowerKrwPerL: bounds.lowerKrwPerL,
+                  upperKrwPerL: bounds.upperKrwPerL,
+                  calibrationSampleCount: bounds.calibrationSampleCount,
+                  source: bounds.source,
+                },
+              ];
+        });
+  const issuedIntervalByHorizon = new Map(
+    issuedIntervalPoints.map((point) => [point.horizonWeeks, point]),
+  );
+  const intervalForwardValidation = recordIntervalForwardCycle({
+    previous: readIntervalForwardValidation(previousRun?.metadata ?? null),
+    issued: issuedIntervalPoints,
+    confirmedWeeks: weeklySeries.map((point) => ({
+      targetDate: point.targetDate,
+      actualKrwPerL: point.pointKrwPerL,
+    })),
+  });
   // 조기 경보: 최근 4주 one-step 성능이 중기 대비 나빠지는지만 본다. 운영 조치는 하지 않는다.
   const performanceDrift = buildPerformanceDrift({
     oneStepPoints: selection.selectedBacktest.oneStepPoints,
@@ -871,10 +925,22 @@ async function executeForecastPipeline(
   });
   const approvalState = gate.approvalState;
   const degradedReason = gate.degradedReason;
+  // 저장되는 범위는 발행 시점 calibration 결과다. 산정 불가한 거리는 범위 없이 중심값만 남긴다.
+  const calibratedWeeklyPoints = weeklyForecast.points.map((point) => {
+    const issued = issuedIntervalByHorizon.get(point.horizonIndex);
+
+    return issued === undefined
+      ? { ...point, lowerBoundKrwPerL: null, upperBoundKrwPerL: null }
+      : {
+          ...point,
+          lowerBoundKrwPerL: issued.lowerKrwPerL,
+          upperBoundKrwPerL: issued.upperKrwPerL,
+        };
+  });
   const weeklyForecastPoints =
     approvalState === ForecastApprovalState.approved
-      ? weeklyForecast.points
-      : stripConfidenceBounds(weeklyForecast.points);
+      ? calibratedWeeklyPoints
+      : stripConfidenceBounds(calibratedWeeklyPoints);
   const monthlyForecastPoints = stripConfidenceBounds(monthlyBaseline.projections);
   const forecastPoints = [...weeklyForecastPoints, ...monthlyForecastPoints];
   const completedAt = new Date();

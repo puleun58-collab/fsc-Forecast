@@ -13,6 +13,7 @@ import { AdminHorizonProfile } from '@/components/admin-horizon-profile';
 import { AdminSignalReview } from '@/components/admin-signal-review';
 import { AdminTuningTimeline } from '@/components/admin-tuning-timeline';
 import { AdminModelTransition } from '@/components/admin-model-transition';
+import { AdminOperationsStatus } from '@/components/admin-operations-status';
 import { AdminOperationsSummary, resolveNextStep } from '@/components/admin-operations-summary';
 import { AdminPostTransition } from '@/components/admin-post-transition';
 import { AdminQuarterManagement } from '@/components/admin-quarter-management';
@@ -30,8 +31,12 @@ import { readForecastErrorAnalysis } from '@/lib/forecast/forecast-error-analysi
 import { readCandidatePersistence } from '@/lib/forecast/candidate-persistence';
 import { readCandidateRegimeComparisons } from '@/lib/forecast/candidate-regime-comparison';
 import { readForecastInputQuality } from '@/lib/forecast/input-quality';
+import { formatModelParams } from '@/lib/forecast/describe-model-params';
 import { readHorizonPerformance } from '@/lib/forecast/horizon-performance';
+import { buildOperationsStatusCenter } from '@/lib/forecast/operations-status';
 import { readPerformanceDrift } from '@/lib/forecast/performance-drift';
+import { env } from '@/lib/env';
+import { readIntervalForwardValidation } from '@/lib/forecast/interval-forward-validation';
 import { readPredictionIntervalCalibration } from '@/lib/forecast/prediction-interval';
 import { readSignalContribution } from '@/lib/forecast/signal-contribution';
 import { readSignalForwardValidation } from '@/lib/forecast/signal-forward-validation';
@@ -140,6 +145,7 @@ export default async function AdminPage() {
   const horizonPerformance = readHorizonPerformance(latestRunMetadata);
   const performanceDrift = readPerformanceDrift(latestRunMetadata);
   const predictionInterval = readPredictionIntervalCalibration(latestRunMetadata);
+  const intervalForwardValidation = readIntervalForwardValidation(latestRunMetadata);
   const signalContribution = readSignalContribution(latestRunMetadata);
   const signalForwardValidation = readSignalForwardValidation(latestRunMetadata);
   const signalReview = buildSignalReview({
@@ -155,6 +161,22 @@ export default async function AdminPage() {
       metadata: run.metadata,
     })),
     transitions: transitionSection.transition.history,
+  });
+  const operationsStatus = buildOperationsStatusCenter({
+    hasForecastRun: forecastRuns.length > 0,
+    inputQuality,
+    performanceDrift,
+    persistence,
+    shadow: shadowSession,
+    transitionStatus: transitionSection.transition.status,
+    rollbackReviewable: transitionSection.postTransition?.rollbackApprovable ?? false,
+    signalReview,
+    horizonPerformance,
+    intervalForward: intervalForwardValidation,
+    topCandidateLabel:
+      sensitivity?.tuningCandidates[0] === undefined
+        ? null
+        : formatModelParams(sensitivity.tuningCandidates[0].params, { compact: true }),
   });
   const tuningStage = resolveNextStep({
     persistence,
@@ -175,6 +197,8 @@ export default async function AdminPage() {
       </section>
 
       <div className="dashboard-shell__grid">
+        <AdminOperationsStatus center={operationsStatus} stageLabel={tuningStage.label} />
+
         <AdminOperationsSummary
           modelParams={forecastDiagnosticsEntries[0]?.diagnostics.selectedParams ?? null}
           recentMapePct={forecastDiagnosticsEntries[0]?.diagnostics.recentOneStep?.mapePct ?? null}
@@ -234,7 +258,12 @@ export default async function AdminPage() {
           stageLabel={tuningStage.label}
         />
 
-        <AdminHorizonProfile performance={horizonPerformance} interval={predictionInterval} />
+        <AdminHorizonProfile
+          performance={horizonPerformance}
+          interval={predictionInterval}
+          forwardInterval={intervalForwardValidation}
+          publicationEnabled={env.predictionIntervalPublic}
+        />
 
         <AdminSignalReview
           contribution={signalContribution}

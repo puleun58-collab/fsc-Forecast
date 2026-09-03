@@ -8,6 +8,11 @@ import type {
   HorizonPerformanceEntry,
   HorizonStatus,
 } from '@/lib/forecast/horizon-performance';
+import {
+  summarizeIntervalForwardValidation,
+  type IntervalForwardValidation,
+  type IntervalPublicationStatus,
+} from '@/lib/forecast/interval-forward-validation';
 import type {
   PredictionIntervalCalibration,
   PredictionIntervalHorizon,
@@ -61,12 +66,22 @@ function describeHorizon(horizonWeeks: number): string {
   return `${horizonWeeks}주 후`;
 }
 
+const PUBLICATION_LABEL: Record<IntervalPublicationStatus, string> = {
+  eligible: '공개 가능',
+  pending: '대기',
+};
+
 export function AdminHorizonProfile({
   performance,
   interval,
+  forwardInterval = null,
+  publicationEnabled = false,
 }: {
   performance: HorizonPerformance | null;
   interval: PredictionIntervalCalibration | null;
+  /** 실제 발행된 범위의 적중 검증 결과. 기능 적용 이전 run에서는 null이다. */
+  forwardInterval?: IntervalForwardValidation | null;
+  publicationEnabled?: boolean;
 }) {
   if (performance === null) {
     return (
@@ -90,6 +105,7 @@ export function AdminHorizonProfile({
   const intervalByHorizon = new Map(
     (interval?.horizons ?? []).map((entry) => [entry.horizonWeeks, entry]),
   );
+  const forwardSummaries = summarizeIntervalForwardValidation(forwardInterval);
 
   return (
     <SectionCard
@@ -253,6 +269,74 @@ export function AdminHorizonProfile({
           <p className="admin-decision__note">
             예상 범위는 과거 Forecast 오차 분포로 계산한 통계적 참고 범위이며, 중심 예측값·FSC 계산을
             바꾸지 않습니다.
+          </p>
+        </div>
+
+        <div className="admin-panel">
+          <strong>실전 범위 검증</strong>
+          <p className="admin-decision__note">
+            실제 발행된 예측 범위와 확정 실제값을 비교합니다. 과거 백테스트 적중률과 별도로 누적합니다.
+            {publicationEnabled ? ' 공개 설정 ON' : ' 공개 설정 OFF'}
+          </p>
+          {forwardSummaries.length === 0 ? (
+            <p className="backtest-detail__empty">실전 범위 검증 적용 이전</p>
+          ) : (
+            <div className="admin-table-wrap">
+              <table className="admin-table horizon-profile-table">
+                <thead>
+                  <tr>
+                    <th scope="col">예측 거리</th>
+                    <th scope="col">검증 표본</th>
+                    <th scope="col">실전 적중률</th>
+                    <th scope="col">평균 범위 폭</th>
+                    <th scope="col">상태</th>
+                    <th scope="col">공개</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {forwardSummaries.map((summary) => (
+                    <tr key={summary.horizonWeeks}>
+                      <th scope="row" data-label="예측 거리">
+                        {describeHorizon(summary.horizonWeeks)}
+                      </th>
+                      <td data-label="검증 표본">
+                        {summary.coverageHitCount}/{summary.coverageSampleCount}개
+                        {summary.pendingSampleCount === 0
+                          ? ''
+                          : ` · 대기 ${summary.pendingSampleCount}개`}
+                      </td>
+                      <td data-label="실전 적중률">
+                        {summary.coverageRatio === null ? '산정 중' : formatRatio(summary.coverageRatio)}
+                      </td>
+                      <td data-label="평균 범위 폭">
+                        {formatMae(summary.averageIntervalWidthKrwPerL)}
+                      </td>
+                      <td data-label="상태">
+                        <span className="admin-table__inline">
+                          {INTERVAL_STATUS_VIEW[summary.status].label}
+                        </span>
+                      </td>
+                      <td data-label="공개">
+                        <span className="admin-table__inline">
+                          <span
+                            className={`status-tag ${
+                              summary.publication === 'eligible' && publicationEnabled
+                                ? 'status-tag--ok'
+                                : ''
+                            }`.trim()}
+                          >
+                            {PUBLICATION_LABEL[summary.publication]}
+                          </span>
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <p className="admin-decision__note">
+            공개 설정을 켜도 실전 검증이 `적정`인 예측 거리만 사용자 화면에 예상 범위가 표시됩니다.
           </p>
         </div>
       </div>

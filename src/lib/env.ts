@@ -10,6 +10,7 @@ export interface RuntimeEnv {
   appRuntimeId: string;
   workerRuntimeId: string;
   scheduledJobName: string;
+  predictionIntervalPublic: boolean;
 }
 
 const LOCKED_RUNTIME_FAMILY = "container-web-postgres-cron";
@@ -64,6 +65,16 @@ function readLockedValue(name: string, lockedValue: string): string {
   return value;
 }
 
+function readBoolean(name: string, fallback: boolean): boolean {
+  const value = process.env[name]?.trim().toLowerCase();
+
+  if (value === undefined || value === "") {
+    return fallback;
+  }
+
+  return value === "1" || value === "true" || value === "on";
+}
+
 function createRuntimeEnv(): RuntimeEnv {
   return Object.freeze({
     databaseUrl: readRequiredString("DATABASE_URL"),
@@ -75,6 +86,8 @@ function createRuntimeEnv(): RuntimeEnv {
     appRuntimeId: readOptionalString("APP_RUNTIME_ID", "web-app"),
     workerRuntimeId: readOptionalString("WORKER_RUNTIME_ID", "scheduled-worker"),
     scheduledJobName: readOptionalString("SCHEDULED_JOB_NAME", DEFAULT_SCHEDULED_JOB_NAME),
+    // 검증이 끝난 예측 거리만 공개하기 위한 전체 스위치. 기본은 비공개다.
+    predictionIntervalPublic: readBoolean("PREDICTION_INTERVAL_PUBLIC", false),
   });
 }
 
