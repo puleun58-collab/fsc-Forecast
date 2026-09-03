@@ -2051,6 +2051,84 @@ summary.operation-history-row::-webkit-details-marker {
   row-gap: 4px;
 }
 
+.candidate-decision {
+  border-top: 0;
+  padding: 0;
+}
+
+.candidate-decision__summary {
+  font-weight: 700;
+}
+
+.candidate-decision__checks {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.82rem;
+}
+
+.candidate-decision__checks li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.top-candidate {
+  display: grid;
+  gap: 12px;
+}
+
+.top-candidate__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.top-candidate__delta {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.tuning-timeline__list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tuning-timeline__item {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: var(--radius-control);
+  background: var(--bg-card);
+}
+
+.tuning-timeline__item--current {
+  border-color: var(--accent);
+}
+
+.tuning-timeline__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tuning-timeline__week {
+  font-weight: 700;
+}
+
+.tuning-timeline__candidate {
+  margin: 0;
+  font-size: 0.86rem;
+}
+
 .admin-table__flag {
   margin-left: 6px;
   white-space: nowrap;

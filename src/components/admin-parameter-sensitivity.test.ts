@@ -69,7 +69,12 @@ function render(
   });
 
   return renderToStaticMarkup(
-    createElement(AdminParameterSensitivity, { sensitivity, persistence, regimeComparisons }),
+    createElement(AdminParameterSensitivity, {
+      sensitivity,
+      persistence,
+      regimeComparisons,
+      stageLabel: '1순위 후보 확인 중 · 1/2주',
+    }),
   );
 }
 
@@ -308,10 +313,11 @@ test('the lowest value in each group is flagged, and ties all keep the flag', ()
   assert.equal(trendBlock.match(/최고<\/span>/g)?.length, 5);
   assert.equal(trendBlock.match(/최저<\/span>/g)?.length, 4);
 });
+
 test('the top ranked tuning candidate is the only row marked as the first choice', () => {
   const markup = render();
 
-  assert.equal(markup.match(/1순위 후보/g)?.length, 1);
+  assert.equal(markup.match(/admin-table__flag">1순위 후보/g)?.length, 1);
   assert.match(
     markup,
     /6주<span class="status-tag status-tag--accent admin-table__flag">1순위 후보<\/span>/,
@@ -347,4 +353,60 @@ test('the current setting never carries the first choice badge', () => {
 
   assert.doesNotMatch(markup, /1순위 후보/);
   assert.match(markup, /현재<\/span>/);
+});
+
+test('every candidate row states why it passed or was excluded', () => {
+  const markup = render();
+  const trendBlock = markup.slice(
+    markup.indexOf('Trend lookback 민감도'),
+    markup.indexOf('Dubai 민감도'),
+  );
+
+  assert.match(trendBlock, /<th scope="col">판정<\/th>/);
+  assert.match(trendBlock, /<span class="candidate-decision__summary">1순위 후보<\/span>/);
+  assert.match(trendBlock, /<span class="candidate-decision__summary">현재<\/span>/);
+  assert.match(trendBlock, /후보 제외 · 2개 기준 미충족/);
+  assert.match(
+    trendBlock,
+    /<span>최근 성능 개선<\/span><strong>미통과<\/strong><\/li><li><span>26주 안정성<\/span><strong>미통과<\/strong>/,
+  );
+  assert.match(trendBlock, /MAE 개선 기준 통과 · 최근 MAE 19\.3% 개선/);
+});
+
+test('the current row is judged as the operating setting, never as a candidate', () => {
+  const markup = render();
+  const currentRow = markup.slice(
+    markup.indexOf('8주<span class="status-tag status-tag--ok admin-table__flag">현재'),
+  );
+  const currentCell = currentRow.slice(0, currentRow.indexOf('</tr>'));
+
+  assert.doesNotMatch(currentCell, /후보 통과|후보 제외|1순위 후보|평가 불가/);
+});
+
+test('the excluded candidate keeps its lowest-value flag while failing the guardrails', () => {
+  const markup = render(CURRENT, null);
+
+  assert.match(markup, /최저<\/span>/);
+  assert.match(markup, /후보 제외/);
+  assert.doesNotMatch(markup, /1순위 후보/);
+});
+
+test('the first choice is summarized against the current setting with its stage', () => {
+  const markup = render();
+  const summary = markup.slice(markup.indexOf('top-candidate'), markup.indexOf('tuning-flow'));
+
+  assert.match(summary, /1순위 후보/);
+  assert.match(summary, /Trend lookback 6주/);
+  assert.match(summary, /22\.80원\/L → 18\.40원\/L/);
+  assert.match(summary, /19\.3% 개선/);
+  assert.match(summary, /1\.27% → 1\.02%/);
+  assert.match(summary, /24\.50원\/L → 20\.10원\/L/);
+  assert.match(summary, /1순위 후보 확인 중 · 1\/2주/);
+});
+
+test('without a ranked candidate the summary says so instead of showing numbers', () => {
+  const markup = render(CURRENT, null);
+
+  assert.match(markup, /현재 기준을 통과한 튜닝 후보가 없습니다/);
+  assert.doesNotMatch(markup, /top-candidate__head/);
 });

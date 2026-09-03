@@ -11,6 +11,12 @@ import type {
   CandidateRegimeVerdict,
 } from '@/lib/forecast/candidate-regime-comparison';
 import type { MarketRegime } from '@/lib/forecast/market-regime';
+import { describeTuningCandidateDecision } from '@/lib/forecast/candidate-decision';
+import type {
+  CandidateDecision,
+  CandidateDecisionReason,
+} from '@/lib/forecast/candidate-decision';
+import type { PromotionQualityChecks } from '@/lib/forecast/promotion-quality';
 import {
   describeIndicator,
   serializeSensitivityParamsKey,
@@ -203,24 +209,117 @@ function BestFlag({
   return <span className="status-tag admin-table__flag sensitivity-flag">{label}</span>;
 }
 
+const DECISION_REASON_LABEL: Record<CandidateDecisionReason, string> = {
+  'minimum-improvement': '최근 성능 개선폭 부족',
+  'long-mae': '26주 MAE 기준 초과',
+  'max-error': '최대 오차 기준 초과',
+  churn: '예측 변동성 기준 초과',
+  'insufficient-sample': '최근 13주 표본 부족',
+};
+
+const DECISION_CHECK_LABEL: Record<Exclude<CandidateDecisionReason, 'insufficient-sample'>, string> = {
+  'minimum-improvement': '최근 성능 개선',
+  'long-mae': '26주 안정성',
+  'max-error': '최대 오차',
+  churn: '예측 변동성',
+};
+
+const DECISION_CHECK_ORDER = [
+  'minimum-improvement',
+  'long-mae',
+  'max-error',
+  'churn',
+] as const;
+
+function describeImprovement(decision: CandidateDecision, checks: PromotionQualityChecks): string {
+  if (decision.improvementBasis === 'mae' && checks.maeImprovementRatio !== null) {
+    return `MAE 개선 기준 통과 · 최근 MAE ${(checks.maeImprovementRatio * 100).toFixed(1)}% 개선`;
+  }
+
+  if (decision.improvementBasis === 'mape' && checks.mapeImprovementPctPoint !== null) {
+    return `MAPE 개선 기준 통과 · 최근 MAPE ${checks.mapeImprovementPctPoint.toFixed(2)}%p 개선`;
+  }
+
+  return '최소 개선 기준을 넘지 못했습니다.';
+}
+
+function describeDecisionSummary(decision: CandidateDecision): string {
+  switch (decision.status) {
+    case 'current':
+      return '현재';
+    case 'top':
+      return '1순위 후보';
+    case 'eligible':
+      return decision.rank === null ? '후보 통과' : `후보 통과 · 현재 ${decision.rank}순위`;
+    case 'not-evaluable':
+      return '평가 불가 · 최근 13주 표본 부족';
+    case 'rejected':
+      return decision.reasons.length === 1
+        ? `후보 제외 · ${DECISION_REASON_LABEL[decision.reasons[0]]}`
+        : `후보 제외 · ${decision.reasons.length}개 기준 미충족`;
+  }
+}
+
+/** 판정 문구는 저장된 qualityChecks를 옮겨 적을 뿐, 기준을 다시 계산하지 않는다. */
+function CandidateDecisionCell({
+  decision,
+  qualityChecks,
+}: {
+  decision: CandidateDecision;
+  qualityChecks: PromotionQualityChecks | null;
+}) {
+  const summary = describeDecisionSummary(decision);
+
+  if (decision.status === 'current' || qualityChecks === null) {
+    return <span className="candidate-decision__summary">{summary}</span>;
+  }
+
+  return (
+    <details className="admin-disclosure admin-disclosure--inline candidate-decision">
+      <summary className="admin-disclosure__summary">
+        <span className="candidate-decision__summary">{summary}</span>
+        <AdminDisclosureToggle />
+      </summary>
+      <div className="admin-disclosure__body">
+        <ul className="candidate-decision__checks">
+          {DECISION_CHECK_ORDER.map((key) => (
+            <li key={key}>
+              <span>{DECISION_CHECK_LABEL[key]}</span>
+              <strong>{decision.reasons.includes(key) ? '미통과' : '통과'}</strong>
+            </li>
+          ))}
+        </ul>
+        <p className="admin-decision__note">{describeImprovement(decision, qualityChecks)}</p>
+      </div>
+    </details>
+  );
+}
+
 function CandidateRow({
   candidate,
   current,
   best,
-  isTopCandidate,
+  rank,
 }: {
   candidate: SensitivityCandidate;
   current: SensitivityWindowMetrics;
   best: GroupBestValues;
-  isTopCandidate: boolean;
+  rank: number | null;
 }) {
+  const decision = describeTuningCandidateDecision({
+    isCurrent: candidate.isCurrent,
+    qualityChecks: candidate.qualityChecks,
+    sampleCount: candidate.recentOneStep.sampleCount,
+    rank,
+  });
+
   return (
     <tr>
       <th scope="row" data-label="설정">
         <span className="admin-table__inline">
           {candidate.label}
           {candidate.isCurrent ? <span className="status-tag status-tag--ok admin-table__flag">현재</span> : null}
-          {isTopCandidate ? (
+          {decision.status === 'top' ? (
             <span className="status-tag status-tag--accent admin-table__flag">1순위 후보</span>
           ) : null}
         </span>
@@ -267,6 +366,9 @@ function CandidateRow({
           />
         </span>
       </td>
+      <td data-label="판정">
+        <CandidateDecisionCell decision={decision} qualityChecks={candidate.qualityChecks} />
+      </td>
     </tr>
   );
 }
@@ -289,12 +391,12 @@ function DailySignalFacts({ diagnostics }: { diagnostics: DailySignalDiagnostics
 function SensitivityGroup({
   group,
   current,
-  topCandidateKey,
+  rankByParamsKey,
   dailySignal,
 }: {
   group: ParameterSensitivityGroup;
   current: SensitivityWindowMetrics;
-  topCandidateKey: string | null;
+  rankByParamsKey: ReadonlyMap<string, number>;
   dailySignal: DailySignalDiagnostics | null;
 }) {
   const best = findGroupBestValues(group.candidates);
@@ -324,6 +426,7 @@ function SensitivityGroup({
                   <th scope="col">26주 MAE</th>
                   <th scope="col">최대 오차</th>
                   <th scope="col">방향 정확도</th>
+                  <th scope="col">판정</th>
                 </tr>
               </thead>
               <tbody>
@@ -333,11 +436,7 @@ function SensitivityGroup({
                     candidate={candidate}
                     current={current}
                     best={best}
-                    isTopCandidate={
-                      !candidate.isCurrent &&
-                      topCandidateKey !== null &&
-                      serializeSensitivityParamsKey(candidate.params) === topCandidateKey
-                    }
+                    rank={rankByParamsKey.get(serializeSensitivityParamsKey(candidate.params)) ?? null}
                   />
                 ))}
               </tbody>
@@ -475,10 +574,10 @@ function TuningCandidateRow({
 
 function CombinationAnalysisPanel({
   analysis,
-  topCandidateKey,
+  rankByParamsKey,
 }: {
   analysis: CombinationAnalysis | null;
-  topCandidateKey: string | null;
+  rankByParamsKey: ReadonlyMap<string, number>;
 }) {
   if (analysis === null || analysis.status === 'not-applicable') {
     return null;
@@ -520,39 +619,44 @@ function CombinationAnalysisPanel({
                 <th scope="col">26주 MAE</th>
                 <th scope="col">최대 오차</th>
                 <th scope="col">방향 정확도</th>
-                <th scope="col">품질 기준</th>
+                <th scope="col">판정</th>
               </tr>
             </thead>
             <tbody>
-              {analysis.candidates.map((candidate) => (
-                <tr key={candidate.label}>
-                  <th scope="row" data-label="조합">
-                    <span className="admin-table__inline">
-                      {candidate.label}
-                      {topCandidateKey !== null &&
-                      serializeSensitivityParamsKey(candidate.params) === topCandidateKey ? (
-                        <span className="status-tag status-tag--accent admin-table__flag">1순위 후보</span>
-                      ) : null}
-                    </span>
-                  </th>
-                  <td data-label="13주 MAE">{formatMae(candidate.recentOneStep.maeKrwPerL)}</td>
-                  <td data-label="13주 MAPE">{formatMape(candidate.recentOneStep.mapePct)}</td>
-                  <td data-label="26주 MAE">{formatMae(candidate.longOneStep.maeKrwPerL)}</td>
-                  <td data-label="최대 오차">
-                    {formatMae(candidate.recentOneStep.maxAbsoluteErrorKrwPerL)}
-                  </td>
-                  <td data-label="방향 정확도">
-                    {formatDirectionAccuracy(candidate.recentOneStep.directionAccuracyRatio)}
-                  </td>
-                  <td data-label="품질 기준">
-                    <span
-                      className={`status-tag ${candidate.meetsPromotionQuality ? 'status-tag--ok' : ''}`.trim()}
-                    >
-                      {candidate.meetsPromotionQuality ? '충족' : '미충족'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {analysis.candidates.map((candidate) => {
+                const rank = rankByParamsKey.get(serializeSensitivityParamsKey(candidate.params)) ?? null;
+                const decision = describeTuningCandidateDecision({
+                  isCurrent: false,
+                  qualityChecks: candidate.qualityChecks,
+                  sampleCount: candidate.recentOneStep.sampleCount,
+                  rank,
+                });
+
+                return (
+                  <tr key={candidate.label}>
+                    <th scope="row" data-label="조합">
+                      <span className="admin-table__inline">
+                        {candidate.label}
+                        {decision.status === 'top' ? (
+                          <span className="status-tag status-tag--accent admin-table__flag">1순위 후보</span>
+                        ) : null}
+                      </span>
+                    </th>
+                    <td data-label="13주 MAE">{formatMae(candidate.recentOneStep.maeKrwPerL)}</td>
+                    <td data-label="13주 MAPE">{formatMape(candidate.recentOneStep.mapePct)}</td>
+                    <td data-label="26주 MAE">{formatMae(candidate.longOneStep.maeKrwPerL)}</td>
+                    <td data-label="최대 오차">
+                      {formatMae(candidate.recentOneStep.maxAbsoluteErrorKrwPerL)}
+                    </td>
+                    <td data-label="방향 정확도">
+                      {formatDirectionAccuracy(candidate.recentOneStep.directionAccuracyRatio)}
+                    </td>
+                    <td data-label="판정">
+                      <CandidateDecisionCell decision={decision} qualityChecks={candidate.qualityChecks} />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -561,14 +665,89 @@ function CombinationAnalysisPanel({
   );
 }
 
+function describeCandidateName(candidate: TuningCandidate): string {
+  return candidate.kind === 'combination'
+    ? candidate.label
+    : `${GROUP_LABEL[candidate.groupKey].replace(' 민감도', '')} ${candidate.label}`;
+}
+
+/** 수치가 가장 낮은 후보가 아니라 실제 ranking 1위 후보만 요약한다. */
+function TopCandidateSummary({
+  sensitivity,
+  candidate,
+  stageLabel,
+}: {
+  sensitivity: ParameterSensitivity;
+  candidate: TuningCandidate | null;
+  stageLabel: string | null;
+}) {
+  if (candidate === null) {
+    return (
+      <p className="backtest-detail__empty">현재 기준을 통과한 튜닝 후보가 없습니다.</p>
+    );
+  }
+
+  const { maeImprovementRatio, mapeImprovementPctPoint } = candidate.qualityChecks;
+
+  return (
+    <div className="admin-panel top-candidate">
+      <div className="top-candidate__head">
+        <span className="status-tag status-tag--accent">1순위 후보</span>
+        <strong>{describeCandidateName(candidate)}</strong>
+        <span className="status-tag status-tag--ok">품질 기준 통과</span>
+      </div>
+      <div className="admin-metric-grid">
+        <div className="admin-metric">
+          <span className="dashboard-shell__metric-label">최근 13주 MAE</span>
+          <strong>
+            {formatMae(sensitivity.currentRecentOneStep.maeKrwPerL)} →{' '}
+            {formatMae(candidate.recentOneStep.maeKrwPerL)}
+          </strong>
+          <span className="top-candidate__delta">
+            {maeImprovementRatio === null
+              ? '개선율 산정 전'
+              : `${(maeImprovementRatio * 100).toFixed(1)}% 개선`}
+          </span>
+        </div>
+        <div className="admin-metric">
+          <span className="dashboard-shell__metric-label">최근 13주 MAPE</span>
+          <strong>
+            {formatMape(sensitivity.currentRecentOneStep.mapePct)} →{' '}
+            {formatMape(candidate.recentOneStep.mapePct)}
+          </strong>
+          <span className="top-candidate__delta">
+            {mapeImprovementPctPoint === null
+              ? '개선폭 산정 전'
+              : `${mapeImprovementPctPoint.toFixed(2)}%p 개선`}
+          </span>
+        </div>
+        <div className="admin-metric">
+          <span className="dashboard-shell__metric-label">최근 26주 MAE</span>
+          <strong>
+            {formatMae(sensitivity.currentLongOneStep.maeKrwPerL)} →{' '}
+            {formatMae(candidate.longOneStep.maeKrwPerL)}
+          </strong>
+        </div>
+        <div className="admin-metric">
+          <span className="dashboard-shell__metric-label">검증 상태</span>
+          <strong>{stageLabel ?? '검증 시작 전'}</strong>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AdminParameterSensitivity({
   sensitivity,
   persistence = null,
   regimeComparisons = [],
+  stageLabel = null,
 }: {
   sensitivity: ParameterSensitivity | null;
   persistence?: CandidatePersistence | null;
   regimeComparisons?: readonly CandidateRegimeComparison[];
+  /** 운영 요약 카드와 같은 진행 단계 문구를 재사용한다. */
+  stageLabel?: string | null;
 }) {
   if (sensitivity === null) {
     return (
@@ -586,8 +765,12 @@ export function AdminParameterSensitivity({
   const { currentParams } = sensitivity;
   // 1순위 후보는 수치상 최저값이 아니라 튜닝 ranking 1위와 정확히 일치하는 후보만 가리킨다.
   const topCandidate = sensitivity.tuningCandidates[0] ?? null;
-  const topCandidateKey =
-    topCandidate === null ? null : serializeSensitivityParamsKey(topCandidate.params);
+  const rankByParamsKey = new Map(
+    sensitivity.tuningCandidates.map((candidate, index) => [
+      serializeSensitivityParamsKey(candidate.params),
+      index + 1,
+    ]),
+  );
 
   return (
     <SectionCard
@@ -601,6 +784,11 @@ export function AdminParameterSensitivity({
       className="admin-sensitivity"
     >
       <div className="admin-detail-stack">
+        <TopCandidateSummary
+          sensitivity={sensitivity}
+          candidate={topCandidate}
+          stageLabel={stageLabel}
+        />
         <TuningFlowGuide />
         <div className="admin-metric-grid">
           {[
@@ -624,14 +812,14 @@ export function AdminParameterSensitivity({
             key={group.key}
             group={group}
             current={sensitivity.currentRecentOneStep}
-            topCandidateKey={topCandidateKey}
+            rankByParamsKey={rankByParamsKey}
             dailySignal={sensitivity.dailySignal}
           />
         ))}
 
         <CombinationAnalysisPanel
           analysis={sensitivity.combinationAnalysis}
-          topCandidateKey={topCandidateKey}
+          rankByParamsKey={rankByParamsKey}
         />
 
         <div className="admin-panel sensitivity-candidates">

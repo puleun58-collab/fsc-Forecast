@@ -37,7 +37,7 @@ function formatMae(value: number | null): string {
 }
 
 /** 관리자가 지금 해야 할 일 하나만 고른다. 조치가 필요한 상태를 항상 앞세운다. */
-function resolveNextStep({
+export function resolveNextStep({
   persistence,
   tuningCandidateCount,
   shadow,

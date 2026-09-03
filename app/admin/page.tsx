@@ -9,8 +9,9 @@ import { AdminParameterSensitivity } from '@/components/admin-parameter-sensitiv
 import { AdminOperationHistory } from '@/components/admin-operation-history';
 import { AdminQuarterCard } from '@/components/admin-quarter-card';
 import { AdminShadowValidation } from '@/components/admin-shadow-validation';
+import { AdminTuningTimeline } from '@/components/admin-tuning-timeline';
 import { AdminModelTransition } from '@/components/admin-model-transition';
-import { AdminOperationsSummary } from '@/components/admin-operations-summary';
+import { AdminOperationsSummary, resolveNextStep } from '@/components/admin-operations-summary';
 import { AdminPostTransition } from '@/components/admin-post-transition';
 import { AdminQuarterManagement } from '@/components/admin-quarter-management';
 import { AdminWeekComposition } from '@/components/admin-week-composition';
@@ -27,6 +28,7 @@ import { readForecastErrorAnalysis } from '@/lib/forecast/forecast-error-analysi
 import { readCandidatePersistence } from '@/lib/forecast/candidate-persistence';
 import { readCandidateRegimeComparisons } from '@/lib/forecast/candidate-regime-comparison';
 import { readForecastInputQuality } from '@/lib/forecast/input-quality';
+import { buildTuningTimeline } from '@/lib/forecast/tuning-timeline';
 import { readMarketRegimeAnalysis } from '@/lib/forecast/market-regime';
 import { readParameterSensitivity } from '@/lib/forecast/parameter-sensitivity';
 import { readShadowValidation } from '@/lib/forecast/shadow-validation';
@@ -122,6 +124,27 @@ export default async function AdminPage() {
   });
 
 
+  const latestRunMetadata = forecastRuns[0]?.metadata;
+  const persistence = readCandidatePersistence(latestRunMetadata);
+  const shadowSession = readShadowValidation(latestRunMetadata);
+  const sensitivity = readParameterSensitivity(latestRunMetadata);
+  // 요약 카드와 자동 튜닝 카드가 같은 진행 단계 판정을 공유한다.
+  const tuningTimeline = buildTuningTimeline({
+    runs: forecastRuns.map((run) => ({
+      id: run.id,
+      completedAt: run.completedAt ?? run.createdAt,
+      metadata: run.metadata,
+    })),
+    transitions: transitionSection.transition.history,
+  });
+  const tuningStage = resolveNextStep({
+    persistence,
+    tuningCandidateCount: sensitivity?.tuningCandidates.length ?? 0,
+    shadow: shadowSession,
+    transition: transitionSection.transition,
+    postTransition: transitionSection.postTransition,
+  });
+
   return (
     <main id="main-content" className="dashboard-shell admin-grid">
       <section className="dashboard-shell__masthead dashboard-shell__masthead--compact">
@@ -143,11 +166,9 @@ export default async function AdminPage() {
             forecastDiagnosticsEntries[0]?.diagnostics.recentOneStep?.sampleCount ?? null
           }
           reliabilityGrade={activeResultDto?.reliabilityGrade ?? null}
-          persistence={readCandidatePersistence(forecastRuns[0]?.metadata)}
-          tuningCandidateCount={
-            readParameterSensitivity(forecastRuns[0]?.metadata)?.tuningCandidates.length ?? 0
-          }
-          shadow={readShadowValidation(forecastRuns[0]?.metadata)}
+          persistence={persistence}
+          tuningCandidateCount={sensitivity?.tuningCandidates.length ?? 0}
+          shadow={shadowSession}
           transition={transitionSection.transition}
           postTransition={transitionSection.postTransition}
         />
@@ -187,12 +208,15 @@ export default async function AdminPage() {
         <AdminMarketRegime analysis={readMarketRegimeAnalysis(forecastRuns[0]?.metadata)} />
 
         <AdminParameterSensitivity
-          sensitivity={readParameterSensitivity(forecastRuns[0]?.metadata)}
-          persistence={readCandidatePersistence(forecastRuns[0]?.metadata)}
+          sensitivity={sensitivity}
+          persistence={persistence}
           regimeComparisons={readCandidateRegimeComparisons(forecastRuns[0]?.metadata) ?? []}
+          stageLabel={tuningStage.label}
         />
 
-        <AdminShadowValidation session={readShadowValidation(forecastRuns[0]?.metadata)} />
+        <AdminShadowValidation session={shadowSession} />
+
+        <AdminTuningTimeline events={tuningTimeline} />
 
         <AdminModelTransition view={transitionSection.transition} />
 
