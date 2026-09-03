@@ -8,7 +8,10 @@ import type { ForecastModelParams } from '@/lib/forecast/forecast-model-config';
 import type { TransitionBlockReason } from '@/lib/forecast/model-transition';
 import { describeBiasCorrection } from '@/lib/forecast/bias-correction';
 import { describeDailySignal } from '@/lib/forecast/daily-signal';
-import { describeIndicator, describeSensitivityParams } from '@/lib/forecast/parameter-sensitivity';
+import {
+  formatModelParams,
+  listModelParamFields,
+} from '@/lib/forecast/describe-model-params';
 import type { ShadowValidationSummary } from '@/lib/forecast/shadow-validation';
 
 export type TransitionViewStatus =
@@ -68,18 +71,6 @@ const HISTORY_STATUS_TEXT: Record<TransitionHistoryEntry['status'], string> = {
   cancelled: '취소됨',
 };
 
-const FACTOR_ROWS: { label: string; read: (params: ForecastModelParams) => string }[] = [
-  { label: 'Trend lookback', read: (params) => `${params.trendLookbackWeeks}주` },
-  { label: 'Dubai', read: (params) => describeIndicator(params.dubai) },
-  { label: 'USD/KRW', read: (params) => describeIndicator(params.usdKrw) },
-  {
-    label: '외부 보정 Cap',
-    read: (params) => `±${(params.externalAdjustmentCapRatio * 100).toFixed(0)}%`,
-  },
-  { label: 'Bias 보정', read: (params) => describeBiasCorrection(params.biasCorrection) },
-  { label: '일별 단기 신호', read: (params) => describeDailySignal(params.dailySignal) },
-];
-
 export function ParameterDiffList({
   baselineParams,
   candidateParams,
@@ -87,17 +78,18 @@ export function ParameterDiffList({
   baselineParams: ForecastModelParams;
   candidateParams: ForecastModelParams;
 }) {
+  const baselineFields = listModelParamFields(baselineParams);
+
   return (
     <dl className="transition-diff">
-      {FACTOR_ROWS.map((row) => {
-        const before = row.read(baselineParams);
-        const after = row.read(candidateParams);
-        const changed = before !== after;
+      {listModelParamFields(candidateParams).map((field, index) => {
+        const before = baselineFields[index].value;
+        const changed = before !== field.value;
 
         return (
-          <div key={row.label} className={changed ? 'transition-diff__row--changed' : undefined}>
-            <dt>{row.label}</dt>
-            <dd>{changed ? `${before} → ${after}` : '동일'}</dd>
+          <div key={field.key} className={changed ? 'transition-diff__row--changed' : undefined}>
+            <dt>{field.label}</dt>
+            <dd>{changed ? `${before} → ${field.value}` : '동일'}</dd>
           </div>
         );
       })}
@@ -295,11 +287,11 @@ export function AdminModelTransition({ view }: { view: ModelTransitionView }) {
         <div className="admin-panel transition-compare">
           <div>
             <span className="dashboard-shell__metric-label">현재 운영</span>
-            <p>{describeSensitivityParams(view.baselineParams)}</p>
+            <p>{formatModelParams(view.baselineParams)}</p>
           </div>
           <div>
             <span className="dashboard-shell__metric-label">전환 후보</span>
-            <p>{describeSensitivityParams(view.candidateParams)}</p>
+            <p>{formatModelParams(view.candidateParams)}</p>
           </div>
         </div>
 

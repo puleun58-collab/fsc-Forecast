@@ -11,6 +11,7 @@ import {
 import type { ModelTransitionView } from './admin-model-transition';
 import type { PostTransitionView } from './admin-post-transition';
 import type { ForecastModelParams } from '@/lib/forecast/forecast-model-config';
+import type { PerformanceDrift } from '@/lib/forecast/performance-drift';
 import type { ShadowValidationSession } from '@/lib/forecast/shadow-validation';
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
@@ -206,4 +207,81 @@ test('a run without diagnostics renders the empty state', () => {
 
   assert.match(markup, /예측 실행 기록이 없습니다/);
   assert.doesNotMatch(markup, /admin-summary__next/);
+});
+
+function driftWindow(windowWeeks: number, mae: number, maxError = mae * 2) {
+  return {
+    windowWeeks,
+    sampleCount: windowWeeks,
+    maeKrwPerL: mae,
+    mapePct: mae / 20,
+    maxAbsoluteErrorKrwPerL: maxError,
+    directionAccuracyRatio: 0.69,
+  };
+}
+
+function drift(overrides: Partial<PerformanceDrift> = {}): PerformanceDrift {
+  return {
+    version: 1,
+    evaluatedAt: '2026-06-01T00:00:00.000Z',
+    status: 'stable',
+    degradedWeekCount: 0,
+    lastEvaluatedWeekEndDate: '2026-05-28T00:00:00.000Z',
+    short: driftWindow(4, 22.4),
+    medium: driftWindow(13, 28.4),
+    long: driftWindow(26, 31.7),
+    reasons: [],
+    ...overrides,
+  };
+}
+
+test('a stable performance state is summarized with the three windows', () => {
+  const markup = render({ drift: drift() });
+
+  assert.match(markup, /Forecast 성능 상태/);
+  assert.match(markup, /안정/);
+  assert.match(markup, /최근 4주 MAE<\/span><strong>22\.40원\/L/);
+  assert.match(markup, /최근 26주 MAE<\/span><strong>31\.70원\/L/);
+  assert.match(markup, /최근 4주 예측 오차가 최근 13주 수준과 비슷합니다/);
+});
+
+test('a repeated degradation states the next things to check', () => {
+  const markup = render({
+    drift: drift({
+      status: 'alert',
+      degradedWeekCount: 2,
+      short: driftWindow(4, 42.1),
+      reasons: ['recent-mae-up', 'repeated-degradation'],
+    }),
+  });
+
+  assert.match(markup, /악화 감지/);
+  assert.match(markup, /예측 오차 증가가 반복되고 있습니다/);
+  assert.match(markup, /입력 데이터 상태 → 시장 국면 → 신호 기여도/);
+  assert.doesNotMatch(markup, /<button/);
+});
+
+test('a single large miss and a direction drop are shown as side notes', () => {
+  const markup = render({
+    drift: drift({ reasons: ['single-large-error', 'direction-accuracy-down'] }),
+  });
+
+  assert.match(markup, /최근 4주에 단일 큰 오차가 있었습니다/);
+  assert.match(markup, /최근 4주 방향 적중률이 낮아졌습니다/);
+});
+
+test('the window table stays collapsed and never claims an automatic action', () => {
+  const markup = render({ drift: drift() });
+  const detailStart = markup.indexOf('성능 변화 상세 보기');
+
+  assert.ok(detailStart > 0);
+  assert.doesNotMatch(markup, /<details[^>]*\sopen/);
+  assert.match(markup, /data-label="MAPE"/);
+  assert.match(markup, /후보 순위·Shadow·운영 전환을 자동으로 바꾸지 않습니다/);
+});
+
+test('runs from before the feature keep the summary unchanged', () => {
+  const markup = render();
+
+  assert.doesNotMatch(markup, /Forecast 성능 상태/);
 });

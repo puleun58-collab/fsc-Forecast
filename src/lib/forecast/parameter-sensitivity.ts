@@ -736,16 +736,3 @@ export function readParameterSensitivity(metadata: unknown): ParameterSensitivit
 
   return parsed.success ? parsed.data.model.parameterSensitivity : null;
 }
-
-export function describeSensitivityParams(params: ForecastModelParams): string {
-  return [
-    `Model ${params.modelId}`,
-    `Trend ${params.trendLookbackWeeks}주`,
-    `Dubai ${describeIndicator(params.dubai)}`,
-    `USD/KRW ${describeIndicator(params.usdKrw)}`,
-    `Cap ±${(params.externalAdjustmentCapRatio * 100).toFixed(0)}%`,
-    // 사용 중일 때만 덧붙여 기본 설정의 표기가 길어지지 않게 한다.
-    ...(params.biasCorrection === null ? [] : [`Bias ${describeBiasCorrection(params.biasCorrection)}`]),
-    ...(params.dailySignal === null ? [] : [`일별 단기 신호 ${describeDailySignal(params.dailySignal)}`]),
-  ].join(" · ");
-}

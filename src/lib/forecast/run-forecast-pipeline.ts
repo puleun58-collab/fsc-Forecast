@@ -67,6 +67,7 @@ import {
 } from "./forecast-model-config";
 import { buildHorizonPerformance } from "./horizon-performance";
 import { buildForecastInputQuality } from "./input-quality";
+import { buildPerformanceDrift, readPerformanceDrift } from "./performance-drift";
 import { buildPredictionIntervalCalibration } from "./prediction-interval";
 import { ablateSignal, buildSignalContribution } from "./signal-contribution";
 import {
@@ -788,6 +789,12 @@ async function executeForecastPipeline(
                   issuedAt: startedAt,
                 },
         });
+  // 조기 경보: 최근 4주 one-step 성능이 중기 대비 나빠지는지만 본다. 운영 조치는 하지 않는다.
+  const performanceDrift = buildPerformanceDrift({
+    oneStepPoints: selection.selectedBacktest.oneStepPoints,
+    previous: readPerformanceDrift(previousRun?.metadata ?? null),
+    evaluatedAt: startedAt,
+  });
   // 진단 전용: 예측 거리별 성능과 예측 범위 적중률. 운영 예측값은 그대로 둔다.
   const horizonPerformance = buildHorizonPerformance({
     evaluationPoints: selection.selectedBacktest.evaluationPoints,

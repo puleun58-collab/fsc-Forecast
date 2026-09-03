@@ -3,7 +3,7 @@ import { SectionCard } from './section-card';
 
 import { formatDashboardDate } from '@/lib/dashboard/dashboard-time';
 import { formatPriceText } from '@/lib/dashboard/display-format';
-import { describeSensitivityParams } from '@/lib/forecast/parameter-sensitivity';
+import { formatModelParams } from '@/lib/forecast/describe-model-params';
 import {
   summarizeShadowValidation,
   type ShadowObservation,
@@ -237,11 +237,11 @@ export function AdminShadowValidation({ session }: { session: ShadowValidationSe
           <dl className="quality-trend-status__facts">
             <div>
               <dt>현재 운영</dt>
-              <dd>{describeSensitivityParams(session.baselineParams)}</dd>
+              <dd>{formatModelParams(session.baselineParams)}</dd>
             </div>
             <div>
               <dt>Shadow 후보</dt>
-              <dd>{describeSensitivityParams(session.candidateParams)}</dd>
+              <dd>{formatModelParams(session.candidateParams)}</dd>
             </div>
             <div>
               <dt>검증 시작</dt>

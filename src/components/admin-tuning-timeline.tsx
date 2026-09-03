@@ -3,7 +3,11 @@ import { AdminDisclosureToggle } from './admin-disclosure-toggle';
 import { formatDashboardDate } from '@/lib/dashboard/dashboard-time';
 import { formatPriceText } from '@/lib/dashboard/display-format';
 import type { ForecastModelParams } from '@/lib/forecast/forecast-model-config';
-import { describeSensitivityParams } from '@/lib/forecast/parameter-sensitivity';
+import {
+  describeModelParamChanges,
+  diffModelParams,
+  formatModelParams,
+} from '@/lib/forecast/describe-model-params';
 import type {
   TuningTimelineEvent,
   TuningTimelineEventType,
@@ -47,7 +51,7 @@ function describeWeek(weekEndDate: string | null): string {
 }
 
 function describeCandidate(params: ForecastModelParams | null): string | null {
-  return params === null ? null : describeSensitivityParams(params);
+  return params === null ? null : formatModelParams(params);
 }
 
 function describeDetail(event: TuningTimelineEvent): string | null {
@@ -84,6 +88,12 @@ export function AdminTuningTimeline({ events }: { events: readonly TuningTimelin
               const view = EVENT_VIEW[event.type];
               const candidate = describeCandidate(event.candidateParams);
               const previous = describeCandidate(event.previousCandidateParams);
+              const changed =
+                event.previousCandidateParams === null || event.candidateParams === null
+                  ? null
+                  : describeModelParamChanges(
+                      diffModelParams(event.previousCandidateParams, event.candidateParams),
+                    );
               const detail = describeDetail(event);
 
               return (
@@ -103,6 +113,9 @@ export function AdminTuningTimeline({ events }: { events: readonly TuningTimelin
                   )}
                   {previous === null ? null : (
                     <p className="admin-decision__note">이전 후보 · {previous}</p>
+                  )}
+                  {changed === null ? null : (
+                    <p className="tuning-timeline__change">변경: {changed}</p>
                   )}
                   {detail === null ? null : <p className="admin-decision__note">{detail}</p>}
                 </li>

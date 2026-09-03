@@ -1,9 +1,11 @@
+import { AdminDisclosureToggle } from './admin-disclosure-toggle';
 import { SectionCard } from './section-card';
 
 import { formatPriceText } from '@/lib/dashboard/display-format';
 import type { CandidatePersistence } from '@/lib/forecast/candidate-persistence';
 import type { ForecastModelParams } from '@/lib/forecast/forecast-model-config';
-import { describeIndicator } from '@/lib/forecast/parameter-sensitivity';
+import { formatModelParams } from '@/lib/forecast/describe-model-params';
+import type { PerformanceDrift, PerformanceDriftStatus } from '@/lib/forecast/performance-drift';
 import type { ModelTransitionView } from './admin-model-transition';
 import type { PostTransitionView } from './admin-post-transition';
 import type { ShadowValidationSession } from '@/lib/forecast/shadow-validation';
@@ -20,6 +22,8 @@ export interface AdminOperationsSummaryProps {
   shadow: ShadowValidationSession | null;
   transition: ModelTransitionView;
   postTransition: PostTransitionView | null;
+  /** 최근 성능 드리프트 진단. 기능 적용 이전 run에서는 null이다. */
+  drift?: PerformanceDrift | null;
 }
 
 interface NextStep {
@@ -117,12 +121,111 @@ export function resolveNextStep({
   };
 }
 
-function describeParams(params: ForecastModelParams): string {
-  return [
-    `Trend ${params.trendLookbackWeeks}주`,
-    `Dubai ${describeIndicator(params.dubai)}`,
-    `USD/KRW ${describeIndicator(params.usdKrw)}`,
-  ].join(' · ');
+const DRIFT_VIEW: Record<PerformanceDriftStatus, { label: string; className: string; detail: string }> = {
+  stable: {
+    label: '안정',
+    className: 'status-tag--ok',
+    detail: '최근 4주 예측 오차가 최근 13주 수준과 비슷합니다.',
+  },
+  watch: {
+    label: '관찰',
+    className: '',
+    detail: '최근 4주 MAE가 최근 13주 평균보다 높아졌습니다.',
+  },
+  alert: {
+    label: '악화 감지',
+    className: 'status-tag--warning',
+    detail:
+      '최근 새 실제 데이터에서 예측 오차 증가가 반복되고 있습니다. 입력 데이터 상태 → 시장 국면 → 신호 기여도 → 실전 신호 검증 → 튜닝 후보 순으로 확인하세요.',
+  },
+  undecided: {
+    label: '판단 보류',
+    className: '',
+    detail: '최근 실제 데이터가 부족해 성능 변화 판단을 보류합니다.',
+  },
+};
+
+const DRIFT_EXTRA_REASON_TEXT: Partial<Record<PerformanceDrift['reasons'][number], string>> = {
+  'single-large-error': '최근 4주에 단일 큰 오차가 있었습니다.',
+  'direction-accuracy-down': '최근 4주 방향 적중률이 낮아졌습니다.',
+};
+
+function PerformanceDriftBlock({ drift }: { drift: PerformanceDrift }) {
+  const view = DRIFT_VIEW[drift.status];
+
+  return (
+    <div className="admin-panel performance-drift">
+      <div className="performance-drift__head">
+        <strong>Forecast 성능 상태</strong>
+        <span className={`status-tag ${view.className}`.trim()}>{view.label}</span>
+      </div>
+      <div className="admin-metric-grid">
+        {[
+          ['최근 4주 MAE', formatMae(drift.short.maeKrwPerL)],
+          ['최근 13주 MAE', formatMae(drift.medium.maeKrwPerL)],
+          ['최근 26주 MAE', formatMae(drift.long.maeKrwPerL)],
+        ].map(([label, value]) => (
+          <div key={label} className="admin-metric">
+            <span className="dashboard-shell__metric-label">{label}</span>
+            <strong>{value}</strong>
+          </div>
+        ))}
+      </div>
+      <p className="admin-decision__note">{view.detail}</p>
+      {drift.reasons.flatMap((reason) => {
+        const text = DRIFT_EXTRA_REASON_TEXT[reason];
+
+        return text === undefined ? [] : [
+          <p key={reason} className="admin-decision__note">
+            {text}
+          </p>,
+        ];
+      })}
+      <details className="admin-disclosure admin-disclosure--inline">
+        <summary className="admin-disclosure__summary">
+          <span>성능 변화 상세 보기</span>
+          <AdminDisclosureToggle />
+        </summary>
+        <div className="admin-disclosure__body">
+          <div className="admin-table-wrap">
+            <table className="admin-table performance-drift-table">
+              <thead>
+                <tr>
+                  <th scope="col">구간</th>
+                  <th scope="col">표본</th>
+                  <th scope="col">MAE</th>
+                  <th scope="col">MAPE</th>
+                  <th scope="col">최대 오차</th>
+                  <th scope="col">방향 정확도</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[drift.short, drift.medium, drift.long].map((window) => (
+                  <tr key={window.windowWeeks}>
+                    <th scope="row" data-label="구간">
+                      최근 {window.windowWeeks}주
+                    </th>
+                    <td data-label="표본">{window.sampleCount}주</td>
+                    <td data-label="MAE">{formatMae(window.maeKrwPerL)}</td>
+                    <td data-label="MAPE">{formatMape(window.mapePct)}</td>
+                    <td data-label="최대 오차">{formatMae(window.maxAbsoluteErrorKrwPerL)}</td>
+                    <td data-label="방향 정확도">
+                      {window.directionAccuracyRatio === null
+                        ? '산정 전'
+                        : `${(window.directionAccuracyRatio * 100).toFixed(1)}%`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="admin-decision__note">
+            성능 상태는 진단 경보이며 후보 순위·Shadow·운영 전환을 자동으로 바꾸지 않습니다.
+          </p>
+        </div>
+      </details>
+    </div>
+  );
 }
 
 export function AdminOperationsSummary({
@@ -136,6 +239,7 @@ export function AdminOperationsSummary({
   shadow,
   transition,
   postTransition,
+  drift = null,
 }: AdminOperationsSummaryProps) {
   if (modelParams === null) {
     return (
@@ -180,7 +284,7 @@ export function AdminOperationsSummary({
           ))}
         </div>
 
-        <p className="admin-decision__note">{describeParams(modelParams)}</p>
+        <p className="admin-decision__note">{formatModelParams(modelParams)}</p>
 
         <div className={`admin-summary__next admin-summary__next--${nextStep.tone}`}>
           <span
@@ -196,6 +300,8 @@ export function AdminOperationsSummary({
           </span>
           <p className="admin-decision__note">{nextStep.detail}</p>
         </div>
+
+        {drift === null ? null : <PerformanceDriftBlock drift={drift} />}
 
         <p className="admin-decision__note">
           최근 13주의 다음 주 예측 결과를 기준으로 산정한 성능입니다.

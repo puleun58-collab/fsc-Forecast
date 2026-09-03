@@ -31,6 +31,7 @@ import { readCandidatePersistence } from '@/lib/forecast/candidate-persistence';
 import { readCandidateRegimeComparisons } from '@/lib/forecast/candidate-regime-comparison';
 import { readForecastInputQuality } from '@/lib/forecast/input-quality';
 import { readHorizonPerformance } from '@/lib/forecast/horizon-performance';
+import { readPerformanceDrift } from '@/lib/forecast/performance-drift';
 import { readPredictionIntervalCalibration } from '@/lib/forecast/prediction-interval';
 import { readSignalContribution } from '@/lib/forecast/signal-contribution';
 import { readSignalForwardValidation } from '@/lib/forecast/signal-forward-validation';
@@ -137,6 +138,7 @@ export default async function AdminPage() {
   const sensitivity = readParameterSensitivity(latestRunMetadata);
   const inputQuality = readForecastInputQuality(latestRunMetadata);
   const horizonPerformance = readHorizonPerformance(latestRunMetadata);
+  const performanceDrift = readPerformanceDrift(latestRunMetadata);
   const predictionInterval = readPredictionIntervalCalibration(latestRunMetadata);
   const signalContribution = readSignalContribution(latestRunMetadata);
   const signalForwardValidation = readSignalForwardValidation(latestRunMetadata);
@@ -188,6 +190,7 @@ export default async function AdminPage() {
           shadow={shadowSession}
           transition={transitionSection.transition}
           postTransition={transitionSection.postTransition}
+          drift={performanceDrift}
         />
 
         <AdminDataHealthPanel

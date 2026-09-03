@@ -5,6 +5,13 @@ import { formatDashboardDate } from '@/lib/dashboard/dashboard-time';
 import { formatPriceText } from '@/lib/dashboard/display-format';
 import type { CandidatePersistence } from '@/lib/forecast/candidate-persistence';
 import { describeBiasCorrection } from '@/lib/forecast/bias-correction';
+import {
+  describeModelParamChanges,
+  diffModelParams,
+  formatModelParams,
+  formatModelParamsRest,
+  listModelParamFields,
+} from '@/lib/forecast/describe-model-params';
 import { describeDailySignal } from '@/lib/forecast/daily-signal';
 import type {
   CandidateRegimeComparison,
@@ -550,14 +557,22 @@ function TuningCandidateRow({
   sensitivity: ParameterSensitivity;
   comparison: CandidateRegimeComparison | null;
 }) {
+  const changes = diffModelParams(sensitivity.currentParams, candidate.params);
+
   return (
     <li className="sensitivity-candidate">
       <strong>
         {index + 1}. [{candidate.kind === 'combination' ? '2단계 조합' : '단일 설정'}]{' '}
-        {candidate.kind === 'combination'
-          ? candidate.label
-          : `${GROUP_LABEL[candidate.groupKey].replace(' 민감도', '')} ${candidate.label}`}
+        {formatModelParams(candidate.params, { compact: true })}
       </strong>
+      <span className="sensitivity-candidate__params">
+        {formatModelParamsRest(candidate.params)}
+      </span>
+      {changes.length === 0 ? null : (
+        <span className="sensitivity-candidate__change">
+          변경: {describeModelParamChanges(changes)}
+        </span>
+      )}
       <span>
         13주 MAE {formatMae(sensitivity.currentRecentOneStep.maeKrwPerL)} →{' '}
         {formatMae(candidate.recentOneStep.maeKrwPerL)}
@@ -666,9 +681,7 @@ function CombinationAnalysisPanel({
 }
 
 function describeCandidateName(candidate: TuningCandidate): string {
-  return candidate.kind === 'combination'
-    ? candidate.label
-    : `${GROUP_LABEL[candidate.groupKey].replace(' 민감도', '')} ${candidate.label}`;
+  return formatModelParams(candidate.params, { compact: true });
 }
 
 /** 수치가 가장 낮은 후보가 아니라 실제 ranking 1위 후보만 요약한다. */
@@ -696,6 +709,12 @@ function TopCandidateSummary({
         <strong>{describeCandidateName(candidate)}</strong>
         <span className="status-tag status-tag--ok">품질 기준 통과</span>
       </div>
+      <p className="top-candidate__params">{formatModelParamsRest(candidate.params)}</p>
+      {describeModelParamChanges(diffModelParams(sensitivity.currentParams, candidate.params)) === null ? null : (
+        <p className="top-candidate__change">
+          변경: {describeModelParamChanges(diffModelParams(sensitivity.currentParams, candidate.params))}
+        </p>
+      )}
       <div className="admin-metric-grid">
         <div className="admin-metric">
           <span className="dashboard-shell__metric-label">최근 13주 MAE</span>
@@ -791,18 +810,10 @@ export function AdminParameterSensitivity({
         />
         <TuningFlowGuide />
         <div className="admin-metric-grid">
-          {[
-            ['현재 모델', `Model ${currentParams.modelId}`],
-            ['Trend lookback', `${currentParams.trendLookbackWeeks}주`],
-            ['Dubai', describeIndicator(currentParams.dubai)],
-            ['USD/KRW', describeIndicator(currentParams.usdKrw)],
-            ['외부 보정 Cap', `±${(currentParams.externalAdjustmentCapRatio * 100).toFixed(0)}%`],
-            ['Bias 보정', describeBiasCorrection(currentParams.biasCorrection)],
-            ['일별 단기 신호', describeDailySignal(currentParams.dailySignal)],
-          ].map(([label, value]) => (
-            <div key={label} className="admin-metric">
-              <span className="dashboard-shell__metric-label">{label}</span>
-              <strong>{value}</strong>
+          {listModelParamFields(currentParams).map((field) => (
+            <div key={field.key} className="admin-metric">
+              <span className="dashboard-shell__metric-label">{field.label}</span>
+              <strong>{field.value}</strong>
             </div>
           ))}
         </div>

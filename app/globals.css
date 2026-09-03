@@ -2221,6 +2221,73 @@ summary.operation-history-row::-webkit-details-marker {
   }
 }
 
+/* 파라미터 문구는 어절 단위로만 줄바꿈해 값이 이름과 떨어지지 않게 한다. */
+.sensitivity-candidate__params,
+.sensitivity-candidate__change,
+.top-candidate__params,
+.top-candidate__change,
+.tuning-timeline__candidate,
+.tuning-timeline__change {
+  margin: 0;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.sensitivity-candidate__params,
+.top-candidate__params {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.sensitivity-candidate__change,
+.top-candidate__change,
+.tuning-timeline__change {
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.performance-drift {
+  display: grid;
+  gap: 10px;
+}
+
+.performance-drift__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 700px) {
+  .performance-drift-table thead {
+    display: none;
+  }
+
+  .performance-drift-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+    gap: 4px 12px;
+    padding: 10px 0;
+  }
+
+  .performance-drift-table tbody th,
+  .performance-drift-table tbody td {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    padding: 0;
+  }
+
+  .performance-drift-table tbody th::before,
+  .performance-drift-table tbody td::before {
+    content: attr(data-label);
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+    font-weight: 700;
+  }
+}
+
 .admin-table__flag {
   margin-left: 6px;
   white-space: nowrap;
