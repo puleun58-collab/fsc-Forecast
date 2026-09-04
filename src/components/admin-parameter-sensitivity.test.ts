@@ -146,7 +146,7 @@ test('the card shows the operating parameters and one collapsed group per factor
   assert.match(markup, /결과는 참고용이며 자동으로 적용되지 않습니다/);
   assert.match(markup, /Model<\/span><strong>B<\/strong>/);
   assert.match(markup, /추세 기간<\/span><strong>8주<\/strong>/);
-  assert.match(markup, /Dubai 시차<\/span><strong>1주<\/strong>/);
+  assert.match(markup, /Dubai 반영 시차<\/span><strong>1주<\/strong>/);
   assert.match(markup, /Dubai 비중<\/span><strong>20%<\/strong>/);
   assert.match(markup, /USD\/KRW<\/span><strong>미사용<\/strong>/);
   assert.match(markup, /외부 보정 상한<\/span><strong>±3%<\/strong>/);
@@ -155,9 +155,9 @@ test('the card shows the operating parameters and one collapsed group per factor
   assert.match(markup, /USD\/KRW 민감도/);
   assert.match(markup, /외부 보정 상한 민감도/);
   assert.match(markup, /현재 운영 설정/);
-  assert.match(markup, /시차 · 해당 시장 움직임을 몇 주 뒤 국내 경유가 예측에 반영하는지/);
+  assert.match(markup, /반영 시차 · 해당 시장 움직임을 몇 주 뒤 국내 경유가 예측에 반영하는지/);
   assert.match(markup, /비중 · 해당 시장 신호를 예측에 얼마나 반영하는지/);
-  assert.doesNotMatch(markup, /Trend lookback|Trend 8주|Lag |Weight |Cap ±|반영 시차|반영 비중/);
+  assert.doesNotMatch(markup, /Trend lookback|Trend 8주|Lag |Weight |Cap ±|반영 비중/);
   assert.doesNotMatch(markup, /<details[^>]*\sopen/);
 });
 
@@ -177,8 +177,11 @@ test('tuning candidates are labelled as review items that are never applied auto
 
   assert.match(markup, /튜닝 검토 후보/);
   assert.match(markup, /1순위 후보/);
-  assert.match(markup, /단일 설정/);
-  assert.match(markup, /추세 기간 6주 · Dubai · 시차 1주 · 비중 20%/);
+  assert.match(
+    markup,
+    /<span class="sensitivity-candidate__meta"><span class="status-tag status-tag--ok admin-table__flag">기준 통과<\/span><span class="sensitivity-candidate__kind">단일 설정<\/span><\/span>/,
+  );
+  assert.match(markup, /추세 기간 6주 · Dubai · 반영 시차 1주 · 비중 20%/);
   assert.match(markup, /변경 · 추세 기간 8주 → 6주/);
   assert.match(markup, /선정 이유 · 최근 13주 MAE가 후보 중 가장 낮습니다/);
   assert.match(markup, /기준 통과/);
@@ -406,7 +409,7 @@ test('the first choice is summarized against the current setting with its stage'
   const summary = markup.slice(markup.indexOf('top-candidate'), markup.indexOf('tuning-flow'));
 
   assert.match(summary, /이번 주 1순위 후보/);
-  assert.match(summary, /추세 기간 6주 · Dubai · 시차 1주 · 비중 20%/);
+  assert.match(summary, /추세 기간 6주 · Dubai · 반영 시차 1주 · 비중 20%/);
   assert.match(summary, /22\.80원\/L → 18\.40원\/L/);
   assert.match(summary, /19\.3% 개선/);
   assert.match(summary, /1\.27% → 1\.02%/);

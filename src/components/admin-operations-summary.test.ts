@@ -101,7 +101,7 @@ test('the summary leads with the operating model and its recent next-week perfor
   assert.match(markup, /최근 13주 MAE<\/span><strong>28\.37원\/L<\/strong>/);
   assert.match(markup, /평가 표본<\/span><strong>13주<\/strong>/);
   assert.match(markup, /신뢰도 등급<\/span><strong>A<\/strong>/);
-  assert.match(markup, /추세 기간 8주 · Dubai · 시차 1주 · 비중 20% · USD\/KRW · 미사용/);
+  assert.match(markup, /추세 기간 8주 · Dubai · 반영 시차 1주 · 비중 20% · USD\/KRW · 미사용/);
   assert.match(markup, /최근 13주의 다음 주 예측 결과를 기준으로 산정한 성능입니다/);
 });
 

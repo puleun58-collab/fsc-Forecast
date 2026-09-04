@@ -65,7 +65,7 @@ test('a single observation is shown once without the collapsed list', () => {
     key: 'candidate-persistence',
     severity: 'watch',
     title: '동일 후보 확인 1/2주',
-    detail: '추세 기간 8주 · Dubai · 시차 2주 · 비중 5% · 같은 후보가 한 번 더 통과하면 Shadow 검증을 시작합니다.',
+    detail: '추세 기간 8주 · Dubai · 반영 시차 2주 · 비중 5% · 같은 후보가 한 번 더 통과하면 Shadow 검증을 시작합니다.',
     source: 'tuning',
   });
   const markup = render(center({ status: 'watch', observations: [observation] }));

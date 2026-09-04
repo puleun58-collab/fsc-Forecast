@@ -39,7 +39,7 @@ type AdminWeekCompositionProps = {
 function formatIndicator(indicator: AdminForecastBasis['dubai']): string {
   return indicator === null
     ? '미사용'
-    : `시차 ${indicator.lagWeeks}주 · 비중 ${Number((indicator.weight * 100).toFixed(1))}%`;
+    : `반영 시차 ${indicator.lagWeeks}주 · 비중 ${Number((indicator.weight * 100).toFixed(1))}%`;
 }
 
 /** 표준 산출 경로(주간 예측값)를 벗어난 주차만 행에서 따로 알린다. */

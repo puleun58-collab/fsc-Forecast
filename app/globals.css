@@ -2043,6 +2043,27 @@ summary.operation-history-row::-webkit-details-marker {
   font-size: 0.88rem;
 }
 
+/* 순위 · 판정 배지 · 후보 유형이 서로 붙어 보이지 않게 역할별로 띄운다. */
+.sensitivity-candidate__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.sensitivity-candidate__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sensitivity-candidate__kind {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
 /* 값과 상태 배지는 한 덩어리로 흘러야 좁은 폭에서 배지만 다음 줄로 떨어지지 않는다. */
 .admin-table__inline {
   display: inline-flex;

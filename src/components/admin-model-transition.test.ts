@@ -84,7 +84,7 @@ test('a reviewable shadow result exposes one explicit admin approval action', ()
   assert.match(markup, /운영 전환 검토/);
   assert.match(markup, /전환 가능/);
   assert.match(markup, /<dt>추세 기간<\/dt><dd>8주 → 6주<\/dd>/);
-  assert.match(markup, /<dt>Dubai 시차<\/dt><dd>1주 → 2주<\/dd>/);
+  assert.match(markup, /<dt>Dubai 반영 시차<\/dt><dd>1주 → 2주<\/dd>/);
   assert.match(markup, /<dt>Dubai 비중<\/dt><dd>20% → 15%<\/dd>/);
   assert.match(markup, /<dt>USD\/KRW<\/dt><dd>동일<\/dd>/);
   assert.match(markup, /24\.80원/);

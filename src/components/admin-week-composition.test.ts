@@ -131,7 +131,7 @@ test('one shared disclosure explains how forecast weeks are produced', () => {
   assert.match(basisBlock, /예측 방식<\/span><strong>주간 실제값 기준 추세 연장<\/strong>/);
   assert.match(basisBlock, /사용 모델<\/span><strong>Model B<\/strong>/);
   assert.match(basisBlock, /추세 기간<\/span><strong>8주<\/strong>/);
-  assert.match(basisBlock, /Dubai<\/span><strong>시차 2주 · 비중 20%<\/strong>/);
+  assert.match(basisBlock, /Dubai<\/span><strong>반영 시차 2주 · 비중 20%<\/strong>/);
   assert.match(basisBlock, /USD\/KRW<\/span><strong>미사용<\/strong>/);
 });
 

@@ -77,7 +77,7 @@ function formatIndicator(indicator: ForecastModelParamsView["dubai"]): string {
     return "미사용";
   }
 
-  return `시차 ${indicator.lagWeeks}주 · 비중 ${Number((indicator.weight * 100).toFixed(1))}%`;
+  return `반영 시차 ${indicator.lagWeeks}주 · 비중 ${Number((indicator.weight * 100).toFixed(1))}%`;
 }
 
 function describeSampleCount(value: number): string {

@@ -584,12 +584,16 @@ function TuningCandidateRow({
   return (
     <li className={`sensitivity-candidate${isTop ? ' sensitivity-candidate--top' : ''}`}>
       <div className="sensitivity-candidate__head">
-        <strong>{isTop ? '1순위 후보' : `${index + 1}순위 후보`}</strong>
-        <span className="status-tag status-tag--ok admin-table__flag">
-          {candidate.meetsPromotionQuality ? '기준 통과' : '기준 미충족'}
-        </span>
-        <span className="sensitivity-candidate__kind">
-          {candidate.kind === 'combination' ? '조합 후보' : '단일 설정'}
+        <strong className="sensitivity-candidate__rank">
+          {isTop ? '1순위 후보' : `${index + 1}순위 후보`}
+        </strong>
+        <span className="sensitivity-candidate__meta">
+          <span className="status-tag status-tag--ok admin-table__flag">
+            {candidate.meetsPromotionQuality ? '기준 통과' : '기준 미충족'}
+          </span>
+          <span className="sensitivity-candidate__kind">
+            {candidate.kind === 'combination' ? '조합 후보' : '단일 설정'}
+          </span>
         </span>
       </div>
       <strong className="sensitivity-candidate__title">
@@ -854,7 +858,7 @@ export function AdminParameterSensitivity({
             ))}
           </div>
           <p className="admin-decision__note">
-            시차 · 해당 시장 움직임을 몇 주 뒤 국내 경유가 예측에 반영하는지
+            반영 시차 · 해당 시장 움직임을 몇 주 뒤 국내 경유가 예측에 반영하는지
           </p>
           <p className="admin-decision__note">
             비중 · 해당 시장 신호를 예측에 얼마나 반영하는지

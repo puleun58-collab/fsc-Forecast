@@ -271,7 +271,7 @@ export { serializeSensitivityParamsKey };
 export function describeIndicator(indicator: ForecastModelParams["dubai"]): string {
   return indicator === null
     ? "미사용"
-    : `시차 ${indicator.lagWeeks}주 · 비중 ${formatWeightPercent(indicator.weight)}`;
+    : `반영 시차 ${indicator.lagWeeks}주 · 비중 ${formatWeightPercent(indicator.weight)}`;
 }
 
 function formatWeightPercent(weight: number): string {
