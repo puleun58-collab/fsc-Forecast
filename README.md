@@ -21,6 +21,34 @@
 - 신호 기여도, 예측 기간별 성능, 성능 드리프트 같은 진단 결과를 관리자 화면에서 확인합니다.
 - 관리자 UI와 인증된 상태 변경 API를 제공합니다.
 
+## 화면 미리보기
+
+아래 화면은 production 배포본(https://fsc-forecast.vercel.app)의 공개 대시보드를 그대로 촬영한 것입니다.
+
+### 대시보드 상단 요약
+
+조회 분기와 기준유가를 선택하면 현재 경유가, 최근 확정 주차 평균, 분기 평균 예상 유가, 예상 FSC율을 한 줄로 확인합니다.
+
+![FSC Forecast 대시보드 상단 요약 카드](docs/images/dashboard-overview.png)
+
+### 주간 유가 전망
+
+완료 주차는 Actual 실선, 이후 주차는 Forecast 점선으로 그리고 기준유가 선과 예측 시작 지점을 함께 표시합니다.
+
+![주간 Actual과 Forecast 추이를 보여주는 라인 차트](docs/images/weekly-forecast-chart.png)
+
+### 주차별 상세 데이터
+
+주차별 가격과 전주·기준유가 대비 차이, 산출 방식을 표로 확인하고 Actual 구간과 Forecast 구간의 경계를 구분해 표시합니다.
+
+![Actual 주차와 Forecast 주차를 구분해 보여주는 주차별 상세 표](docs/images/weekly-detail-table.png)
+
+### 시장 참고 지표
+
+두바이유와 USD/KRW의 최신 관측값, 전일 대비 변화, 최근 30일 흐름을 보조 지표로 제공합니다.
+
+![두바이유와 USD/KRW 최근 30일 추이 카드](docs/images/market-reference.png)
+
 ## 핵심 데이터 흐름
 
 1. 오피넷과 외부 지표에서 원천 데이터를 가져옵니다.
