@@ -599,34 +599,31 @@ function TuningCandidateRow({
       <strong className="sensitivity-candidate__title">
         {formatModelParams(candidate.params, { compact: true })}
       </strong>
-      <span>
-        최근 13주 MAE {formatMae(sensitivity.currentRecentOneStep.maeKrwPerL)} →{' '}
-        {formatMae(candidate.recentOneStep.maeKrwPerL)}
-      </span>
-      <span>
-        최근 26주 MAE {formatMae(sensitivity.currentLongOneStep.maeKrwPerL)} →{' '}
-        {formatMae(candidate.longOneStep.maeKrwPerL)}
-      </span>
-      <span className="sensitivity-candidate__change">
-        선정 이유 · {describeSelectionReason(index, candidate, topCandidate)}
-      </span>
-      {changes.length === 0 ? null : (
-        <span className="sensitivity-candidate__change">
-          변경 · {describeModelParamChanges(changes)}
-        </span>
-      )}
-      <details className="admin-disclosure admin-disclosure--inline">
-        <summary className="admin-disclosure__summary">
-          <span>상세 보기</span>
-          <AdminDisclosureToggle />
-        </summary>
-        <div className="admin-disclosure__body">
-          <p className="sensitivity-candidate__params">
-            유지 · {formatModelParamsRest(candidate.params)}
-          </p>
-          {comparison === null ? null : <CandidateRegimePanel comparison={comparison} />}
+      <div className="sensitivity-candidate__metrics">
+        <div className="sensitivity-candidate__metric sensitivity-candidate__metric--primary">
+          <span className="dashboard-shell__metric-label">최근 13주 MAE</span>
+          <strong>
+            {formatMae(sensitivity.currentRecentOneStep.maeKrwPerL)} →{' '}
+            <span className="sensitivity-candidate__mae-after">
+              {formatMae(candidate.recentOneStep.maeKrwPerL)}
+            </span>
+          </strong>
         </div>
-      </details>
+        <div className="sensitivity-candidate__metric">
+          <span className="dashboard-shell__metric-label">최근 26주 MAE</span>
+          <strong>
+            {formatMae(sensitivity.currentLongOneStep.maeKrwPerL)} →{' '}
+            {formatMae(candidate.longOneStep.maeKrwPerL)}
+          </strong>
+        </div>
+      </div>
+      <p className="sensitivity-candidate__reason">
+        선정 이유 · {describeSelectionReason(index, candidate, topCandidate)}
+      </p>
+      {changes.length === 0 ? null : (
+        <p className="sensitivity-candidate__change">변경 · {describeModelParamChanges(changes)}</p>
+      )}
+      {comparison === null ? null : <CandidateRegimePanel comparison={comparison} />}
     </li>
   );
 }

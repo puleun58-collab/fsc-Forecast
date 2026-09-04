@@ -185,7 +185,12 @@ test('tuning candidates are labelled as review items that are never applied auto
   assert.match(markup, /변경 · 추세 기간 8주 → 6주/);
   assert.match(markup, /선정 이유 · 최근 13주 MAE가 후보 중 가장 낮습니다/);
   assert.match(markup, /기준 통과/);
-  assert.match(markup, /최근 13주 MAE 22\.80원\/L → 18\.40원\/L/);
+  assert.match(
+    markup,
+    /최근 13주 MAE<\/span><strong>22\.80원\/L → <span class="sensitivity-candidate__mae-after">18\.40원\/L<\/span><\/strong>/,
+  );
+  assert.match(markup, /최근 26주 MAE<\/span><strong>24\.50원\/L → 20\.10원\/L<\/strong>/);
+  assert.doesNotMatch(markup, /상세 보기|유지 · Model/);
   assert.match(markup, /조합 후보도 실제 적용 전에 새 실제 데이터를 이용한 검증을 거치며/);
   assert.doesNotMatch(markup, /추천 설정|적용 예정|자동으로 적용됩니다/);
   assert.doesNotMatch(markup, /<button/);
@@ -272,6 +277,8 @@ test('a candidate exposes its market regime comparison behind a collapsed disclo
 
   assert.match(markup, /시장 국면별 성능 보기/);
   assert.doesNotMatch(markup, /<details[^>]*\sopen/);
+  assert.doesNotMatch(markup, /상세 보기/);
+  assert.match(markup, /<summary class="admin-disclosure__summary"><strong>시장 국면별 성능 보기<\/strong>/);
   assert.match(panel, /최근 26주 중 현재 설정과 동일한 평가 주차 21주 기준/);
   assert.match(panel, /data-label="현재 MAE">22\.10원\/L/);
   assert.match(panel, /data-label="후보 MAE">18\.70원\/L/);

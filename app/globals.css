@@ -1968,11 +1968,13 @@ summary.operation-history-row::-webkit-details-marker {
   font-size: 0.78rem;
 }
 
+/* 후보 카드 묶음과 Shadow 진행 상태를 구분선으로 떼어 놓는다. */
 .shadow-entry {
   display: grid;
   gap: 4px;
   justify-items: start;
-  padding-top: 8px;
+  margin-top: 6px;
+  padding-top: 12px;
   border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
 }
 
@@ -2026,16 +2028,27 @@ summary.operation-history-row::-webkit-details-marker {
 
 .sensitivity-candidates__list {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   margin: 0;
-  padding-left: 18px;
+  padding: 0;
+  list-style: none;
 }
 
+/* 후보별 독립 카드. 순위 강조는 1순위 왼쪽 포인트 하나로만 준다. */
 .sensitivity-candidate {
   display: grid;
-  gap: 2px;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-panel);
+  background: var(--bg-card);
   color: var(--text-secondary);
   font-size: 0.84rem;
+}
+
+.sensitivity-candidate--top {
+  border-left-color: var(--accent);
 }
 
 .sensitivity-candidate > strong {
@@ -2049,7 +2062,7 @@ summary.operation-history-row::-webkit-details-marker {
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
-  margin-bottom: 8px;
+  margin-bottom: 2px;
 }
 
 .sensitivity-candidate__meta {
@@ -2062,6 +2075,55 @@ summary.operation-history-row::-webkit-details-marker {
   color: var(--text-secondary);
   font-size: 0.8rem;
   font-weight: 600;
+}
+
+.sensitivity-candidate__title {
+  margin-bottom: 6px;
+}
+
+/* 13주 MAE를 먼저 읽히게 두고 26주 MAE는 같은 줄의 보조 지표로 둔다. */
+.sensitivity-candidate__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.sensitivity-candidate__metric {
+  display: grid;
+  gap: 2px;
+}
+
+.sensitivity-candidate__metric strong {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.sensitivity-candidate__metric--primary strong {
+  color: var(--text-primary);
+  font-size: 0.96rem;
+  font-weight: 800;
+}
+
+.sensitivity-candidate__mae-after {
+  color: var(--accent);
+}
+
+.sensitivity-candidate__reason {
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.sensitivity-candidate .candidate-regime {
+  margin-top: 6px;
+}
+
+@media (max-width: 700px) {
+  .sensitivity-candidate__metrics {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* 값과 상태 배지는 한 덩어리로 흘러야 좁은 폭에서 배지만 다음 줄로 떨어지지 않는다. */
