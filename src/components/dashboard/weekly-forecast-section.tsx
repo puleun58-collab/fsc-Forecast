@@ -16,7 +16,7 @@ export function WeeklyForecastSection({ fsc, historical = false }: WeeklyForecas
           <p>
             {historical
               ? '선택한 분기 안의 확정 Actual 주간 유가만 표시합니다.'
-              : '실제값이 있는 완료 주차는 actual 선으로, 이후 주차는 forecast 점선으로 표시합니다.'}
+              : '완료 주차는 Actual 실선으로, 이후 주차는 Forecast 점선으로 표시합니다.'}
           </p>
         </div>
         <ForecastLegend

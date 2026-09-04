@@ -37,7 +37,7 @@ export async function FscDashboard({ data }: FscDashboardProps) {
         <StatusRail />
         <section className="surface-panel dashboard-state" role="status" aria-labelledby="dashboard-empty-title">
           <h1 id="dashboard-empty-title">아직 FSC 산출 결과가 없습니다.</h1>
-          <p>관리자 재계산 후 분기 평균 예상 유가, FSC 파생 결과, actual/forecast 경계가 표시됩니다.</p>
+          <p>산출 결과가 생성되면 분기 평균 예상 유가, FSC 결과, Actual/Forecast 구간이 표시됩니다.</p>
           <span className="metric-caption">대상 분기 {quarterLabel}</span>
         </section>
         <OilPriceHistory history={oilPriceHistory} />
