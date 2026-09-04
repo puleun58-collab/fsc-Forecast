@@ -74,7 +74,7 @@ function render(
       sensitivity,
       persistence,
       regimeComparisons,
-      stageLabel: '1순위 후보 확인 중 · 1/2주',
+      stageLabel: '동일 후보 확인 1/2주',
     }),
   );
 }
@@ -107,7 +107,7 @@ function comparison(
     version: 1,
     evaluatedAt: '2026-09-02T00:00:00.000Z',
     windowWeeks: 26,
-    label: 'Trend lookback 6주',
+    label: '추세 기간 6주',
     kind: 'single',
     paramsKey: serializeSensitivityParamsKey({ ...CURRENT, trendLookbackWeeks: 6 }),
     candidateFingerprint: 'v1|B|6|1:0.2|none|0.03',
@@ -145,15 +145,19 @@ test('the card shows the operating parameters and one collapsed group per factor
   assert.match(markup, /파라미터 민감도 분석/);
   assert.match(markup, /결과는 참고용이며 자동으로 적용되지 않습니다/);
   assert.match(markup, /Model<\/span><strong>B<\/strong>/);
-  assert.match(markup, /Trend<\/span><strong>8주<\/strong>/);
-  assert.match(markup, /Dubai 반영 시차<\/span><strong>1주<\/strong>/);
-  assert.match(markup, /Dubai 반영 비중<\/span><strong>20%<\/strong>/);
+  assert.match(markup, /추세 기간<\/span><strong>8주<\/strong>/);
+  assert.match(markup, /Dubai 시차<\/span><strong>1주<\/strong>/);
+  assert.match(markup, /Dubai 비중<\/span><strong>20%<\/strong>/);
   assert.match(markup, /USD\/KRW<\/span><strong>미사용<\/strong>/);
-  assert.match(markup, /Cap<\/span><strong>±3%<\/strong>/);
-  assert.match(markup, /Trend lookback 민감도/);
+  assert.match(markup, /외부 보정 상한<\/span><strong>±3%<\/strong>/);
+  assert.match(markup, /추세 기간 민감도/);
   assert.match(markup, /Dubai 민감도/);
   assert.match(markup, /USD\/KRW 민감도/);
-  assert.match(markup, /외부 보정 Cap 민감도/);
+  assert.match(markup, /외부 보정 상한 민감도/);
+  assert.match(markup, /현재 운영 설정/);
+  assert.match(markup, /시차 · 해당 시장 움직임을 몇 주 뒤 국내 경유가 예측에 반영하는지/);
+  assert.match(markup, /비중 · 해당 시장 신호를 예측에 얼마나 반영하는지/);
+  assert.doesNotMatch(markup, /Trend lookback|Trend 8주|Lag |Weight |Cap ±|반영 시차|반영 비중/);
   assert.doesNotMatch(markup, /<details[^>]*\sopen/);
 });
 
@@ -174,8 +178,8 @@ test('tuning candidates are labelled as review items that are never applied auto
   assert.match(markup, /튜닝 검토 후보/);
   assert.match(markup, /1순위 후보/);
   assert.match(markup, /단일 설정/);
-  assert.match(markup, /Trend 6주 · Dubai 1주 \/ 20%/);
-  assert.match(markup, /변경 · Trend 8주 → 6주/);
+  assert.match(markup, /추세 기간 6주 · Dubai · 시차 1주 · 비중 20%/);
+  assert.match(markup, /변경 · 추세 기간 8주 → 6주/);
   assert.match(markup, /선정 이유 · 최근 13주 MAE가 후보 중 가장 낮습니다/);
   assert.match(markup, /기준 통과/);
   assert.match(markup, /최근 13주 MAE 22\.80원\/L → 18\.40원\/L/);
@@ -205,7 +209,7 @@ test('the card leads with the automatic tuning flow guide', () => {
   assert.deepEqual(stepLabels, [
     '자동 비교',
     '후보 최대 3개',
-    '1순위 2주 확인',
+    '동일 후보 확인 2주',
     'Shadow 검증 · 새 실제 데이터 13주',
     '운영 적용 검토',
   ]);
@@ -307,7 +311,7 @@ test('runs without stored sensitivity metadata fall back cleanly', () => {
 test('the lowest value in each group is flagged, and ties all keep the flag', () => {
   const markup = render();
   const trendBlock = markup.slice(
-    markup.indexOf('Trend lookback 민감도'),
+    markup.indexOf('추세 기간 민감도'),
     markup.indexOf('Dubai 민감도'),
   );
   const lowest = /<span class="status-tag admin-table__flag sensitivity-flag">최저<\/span>/;
@@ -364,7 +368,7 @@ test('the current setting never carries the first choice badge', () => {
 test('every candidate row states why it passed or was excluded', () => {
   const markup = render();
   const trendBlock = markup.slice(
-    markup.indexOf('Trend lookback 민감도'),
+    markup.indexOf('추세 기간 민감도'),
     markup.indexOf('Dubai 민감도'),
   );
 
@@ -401,13 +405,13 @@ test('the first choice is summarized against the current setting with its stage'
   const markup = render();
   const summary = markup.slice(markup.indexOf('top-candidate'), markup.indexOf('tuning-flow'));
 
-  assert.match(summary, /1순위 후보/);
-  assert.match(summary, /Trend 6주 · Dubai 1주 \/ 20%/);
+  assert.match(summary, /이번 주 1순위 후보/);
+  assert.match(summary, /추세 기간 6주 · Dubai · 시차 1주 · 비중 20%/);
   assert.match(summary, /22\.80원\/L → 18\.40원\/L/);
   assert.match(summary, /19\.3% 개선/);
   assert.match(summary, /1\.27% → 1\.02%/);
   assert.match(summary, /24\.50원\/L → 20\.10원\/L/);
-  assert.match(summary, /1순위 후보 확인 중 · 1\/2주/);
+  assert.match(summary, /동일 후보 확인 1\/2주/);
 });
 
 test('without a ranked candidate the summary says so instead of showing numbers', () => {

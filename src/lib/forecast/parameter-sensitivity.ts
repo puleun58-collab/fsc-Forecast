@@ -271,7 +271,7 @@ export { serializeSensitivityParamsKey };
 export function describeIndicator(indicator: ForecastModelParams["dubai"]): string {
   return indicator === null
     ? "미사용"
-    : `반영 시차 ${indicator.lagWeeks}주 · 반영 비중 ${formatWeightPercent(indicator.weight)}`;
+    : `시차 ${indicator.lagWeeks}주 · 비중 ${formatWeightPercent(indicator.weight)}`;
 }
 
 function formatWeightPercent(weight: number): string {
@@ -306,13 +306,13 @@ function describeFactorValue(
 ): string {
   switch (factorKey) {
     case "trendLookback":
-      return `Trend ${params.trendLookbackWeeks}주`;
+      return `추세 기간 ${params.trendLookbackWeeks}주`;
     case "dubai":
-      return `Dubai ${describeIndicator(params.dubai)}`;
+      return `Dubai · ${describeIndicator(params.dubai)}`;
     case "usdKrw":
-      return `USD/KRW ${describeIndicator(params.usdKrw)}`;
+      return `USD/KRW · ${describeIndicator(params.usdKrw)}`;
     case "cap":
-      return `Cap ±${(params.externalAdjustmentCapRatio * 100).toFixed(0)}%`;
+      return `외부 보정 상한 ±${(params.externalAdjustmentCapRatio * 100).toFixed(0)}%`;
     case "bias":
       return `Bias ${describeBiasCorrection(params.biasCorrection)}`;
     case "dailySignal":

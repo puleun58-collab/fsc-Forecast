@@ -348,7 +348,7 @@ test('combinations pair two different factors and never grow past two changes', 
   assert.deepEqual(candidate?.params.dubai, { lagWeeks: 2, weight: 0.15 });
   assert.equal(candidate?.params.externalAdjustmentCapRatio, CURRENT.externalAdjustmentCapRatio);
   assert.equal(candidate?.params.usdKrw, null);
-  assert.equal(candidate?.label, 'Trend 6주 + Dubai 반영 시차 2주 · 반영 비중 15%');
+  assert.equal(candidate?.label, '추세 기간 6주 + Dubai · 시차 2주 · 비중 15%');
 });
 
 test('a stronger combination outranks the single candidates it was built from', () => {

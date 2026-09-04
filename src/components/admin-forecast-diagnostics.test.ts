@@ -107,8 +107,8 @@ test('admin diagnostics render the current model, parameters, and candidate comp
   assert.match(markup, /weekly-anchor-trend-v2/);
   assert.match(markup, /2026\.08\.18/);
   assert.match(markup, /Model A → Model C 승격/);
-  assert.match(markup, /Lag 2주 · Weight 15\.0%/);
-  assert.match(markup, /Lag 1주 · Weight 5\.0%/);
+  assert.match(markup, /시차 2주 · 비중 15%/);
+  assert.match(markup, /시차 1주 · 비중 5%/);
   assert.match(markup, /±2\.0%/);
   assert.match(markup, /최근 성능이 의미 있게 개선되고 장기 안정성 기준도 충족하여 모델을 승격했습니다/);
   assert.match(markup, /6\.2%/);

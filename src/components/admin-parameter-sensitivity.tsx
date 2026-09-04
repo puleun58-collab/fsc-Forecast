@@ -38,10 +38,10 @@ import {
 } from '@/lib/forecast/parameter-sensitivity';
 
 const GROUP_LABEL: Record<ParameterSensitivityGroupKey, string> = {
-  trendLookback: 'Trend lookback 민감도',
+  trendLookback: '추세 기간 민감도',
   dubai: 'Dubai 민감도',
   usdKrw: 'USD/KRW 민감도',
-  cap: '외부 보정 Cap 민감도',
+  cap: '외부 보정 상한 민감도',
   bias: 'Bias 보정 민감도',
   dailySignal: '일별 단기 신호 민감도',
 };
@@ -49,7 +49,7 @@ const GROUP_LABEL: Record<ParameterSensitivityGroupKey, string> = {
 const TUNING_FLOW_STEPS = [
   '자동 비교',
   '후보 최대 3개',
-  '1순위 2주 확인',
+  '동일 후보 확인 2주',
   'Shadow 검증 · 새 실제 데이터 13주',
   '운영 적용 검토',
 ];
@@ -745,14 +745,14 @@ function TopCandidateSummary({
   return (
     <div className="admin-panel top-candidate">
       <div className="top-candidate__head">
-        <span className="status-tag status-tag--accent">1순위 후보</span>
+        <span className="status-tag status-tag--accent">이번 주 1순위 후보</span>
         <strong>{describeCandidateName(candidate)}</strong>
         <span className="status-tag status-tag--ok">품질 기준 통과</span>
       </div>
       <p className="top-candidate__params">{formatModelParamsRest(candidate.params)}</p>
       {describeModelParamChanges(diffModelParams(sensitivity.currentParams, candidate.params)) === null ? null : (
         <p className="top-candidate__change">
-          변경: {describeModelParamChanges(diffModelParams(sensitivity.currentParams, candidate.params))}
+          변경 · {describeModelParamChanges(diffModelParams(sensitivity.currentParams, candidate.params))}
         </p>
       )}
       <div className="admin-metric-grid">
@@ -843,20 +843,29 @@ export function AdminParameterSensitivity({
       className="admin-sensitivity"
     >
       <div className="admin-detail-stack">
+        <div className="admin-panel">
+          <strong>현재 운영 설정</strong>
+          <div className="admin-metric-grid">
+            {listModelParamFields(currentParams).map((field) => (
+              <div key={field.key} className="admin-metric">
+                <span className="dashboard-shell__metric-label">{field.label}</span>
+                <strong>{field.value}</strong>
+              </div>
+            ))}
+          </div>
+          <p className="admin-decision__note">
+            시차 · 해당 시장 움직임을 몇 주 뒤 국내 경유가 예측에 반영하는지
+          </p>
+          <p className="admin-decision__note">
+            비중 · 해당 시장 신호를 예측에 얼마나 반영하는지
+          </p>
+        </div>
         <TopCandidateSummary
           sensitivity={sensitivity}
           candidate={topCandidate}
           stageLabel={stageLabel}
         />
         <TuningFlowGuide />
-        <div className="admin-metric-grid">
-          {listModelParamFields(currentParams).map((field) => (
-            <div key={field.key} className="admin-metric">
-              <span className="dashboard-shell__metric-label">{field.label}</span>
-              <strong>{field.value}</strong>
-            </div>
-          ))}
-        </div>
 
         {sensitivity.groups.map((group) => (
           <SensitivityGroup

@@ -18,7 +18,7 @@ const FACTOR_LABEL: Record<ForecastErrorFactorKey, string> = {
   trend: '주간 Trend',
   dubai: 'Dubai 보정',
   usdKrw: 'USD/KRW 보정',
-  cap: '외부 보정 Cap',
+  cap: '외부 보정 상한',
 };
 
 function describeWeekLabel(targetDate: string): string {

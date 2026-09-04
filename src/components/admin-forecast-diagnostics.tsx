@@ -77,7 +77,7 @@ function formatIndicator(indicator: ForecastModelParamsView["dubai"]): string {
     return "미사용";
   }
 
-  return `Lag ${indicator.lagWeeks}주 · Weight ${(indicator.weight * 100).toFixed(1)}%`;
+  return `시차 ${indicator.lagWeeks}주 · 비중 ${Number((indicator.weight * 100).toFixed(1))}%`;
 }
 
 function describeSampleCount(value: number): string {
@@ -229,7 +229,7 @@ export function AdminForecastDiagnostics({
 
         <div className="admin-panel">
           <strong>현재 파라미터</strong>
-          <span>국내 추세 Lookback: {selectedParams.trendLookbackWeeks}주</span>
+          <span>추세 기간: {selectedParams.trendLookbackWeeks}주</span>
           <span>Dubai: {formatIndicator(selectedParams.dubai)}</span>
           <span>USD/KRW: {formatIndicator(selectedParams.usdKrw)}</span>
           <span>
@@ -524,9 +524,7 @@ export function AdminForecastDiagnostics({
               {diagnostics.candidates.map((candidate) => (
                 <li key={`params-${candidate.modelId}`} className="admin-panel">
                   <strong>Model {candidate.modelId} 파라미터</strong>
-                  <span>
-                    국내 추세 Lookback: {candidate.params.trendLookbackWeeks}주
-                  </span>
+                  <span>추세 기간: {candidate.params.trendLookbackWeeks}주</span>
                   <span>Dubai: {formatIndicator(candidate.params.dubai)}</span>
                   <span>
                     USD/KRW: {formatIndicator(candidate.params.usdKrw)}

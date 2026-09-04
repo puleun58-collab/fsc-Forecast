@@ -104,8 +104,8 @@ function buildStages({
       key: "candidate",
       label:
         persistence === null || persistence.candidateFingerprint === null
-          ? "후보 확인 대기"
-          : `후보 확인 ${persistence.confirmedCount}/${persistence.requiredCount}`,
+          ? "동일 후보 확인 대기"
+          : `동일 후보 확인 ${persistence.confirmedCount}/${persistence.requiredCount}`,
       current: candidateConfirming,
     },
     {
@@ -268,7 +268,7 @@ export function buildOperationsStatusCenter({
     items.push({
       key: "candidate-persistence",
       severity: "watch",
-      title: `1순위 후보 확인 ${persistence.confirmedCount}/${persistence.requiredCount}주`,
+      title: `동일 후보 확인 ${persistence.confirmedCount}/${persistence.requiredCount}주`,
       detail:
         topCandidateLabel === null
           ? "같은 후보가 새 주간 데이터에서 한 번 더 통과하면 Shadow 검증을 시작합니다."

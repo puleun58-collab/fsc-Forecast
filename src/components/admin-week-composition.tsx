@@ -39,7 +39,7 @@ type AdminWeekCompositionProps = {
 function formatIndicator(indicator: AdminForecastBasis['dubai']): string {
   return indicator === null
     ? '미사용'
-    : `Lag ${indicator.lagWeeks}주 · Weight ${(indicator.weight * 100).toFixed(1)}%`;
+    : `시차 ${indicator.lagWeeks}주 · 비중 ${Number((indicator.weight * 100).toFixed(1))}%`;
 }
 
 /** 표준 산출 경로(주간 예측값)를 벗어난 주차만 행에서 따로 알린다. */
@@ -141,7 +141,7 @@ export function AdminWeekComposition({
                 {[
                   ['예측 방식', '주간 실제값 기준 추세 연장'],
                   ['사용 모델', `Model ${forecastBasis.modelId}`],
-                  ['추세 기준', `최근 ${forecastBasis.trendLookbackWeeks}주`],
+                  ['추세 기간', `${forecastBasis.trendLookbackWeeks}주`],
                   ['Dubai', formatIndicator(forecastBasis.dubai)],
                   ['USD/KRW', formatIndicator(forecastBasis.usdKrw)],
                 ].map(([label, value]) => (

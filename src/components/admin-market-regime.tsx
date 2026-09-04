@@ -86,7 +86,7 @@ function RegimeReferenceFacts({ summary }: { summary: MarketRegimeSummary }) {
       <strong>{REGIME_LABEL[summary.regime]}</strong>
       <dl className="quality-trend-status__facts">
         {[
-          ['평균 Trend 변화', formatMae(summary.averageTrendDeltaKrwPerL)],
+          ['평균 추세 변화', formatMae(summary.averageTrendDeltaKrwPerL)],
           ['평균 Dubai 기여', formatPercent(summary.averageDubaiContributionRatio)],
           ['평균 USD/KRW 기여', formatPercent(summary.averageUsdKrwContributionRatio)],
           ['평균 외부 보정', formatPercent(summary.averageExternalAdjustmentRatio)],

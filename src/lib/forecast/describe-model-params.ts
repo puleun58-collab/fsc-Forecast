@@ -26,28 +26,28 @@ function formatWeightPercent(weight: number): string {
 function formatIndicator(indicator: ForecastIndicatorParams | null): string {
   return indicator === null
     ? "미사용"
-    : `반영 시차 ${indicator.lagWeeks}주 · 반영 비중 ${formatWeightPercent(indicator.weight)}`;
+    : `시차 ${indicator.lagWeeks}주 · 비중 ${formatWeightPercent(indicator.weight)}`;
 }
 
 /** Dubai는 시차와 비중을 별도 항목으로 나눠 변경점을 정확히 짚을 수 있게 한다. */
 export function listModelParamFields(params: ForecastModelParams): ModelParamField[] {
   return [
     { key: "model", label: "Model", value: params.modelId },
-    { key: "trend", label: "Trend", value: `${params.trendLookbackWeeks}주` },
+    { key: "trend", label: "추세 기간", value: `${params.trendLookbackWeeks}주` },
     {
       key: "dubaiLag",
-      label: "Dubai 반영 시차",
+      label: "Dubai 시차",
       value: params.dubai === null ? "미사용" : `${params.dubai.lagWeeks}주`,
     },
     {
       key: "dubaiWeight",
-      label: "Dubai 반영 비중",
+      label: "Dubai 비중",
       value: params.dubai === null ? "미사용" : formatWeightPercent(params.dubai.weight),
     },
     { key: "usdKrw", label: "USD/KRW", value: formatIndicator(params.usdKrw) },
     {
       key: "cap",
-      label: "Cap",
+      label: "외부 보정 상한",
       value: `±${(params.externalAdjustmentCapRatio * 100).toFixed(0)}%`,
     },
     { key: "bias", label: "Bias 보정", value: describeBiasCorrection(params.biasCorrection) },
@@ -60,38 +60,33 @@ export function listModelParamFields(params: ForecastModelParams): ModelParamFie
 }
 
 export interface FormatModelParamsOptions {
-  /** 모바일 1차 요약. 실제 변경이 잦은 Trend와 Dubai만 남긴다. */
+  /** 모바일 1차 요약. 실제 변경이 잦은 추세 기간과 Dubai만 남긴다. */
   compact?: boolean;
 }
 
 /**
  * 관리자 화면 전체가 같은 문자열을 쓰도록 하는 단일 포맷터.
- * 순서는 Model → Trend → Dubai 시차 → Dubai 비중 → USD/KRW → Cap 고정이다.
+ * 순서는 Model → 추세 기간 → Dubai 시차 → Dubai 비중 → USD/KRW → 외부 보정 상한 고정이다.
  */
 export function formatModelParams(
   params: ForecastModelParams,
   { compact = false }: FormatModelParamsOptions = {},
 ): string {
-  if (compact) {
-    const dubai =
-      params.dubai === null
-        ? "Dubai 미사용"
-        : `Dubai ${params.dubai.lagWeeks}주 / ${formatWeightPercent(params.dubai.weight)}`;
-
-    return `Trend ${params.trendLookbackWeeks}주 · ${dubai}`;
-  }
-
   const dubai =
     params.dubai === null
-      ? "Dubai 미사용"
-      : `Dubai 반영 시차 ${params.dubai.lagWeeks}주 · 반영 비중 ${formatWeightPercent(params.dubai.weight)}`;
+      ? "Dubai · 미사용"
+      : `Dubai · 시차 ${params.dubai.lagWeeks}주 · 비중 ${formatWeightPercent(params.dubai.weight)}`;
+
+  if (compact) {
+    return `추세 기간 ${params.trendLookbackWeeks}주 · ${dubai}`;
+  }
 
   return [
     `Model ${params.modelId}`,
-    `Trend ${params.trendLookbackWeeks}주`,
+    `추세 기간 ${params.trendLookbackWeeks}주`,
     dubai,
-    `USD/KRW ${formatIndicator(params.usdKrw)}`,
-    `Cap ±${(params.externalAdjustmentCapRatio * 100).toFixed(0)}%`,
+    `USD/KRW · ${formatIndicator(params.usdKrw)}`,
+    `외부 보정 상한 ±${(params.externalAdjustmentCapRatio * 100).toFixed(0)}%`,
     // 진단 후보 항목은 실제 사용 중일 때만 덧붙인다.
     ...(params.biasCorrection === null
       ? []
@@ -106,8 +101,8 @@ export function formatModelParams(
 export function formatModelParamsRest(params: ForecastModelParams): string {
   return [
     `Model ${params.modelId}`,
-    `USD/KRW ${formatIndicator(params.usdKrw)}`,
-    `Cap ±${(params.externalAdjustmentCapRatio * 100).toFixed(0)}%`,
+    `USD/KRW · ${formatIndicator(params.usdKrw)}`,
+    `외부 보정 상한 ±${(params.externalAdjustmentCapRatio * 100).toFixed(0)}%`,
     ...(params.biasCorrection === null
       ? []
       : [`Bias 보정 ${describeBiasCorrection(params.biasCorrection)}`]),
@@ -140,8 +135,32 @@ export function diffModelParams(
   });
 }
 
+/** Dubai 시차·비중처럼 같은 신호의 변경은 한 덩어리로 읽히게 묶는다. */
 export function describeModelParamChanges(changes: readonly ModelParamChange[]): string | null {
-  return changes.length === 0
-    ? null
-    : changes.map((change) => `${change.label} ${change.from} → ${change.to}`).join(" · ");
+  if (changes.length === 0) {
+    return null;
+  }
+
+  const dubaiChanges = changes.filter(
+    (change) => change.key === "dubaiLag" || change.key === "dubaiWeight",
+  );
+  const rest = changes.filter(
+    (change) => change.key !== "dubaiLag" && change.key !== "dubaiWeight",
+  );
+  const dubaiText =
+    dubaiChanges.length === 0
+      ? []
+      : [
+          `Dubai · ${dubaiChanges
+            .map(
+              (change) =>
+                `${change.key === "dubaiLag" ? "시차" : "비중"} ${change.from} → ${change.to}`,
+            )
+            .join(" · ")}`,
+        ];
+
+  return [
+    ...dubaiText,
+    ...rest.map((change) => `${change.label} ${change.from} → ${change.to}`),
+  ].join(" · ");
 }
