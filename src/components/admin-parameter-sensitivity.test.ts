@@ -172,10 +172,13 @@ test('tuning candidates are labelled as review items that are never applied auto
   const markup = render();
 
   assert.match(markup, /튜닝 검토 후보/);
-  assert.match(markup, /1\. \[단일 설정\] Trend 6주 · Dubai 1주 \/ 20%/);
-  assert.match(markup, /변경: Trend 8주 → 6주/);
-  assert.match(markup, /13주 MAE 22\.80원\/L → 18\.40원\/L/);
-  assert.match(markup, /기존 승격 품질 기준 충족/);
+  assert.match(markup, /1순위 후보/);
+  assert.match(markup, /단일 설정/);
+  assert.match(markup, /Trend 6주 · Dubai 1주 \/ 20%/);
+  assert.match(markup, /변경 · Trend 8주 → 6주/);
+  assert.match(markup, /선정 이유 · 최근 13주 MAE가 후보 중 가장 낮습니다/);
+  assert.match(markup, /기준 통과/);
+  assert.match(markup, /최근 13주 MAE 22\.80원\/L → 18\.40원\/L/);
   assert.match(markup, /조합 후보도 실제 적용 전에 새 실제 데이터를 이용한 검증을 거치며/);
   assert.doesNotMatch(markup, /추천 설정|적용 예정|자동으로 적용됩니다/);
   assert.doesNotMatch(markup, /<button/);
@@ -252,7 +255,7 @@ test('the candidate panel states the next-week evaluation basis', () => {
 
   assert.match(
     markup,
-    /후보는 최근 13주의 다음 주 예측 성능을 중심으로 비교하며, 최근 26주의 다음 주 예측 결과로 장기 안정성을 함께 확인합니다\./,
+    /1순위는 최근 13주의 다음 주 예측 성능을 우선 기준으로 선정합니다\. 26주 성능과 최대 오차·변동성은\s+품질 기준 확인에 함께 사용합니다\./,
   );
 });
 

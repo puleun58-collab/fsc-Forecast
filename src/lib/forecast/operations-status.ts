@@ -28,12 +28,23 @@ export interface OperationsStatusItem {
   source: OperationsItemSource;
 }
 
+export type OperationsStageKey = "candidate" | "shadow" | "transition";
+
+export interface OperationsStageStep {
+  key: OperationsStageKey;
+  label: string;
+  /** 지금 진행 중인 단계 하나만 true다. */
+  current: boolean;
+}
+
 export interface OperationsStatusCenter {
   status: OperationsStatus;
   /** 조치가 필요할 때 가장 먼저 볼 항목 하나. */
   primaryAction: OperationsStatusItem | null;
   items: OperationsStatusItem[];
   observations: OperationsStatusItem[];
+  /** 후보 확인 → Shadow → 운영 전환 흐름. 기존 상태를 옮겨 적기만 한다. */
+  stages: OperationsStageStep[];
 }
 
 /** 확인 순서: 입력 데이터 → 관리자 조치 → 성능 → 검증 → 참고. */
@@ -71,6 +82,48 @@ export interface BuildOperationsStatusCenterInput {
   topCandidateLabel: string | null;
 }
 
+function buildStages({
+  persistence,
+  shadow,
+  transitionStatus,
+}: Pick<
+  BuildOperationsStatusCenterInput,
+  "persistence" | "shadow" | "transitionStatus"
+>): OperationsStageStep[] {
+  const shadowSummary = shadow === null ? null : summarizeShadowValidation(shadow);
+  const shadowRunning = shadowSummary?.status === "validating";
+  const transitionReady = shadowSummary?.status === "reviewable" || transitionStatus === "approvable";
+  const candidateConfirming =
+    !shadowRunning &&
+    !transitionReady &&
+    persistence !== null &&
+    persistence.candidateFingerprint !== null;
+
+  return [
+    {
+      key: "candidate",
+      label:
+        persistence === null || persistence.candidateFingerprint === null
+          ? "후보 확인 대기"
+          : `후보 확인 ${persistence.confirmedCount}/${persistence.requiredCount}`,
+      current: candidateConfirming,
+    },
+    {
+      key: "shadow",
+      label:
+        shadowSummary === null
+          ? "Shadow 대기"
+          : `Shadow ${shadowSummary.completedSampleCount}/${shadowSummary.requiredSampleCount}`,
+      current: shadowRunning,
+    },
+    {
+      key: "transition",
+      label: transitionReady ? "운영 전환 검토" : "운영 전환 대기",
+      current: transitionReady,
+    },
+  ];
+}
+
 const SIGNAL_LABEL: Record<string, string> = {
   trend: "Trend",
   dubai: "Dubai",
@@ -97,7 +150,7 @@ export function buildOperationsStatusCenter({
   topCandidateLabel,
 }: BuildOperationsStatusCenterInput): OperationsStatusCenter {
   if (!hasForecastRun) {
-    return { status: "unknown", primaryAction: null, items: [], observations: [] };
+    return { status: "unknown", primaryAction: null, items: [], observations: [], stages: [] };
   }
 
   const items: OperationsStatusItem[] = [];
@@ -301,5 +354,6 @@ export function buildOperationsStatusCenter({
     primaryAction: actionable[0] ?? null,
     items: actionable,
     observations: sorted.filter((item) => item.severity === "watch"),
+    stages: buildStages({ persistence, shadow, transitionStatus }),
   };
 }

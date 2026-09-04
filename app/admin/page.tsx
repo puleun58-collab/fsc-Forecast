@@ -197,7 +197,7 @@ export default async function AdminPage() {
       </section>
 
       <div className="dashboard-shell__grid">
-        <AdminOperationsStatus center={operationsStatus} stageLabel={tuningStage.label} />
+        <AdminOperationsStatus center={operationsStatus} />
 
         <AdminOperationsSummary
           modelParams={forecastDiagnosticsEntries[0]?.diagnostics.selectedParams ?? null}

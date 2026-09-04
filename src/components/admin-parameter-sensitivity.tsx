@@ -546,43 +546,83 @@ function CandidateRegimePanel({ comparison }: { comparison: CandidateRegimeCompa
   );
 }
 
+function describeSelectionReason(
+  index: number,
+  candidate: TuningCandidate,
+  topCandidate: TuningCandidate,
+): string {
+  if (index === 0) {
+    return '최근 13주 MAE가 후보 중 가장 낮습니다.';
+  }
+
+  const gap =
+    candidate.recentOneStep.maeKrwPerL === null || topCandidate.recentOneStep.maeKrwPerL === null
+      ? null
+      : candidate.recentOneStep.maeKrwPerL - topCandidate.recentOneStep.maeKrwPerL;
+
+  return gap === null
+    ? '최근 13주 MAE를 산정하지 못했습니다.'
+    : `1순위 대비 최근 13주 MAE ${formatPriceText(Math.abs(gap))} ${gap >= 0 ? '높습니다' : '낮지만 순위 기준에서 밀렸습니다'}.`;
+}
+
 function TuningCandidateRow({
   candidate,
   index,
   sensitivity,
   comparison,
+  topCandidate,
 }: {
   candidate: TuningCandidate;
   index: number;
   sensitivity: ParameterSensitivity;
   comparison: CandidateRegimeComparison | null;
+  topCandidate: TuningCandidate;
 }) {
   const changes = diffModelParams(sensitivity.currentParams, candidate.params);
+  const isTop = index === 0;
 
   return (
-    <li className="sensitivity-candidate">
-      <strong>
-        {index + 1}. [{candidate.kind === 'combination' ? '2단계 조합' : '단일 설정'}]{' '}
+    <li className={`sensitivity-candidate${isTop ? ' sensitivity-candidate--top' : ''}`}>
+      <div className="sensitivity-candidate__head">
+        <strong>{isTop ? '1순위 후보' : `${index + 1}순위 후보`}</strong>
+        <span className="status-tag status-tag--ok admin-table__flag">
+          {candidate.meetsPromotionQuality ? '기준 통과' : '기준 미충족'}
+        </span>
+        <span className="sensitivity-candidate__kind">
+          {candidate.kind === 'combination' ? '조합 후보' : '단일 설정'}
+        </span>
+      </div>
+      <strong className="sensitivity-candidate__title">
         {formatModelParams(candidate.params, { compact: true })}
       </strong>
-      <span className="sensitivity-candidate__params">
-        {formatModelParamsRest(candidate.params)}
-      </span>
-      {changes.length === 0 ? null : (
-        <span className="sensitivity-candidate__change">
-          변경: {describeModelParamChanges(changes)}
-        </span>
-      )}
       <span>
-        13주 MAE {formatMae(sensitivity.currentRecentOneStep.maeKrwPerL)} →{' '}
+        최근 13주 MAE {formatMae(sensitivity.currentRecentOneStep.maeKrwPerL)} →{' '}
         {formatMae(candidate.recentOneStep.maeKrwPerL)}
       </span>
       <span>
-        26주 MAE {formatMae(sensitivity.currentLongOneStep.maeKrwPerL)} →{' '}
+        최근 26주 MAE {formatMae(sensitivity.currentLongOneStep.maeKrwPerL)} →{' '}
         {formatMae(candidate.longOneStep.maeKrwPerL)}
       </span>
-      <span className="sensitivity-candidate__checks">기존 승격 품질 기준 충족</span>
-      {comparison === null ? null : <CandidateRegimePanel comparison={comparison} />}
+      <span className="sensitivity-candidate__change">
+        선정 이유 · {describeSelectionReason(index, candidate, topCandidate)}
+      </span>
+      {changes.length === 0 ? null : (
+        <span className="sensitivity-candidate__change">
+          변경 · {describeModelParamChanges(changes)}
+        </span>
+      )}
+      <details className="admin-disclosure admin-disclosure--inline">
+        <summary className="admin-disclosure__summary">
+          <span>상세 보기</span>
+          <AdminDisclosureToggle />
+        </summary>
+        <div className="admin-disclosure__body">
+          <p className="sensitivity-candidate__params">
+            유지 · {formatModelParamsRest(candidate.params)}
+          </p>
+          {comparison === null ? null : <CandidateRegimePanel comparison={comparison} />}
+        </div>
+      </details>
     </li>
   );
 }
@@ -835,6 +875,10 @@ export function AdminParameterSensitivity({
 
         <div className="admin-panel sensitivity-candidates">
           <strong>튜닝 검토 후보</strong>
+          <p className="admin-decision__note">
+            1순위는 최근 13주의 다음 주 예측 성능을 우선 기준으로 선정합니다. 26주 성능과 최대 오차·변동성은
+            품질 기준 확인에 함께 사용합니다.
+          </p>
           {!sensitivity.sampleSufficient ? (
             <p className="backtest-detail__empty">
               백테스트 표본이 충분하지 않아 튜닝 후보를 제안하지 않습니다.
@@ -851,6 +895,7 @@ export function AdminParameterSensitivity({
                   candidate={candidate}
                   index={index}
                   sensitivity={sensitivity}
+                  topCandidate={sensitivity.tuningCandidates[0]}
                   comparison={
                     regimeComparisons.find(
                       (comparison) =>
@@ -862,10 +907,6 @@ export function AdminParameterSensitivity({
             </ol>
           )}
           {persistence === null ? null : <ShadowEntryStatus persistence={persistence} />}
-          <p className="admin-decision__note">
-            후보는 최근 13주의 다음 주 예측 성능을 중심으로 비교하며, 최근 26주의 다음 주 예측 결과로
-            장기 안정성을 함께 확인합니다.
-          </p>
           <p className="admin-decision__note">
             후보는 과거 데이터 비교 결과입니다. 조합 후보도 실제 적용 전에 새 실제 데이터를 이용한 검증을
             거치며, 이 화면에서 운영 모델이나 파라미터를 변경하지 않습니다.
