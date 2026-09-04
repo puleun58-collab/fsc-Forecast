@@ -2034,13 +2034,12 @@ summary.operation-history-row::-webkit-details-marker {
   list-style: none;
 }
 
-/* 후보별 독립 카드. 순위 강조는 1순위 왼쪽 포인트 하나로만 준다. */
+/* 후보별 독립 카드. 1순위는 테두리와 순위 텍스트로만 절제되게 강조한다. */
 .sensitivity-candidate {
   display: grid;
   gap: 6px;
   padding: 14px 16px;
   border: 1px solid var(--border);
-  border-left: 3px solid transparent;
   border-radius: var(--radius-panel);
   background: var(--bg-card);
   color: var(--text-secondary);
@@ -2048,7 +2047,11 @@ summary.operation-history-row::-webkit-details-marker {
 }
 
 .sensitivity-candidate--top {
-  border-left-color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+
+.sensitivity-candidate--top .sensitivity-candidate__rank {
+  color: var(--accent);
 }
 
 .sensitivity-candidate > strong {

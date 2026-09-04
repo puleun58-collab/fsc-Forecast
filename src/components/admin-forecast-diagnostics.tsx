@@ -349,10 +349,14 @@ export function AdminForecastDiagnostics({
 
         <details className="admin-panel admin-disclosure">
           <summary className="admin-disclosure__summary">
-            <strong>전체 horizon 평균 · 참고</strong>
+            <strong>전체 예측 성능 참고</strong>
             <AdminDisclosureToggle />
           </summary>
           <div className="admin-disclosure__body">
+            <p className="admin-decision__note">
+              1~13주 앞 전체 예측을 함께 집계한 참고 지표입니다. 현재 운영 정확도나 튜닝 후보 선정
+              기준으로 사용하지 않습니다.
+            </p>
             <div className="admin-decision__metrics admin-decision__metrics--wide admin-disclosure__metrics">
               <DiagnosticMetric
                 label="전체 예측 MAPE"
@@ -398,12 +402,8 @@ export function AdminForecastDiagnostics({
               />
             </div>
             <p className="admin-decision__note">
-              다음 주부터 최대 13주 후까지의 예측을 모두 포함한 성능입니다. 예측
-              시점이 멀어질수록 오차가 커질 수 있어 기본 후보 비교와 신뢰도
-              판단에는 다음 주 예측 성능을 사용합니다.
-            </p>
-            <p className="admin-decision__note">
-              전체 예측 성능은 참고용이며 튜닝 후보 선정에는 사용하지 않습니다.
+              다음 주부터 최대 13주 후까지의 예측을 모두 포함한 성능입니다. 예측 시점이 멀어질수록
+              오차가 커질 수 있어 기본 후보 비교와 신뢰도 판단에는 다음 주 예측 성능을 사용합니다.
             </p>
             {diagnostics.candidates.length === 0 ? null : (
               <div className="admin-table-wrap">

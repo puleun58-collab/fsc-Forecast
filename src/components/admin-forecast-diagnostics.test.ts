@@ -195,11 +195,17 @@ test('performance blocks separate the reliability basis from the full-horizon ba
 
   assert.match(markup.slice(horizonStart, horizonStart + 60), /<details class="admin-panel admin-disclosure">/);
   assert.doesNotMatch(markup.slice(horizonStart, horizonStart + 80), /\sopen(?:=|>|\s)/);
-  assert.match(horizonBlock, /전체 horizon 평균 · 참고/);
+  assert.match(horizonBlock, /전체 예측 성능 참고/);
+  assert.doesNotMatch(horizonBlock, /전체 horizon 평균/);
+  assert.ok(
+    horizonBlock.indexOf('1~13주 앞 전체 예측을 함께 집계한 참고 지표입니다') <
+      horizonBlock.indexOf('전체 예측 MAPE'),
+  );
+  assert.match(horizonBlock, /현재 운영 정확도나 튜닝 후보 선정\s+기준으로 사용하지 않습니다/);
   assert.match(horizonBlock, /<span>전체 예측 MAPE<\/span><strong>9\.38%<\/strong>/);
   assert.match(horizonBlock, /<span>전체 예측 MAE<\/span><strong>179\.35원\/L<\/strong>/);
   assert.match(horizonBlock, /다음 주부터 최대 13주 후까지의 예측을 모두 포함한 성능입니다/);
-  assert.match(horizonBlock, /전체 예측 성능은 참고용이며 튜닝 후보 선정에는 사용하지 않습니다/);
+  assert.doesNotMatch(horizonBlock, /전체 예측 성능은 참고용이며 튜닝 후보 선정에는 사용하지 않습니다/);
   assert.match(horizonBlock, /전체 예측 MAE/);
   assert.match(horizonBlock, /전체 예측 MAPE/);
   assert.equal(horizonBlock.match(/diagnostics-metrics-table/g)?.length, 1);
