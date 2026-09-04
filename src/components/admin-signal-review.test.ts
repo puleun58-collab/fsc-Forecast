@@ -135,7 +135,8 @@ test('contribution is written as improvement or drag, never as a bare sign', () 
 test('trend reports that it cannot be removed on its own', () => {
   const markup = render();
 
-  assert.match(markup, /Trend<\/strong><span class="status-tag">구조상 독립 제거 비교 불가/);
+  assert.match(markup, /추세<\/strong><span class="status-tag">구조상 독립 제거 비교 불가/);
+  assert.doesNotMatch(markup, /Trend<|Bias 보정/);
 });
 
 test('the detail stays collapsed and keeps both windows with their samples', () => {

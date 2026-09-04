@@ -30,9 +30,9 @@ const HORIZON_STATUS_LABEL: Record<HorizonStatus, string> = {
 };
 
 const BAND_LABEL: Record<HorizonBandKey, string> = {
-  near: '근거리',
-  mid: '중거리',
-  long: '장거리',
+  near: '단기',
+  mid: '중기',
+  long: '장기',
 };
 
 const INTERVAL_STATUS_VIEW: Record<PredictionIntervalStatus, { label: string; className: string }> = {
@@ -226,7 +226,7 @@ export function AdminHorizonProfile({
                           <th scope="col">표본</th>
                           <th scope="col">실제 적중률</th>
                           <th scope="col">평균 범위 폭</th>
-                          <th scope="col">calibration 표본</th>
+                          <th scope="col">범위 산정 표본</th>
                           <th scope="col">상태</th>
                         </tr>
                       </thead>
@@ -243,7 +243,7 @@ export function AdminHorizonProfile({
                             <td data-label="평균 범위 폭">
                               {formatMae(entry.averageIntervalWidthKrwPerL)}
                             </td>
-                            <td data-label="calibration 표본">
+                            <td data-label="범위 산정 표본">
                               {entry.calibrationSampleCount}개 · {INTERVAL_SOURCE_LABEL[entry.source]}
                             </td>
                             <td data-label="상태">
@@ -267,7 +267,7 @@ export function AdminHorizonProfile({
             </>
           )}
           <p className="admin-decision__note">
-            예상 범위는 과거 Forecast 오차 분포로 계산한 통계적 참고 범위이며, 중심 예측값·FSC 계산을
+            예상 범위는 과거 예측 오차 분포로 계산한 통계적 참고 범위이며, 중심 예측값·FSC 계산을
             바꾸지 않습니다.
           </p>
         </div>
@@ -276,7 +276,7 @@ export function AdminHorizonProfile({
           <strong>실전 범위 검증</strong>
           <p className="admin-decision__note">
             실제 발행된 예측 범위와 확정 실제값을 비교합니다. 과거 백테스트 적중률과 별도로 누적합니다.
-            {publicationEnabled ? ' 공개 설정 ON' : ' 공개 설정 OFF'}
+            {publicationEnabled ? ' 예상 범위 공개 켜짐' : ' 예상 범위 공개 꺼짐'}
           </p>
           {forwardSummaries.length === 0 ? (
             <p className="backtest-detail__empty">실전 범위 검증 적용 이전</p>
@@ -336,7 +336,7 @@ export function AdminHorizonProfile({
             </div>
           )}
           <p className="admin-decision__note">
-            공개 설정을 켜도 실전 검증이 `적정`인 예측 거리만 사용자 화면에 예상 범위가 표시됩니다.
+            예상 범위 공개를 켜도 실전 검증이 `적정`인 예측 거리만 사용자 화면에 예상 범위가 표시됩니다.
           </p>
         </div>
       </div>

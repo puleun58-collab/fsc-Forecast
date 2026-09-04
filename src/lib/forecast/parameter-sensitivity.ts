@@ -314,7 +314,7 @@ function describeFactorValue(
     case "cap":
       return `외부 보정 상한 ±${(params.externalAdjustmentCapRatio * 100).toFixed(0)}%`;
     case "bias":
-      return `Bias ${describeBiasCorrection(params.biasCorrection)}`;
+      return `편향 보정 ${describeBiasCorrection(params.biasCorrection)}`;
     case "dailySignal":
       return `일별 단기 신호 ${describeDailySignal(params.dailySignal)}`;
   }
@@ -607,8 +607,8 @@ export function buildParameterSensitivity({
         status: "not-applicable",
         notApplicableReason:
           biasState.sampleCount < BIAS_CANDIDATE_WINDOW_WEEKS
-            ? "Bias 보정을 평가할 만큼 최근 예측 결과가 쌓이지 않았습니다."
-            : "최근 예측이 한쪽 방향으로 치우쳐 있지 않아 Bias 보정 후보를 만들지 않습니다.",
+            ? "편향 보정을 평가할 만큼 최근 예측 결과가 쌓이지 않았습니다."
+            : "최근 예측이 한쪽 방향으로 치우쳐 있지 않아 편향 보정 후보를 만들지 않습니다.",
         candidates: [],
       };
     }

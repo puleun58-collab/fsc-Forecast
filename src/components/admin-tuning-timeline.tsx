@@ -36,6 +36,16 @@ const TONE_CLASS: Record<string, string> = {
   neutral: '',
 };
 
+/**
+ * 1순위 배지는 후보가 실제로 존재하는 이벤트에만 붙인다.
+ * Shadow·운영 전환 단계는 자체 상태 배지만 사용한다.
+ */
+const SHOWS_RANK_BADGE: Partial<Record<TuningTimelineEventType, true>> = {
+  'candidate-started': true,
+  'candidate-confirmed': true,
+  'candidate-changed': true,
+};
+
 function describeWeek(weekEndDate: string | null): string {
   if (weekEndDate === null) {
     return '주차 정보 없음';
@@ -73,6 +83,9 @@ function describeDetail(event: TuningTimelineEvent): string | null {
 }
 
 export function AdminTuningTimeline({ events }: { events: readonly TuningTimelineEvent[] }) {
+  // 가장 최근 후보 이벤트만 "이번 주 1순위"로 표시한다.
+  const latestRankedIndex = events.findIndex(event => SHOWS_RANK_BADGE[event.type] === true);
+
   return (
     <details className="admin-panel admin-disclosure tuning-timeline">
       <summary className="admin-disclosure__summary">
@@ -91,6 +104,7 @@ export function AdminTuningTimeline({ events }: { events: readonly TuningTimelin
           <ol className="tuning-timeline__list">
             {events.map((event, index) => {
               const view = EVENT_VIEW[event.type];
+              const showsRank = SHOWS_RANK_BADGE[event.type] === true;
               const candidate = describeCandidate(event.candidateParams);
               const previous = describeCandidate(event.previousCandidateParams);
               const changed =
@@ -109,9 +123,11 @@ export function AdminTuningTimeline({ events }: { events: readonly TuningTimelin
                   <div className="tuning-timeline__head">
                     <span className="tuning-timeline__week">{describeWeek(event.weekEndDate)}</span>
                     <span className={`status-tag ${TONE_CLASS[view.tone]}`.trim()}>{view.title}</span>
-                    <span className="status-tag status-tag--accent">
-                      {index === 0 ? '이번 주 1순위' : '당시 1순위'}
-                    </span>
+                    {showsRank ? (
+                      <span className="status-tag status-tag--accent">
+                        {index === latestRankedIndex ? '이번 주 1순위' : '당시 1순위'}
+                      </span>
+                    ) : null}
                   </div>
                   {candidate === null ? null : (
                     <p className="tuning-timeline__candidate">{candidate}</p>
@@ -120,7 +136,7 @@ export function AdminTuningTimeline({ events }: { events: readonly TuningTimelin
                     <p className="admin-decision__note">이전 주 1순위 · {previous}</p>
                   )}
                   {changed === null ? null : (
-                    <p className="tuning-timeline__change">변경 · {changed}</p>
+                    <p className="tuning-timeline__change">이전 주 1순위 대비 변경 · {changed}</p>
                   )}
                   {event.type === 'candidate-changed' ? (
                     <p className="admin-decision__note">

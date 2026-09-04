@@ -125,10 +125,10 @@ function buildStages({
 }
 
 const SIGNAL_LABEL: Record<string, string> = {
-  trend: "Trend",
+  trend: "추세",
   dubai: "Dubai",
   usdKrw: "USD/KRW",
-  bias: "Bias 보정",
+  bias: "편향 보정",
   dailySignal: "일별 단기 신호",
 };
 

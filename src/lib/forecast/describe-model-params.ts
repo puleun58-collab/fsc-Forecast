@@ -50,7 +50,7 @@ export function listModelParamFields(params: ForecastModelParams): ModelParamFie
       label: "외부 보정 상한",
       value: `±${(params.externalAdjustmentCapRatio * 100).toFixed(0)}%`,
     },
-    { key: "bias", label: "Bias 보정", value: describeBiasCorrection(params.biasCorrection) },
+    { key: "bias", label: "편향 보정", value: describeBiasCorrection(params.biasCorrection) },
     {
       key: "dailySignal",
       label: "일별 단기 신호",
@@ -90,7 +90,7 @@ export function formatModelParams(
     // 진단 후보 항목은 실제 사용 중일 때만 덧붙인다.
     ...(params.biasCorrection === null
       ? []
-      : [`Bias 보정 ${describeBiasCorrection(params.biasCorrection)}`]),
+      : [`편향 보정 ${describeBiasCorrection(params.biasCorrection)}`]),
     ...(params.dailySignal === null
       ? []
       : [`일별 단기 신호 ${describeDailySignal(params.dailySignal)}`]),
@@ -105,7 +105,7 @@ export function formatModelParamsRest(params: ForecastModelParams): string {
     `외부 보정 상한 ±${(params.externalAdjustmentCapRatio * 100).toFixed(0)}%`,
     ...(params.biasCorrection === null
       ? []
-      : [`Bias 보정 ${describeBiasCorrection(params.biasCorrection)}`]),
+      : [`편향 보정 ${describeBiasCorrection(params.biasCorrection)}`]),
     ...(params.dailySignal === null
       ? []
       : [`일별 단기 신호 ${describeDailySignal(params.dailySignal)}`]),

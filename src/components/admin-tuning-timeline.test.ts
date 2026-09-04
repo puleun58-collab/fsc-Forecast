@@ -55,16 +55,30 @@ test('each event states its week, title and candidate', () => {
   assert.doesNotMatch(markup, /Trend |Lag |Weight |Cap ±|현재<\/span>/);
 });
 
-test('only the newest event is labelled as this week rank one', () => {
+test('the rank badge only marks candidate events, newest first', () => {
   const markup = render([
     event({ type: 'shadow-progress', shadowSampleCount: 4, shadowRequiredSampleCount: 13, shadowMaeKrwPerL: 19.2 }),
     event({ occurredAt: '2026-08-27T01:00:00.000Z' }),
+    event({ type: 'candidate-confirmed', occurredAt: '2026-08-20T01:00:00.000Z' }),
   ]);
 
   assert.equal(markup.match(/status-tag--accent">이번 주 1순위/g)?.length, 1);
   assert.equal(markup.match(/status-tag--accent">당시 1순위/g)?.length, 1);
   assert.equal(markup.match(/tuning-timeline__item--current/g)?.length, 1);
   assert.match(markup, /Shadow 4\/13주 · 누적 MAE 19\.20원\/L/);
+});
+
+test('shadow, transition and cleared events carry no rank badge', () => {
+  const markup = render([
+    event({ type: 'shadow-completed', candidateParams: null }),
+    event({ type: 'transition-applied', occurredAt: '2026-08-27T01:00:00.000Z', candidateParams: null }),
+    event({ type: 'candidate-cleared', occurredAt: '2026-08-20T01:00:00.000Z', candidateParams: null }),
+  ]);
+
+  assert.doesNotMatch(markup, /이번 주 1순위|당시 1순위/);
+  assert.match(markup, /Shadow 검증 완료/);
+  assert.match(markup, /운영 모델 적용/);
+  assert.match(markup, /기준 통과 후보 없음/);
 });
 
 test('a candidate change shows the setting it replaced', () => {
@@ -79,6 +93,8 @@ test('a candidate change shows the setting it replaced', () => {
   assert.match(markup, /1순위 후보가 변경됨/);
   assert.match(markup, /이전 주 1순위 · .*외부 보정 상한 ±1%/);
   assert.match(markup, /추세 기간 6주/);
+  assert.match(markup, /이전 주 1순위 대비 변경 · 추세 기간 8주 → 6주 · 외부 보정 상한 ±1% → ±2%/);
+  assert.match(markup, /후보 변경으로 동일 후보 확인 기간이 다시 시작됩니다\./);
 });
 
 test('operational transitions continue the same list', () => {

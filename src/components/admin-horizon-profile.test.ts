@@ -85,10 +85,11 @@ test('the degradation start is stated in plain words', () => {
 test('band averages never replace the individual distances', () => {
   const markup = render();
 
-  assert.match(markup, /근거리 1~4주/);
-  assert.match(markup, /중거리 5~8주/);
-  assert.match(markup, /장거리 9~13주/);
+  assert.match(markup, /단기 1~4주/);
+  assert.match(markup, /중기 5~8주/);
+  assert.match(markup, /장기 9~13주/);
   assert.match(markup, /13주 후<\/th><td data-label="표본">20개/);
+  assert.doesNotMatch(markup, /근거리|중거리|장거리/);
 });
 
 test('the full table stays collapsed and carries every metric with its sample count', () => {
@@ -110,6 +111,10 @@ test('interval coverage is shown against the configured target with widths', () 
   assert.match(markup, /평균 범위 폭/);
   assert.match(markup, /전체 가중 적중률/);
   assert.match(markup, /중심 예측값·FSC 계산을\s+바꾸지 않습니다|중심 예측값·FSC 계산을 바꾸지 않습니다/);
+  assert.match(markup, /범위 산정 표본/);
+  assert.match(markup, /과거 예측 오차 분포/);
+  assert.match(markup, /예상 범위 공개 (켜짐|꺼짐)/);
+  assert.doesNotMatch(markup, /calibration 표본|공개 설정 ON|공개 설정 OFF/);
 });
 
 test('runs from before the feature render the empty state', () => {

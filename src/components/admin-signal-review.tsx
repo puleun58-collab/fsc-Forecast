@@ -18,10 +18,10 @@ import {
 import type { SignalReviewDecision, SignalReviewStatus } from '@/lib/forecast/signal-review';
 
 export const SIGNAL_LABEL: Record<ForecastSignalKey, string> = {
-  trend: 'Trend',
+  trend: '추세',
   dubai: 'Dubai',
   usdKrw: 'USD/KRW',
-  bias: 'Bias 보정',
+  bias: '편향 보정',
   dailySignal: '일별 단기 신호',
 };
 

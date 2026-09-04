@@ -18,7 +18,7 @@ const STATUS_VIEW: Record<ShadowSessionStatus, { label: string; className: strin
   validating: {
     label: '검증 중',
     className: 'status-tag--warning',
-    summary: '새 Actual을 기준으로 운영 모델과 Shadow 후보를 동시에 검증하고 있습니다.',
+    summary: '새 실제값을 기준으로 현재 운영 설정과 Shadow 후보를 동시에 검증하고 있습니다.',
   },
   reviewable: {
     label: '운영 적용 검토 가능',
@@ -40,7 +40,7 @@ const STATUS_VIEW: Record<ShadowSessionStatus, { label: string; className: strin
 
 const STOP_REASON_TEXT: Record<ShadowStopReason, string> = {
   baseline_params_changed: '운영 모델 파라미터가 변경되었습니다.',
-  model_version_changed: 'Forecast 모델 버전이 변경되었습니다.',
+  model_version_changed: '예측 모델 버전이 변경되었습니다.',
 };
 
 function describeWeekLabel(targetDate: string): string {
@@ -110,9 +110,9 @@ function ObservationRow({ observation }: { observation: ShadowObservation }) {
       <th scope="row" data-label="주차">
         {describeWeekLabel(observation.targetDate)}
       </th>
-      <td data-label="운영 Forecast">{formatPriceText(observation.baselineForecastKrwPerL)}</td>
-      <td data-label="Shadow Forecast">{formatPriceText(observation.shadowForecastKrwPerL)}</td>
-      <td data-label="Actual">
+      <td data-label="운영 예측값">{formatPriceText(observation.baselineForecastKrwPerL)}</td>
+      <td data-label="Shadow 예측값">{formatPriceText(observation.shadowForecastKrwPerL)}</td>
+      <td data-label="실제값">
         {observation.actualKrwPerL === null ? '확정 대기' : formatPriceText(observation.actualKrwPerL)}
       </td>
       <td data-label="운영 오차">{formatMae(observation.baselineAbsoluteErrorKrwPerL)}</td>
@@ -185,7 +185,7 @@ function ComparisonTable({
             delta={formatDelta(baseline.maxAbsoluteErrorKrwPerL, shadow.maxAbsoluteErrorKrwPerL, '원/L')}
           />
           <ComparisonRow
-            label="Forecast 변동성"
+            label="예측값 변동성"
             baseline={formatMae(baseline.forecastChurnKrwPerL)}
             shadow={formatMae(shadow.forecastChurnKrwPerL)}
             delta={formatDelta(baseline.forecastChurnKrwPerL, shadow.forecastChurnKrwPerL, '원/L')}
@@ -286,12 +286,12 @@ export function AdminShadowValidation({ session }: { session: ShadowValidationSe
                 <dd>{summary.qualityChecks.maxErrorStable ? '충족' : '미충족'}</dd>
               </div>
               <div>
-                <dt>Forecast 변동성</dt>
+                <dt>예측값 변동성</dt>
                 <dd>{summary.qualityChecks.churnStable ? '충족' : '미충족'}</dd>
               </div>
               <div>
                 <dt>운영 변경 조건</dt>
-                <dd>별도 cooldown 확인 필요</dd>
+                <dd>운영 변경 대기 기간 확인 필요</dd>
               </div>
             </dl>
           </div>
@@ -311,9 +311,9 @@ export function AdminShadowValidation({ session }: { session: ShadowValidationSe
                   <thead>
                     <tr>
                       <th scope="col">주차</th>
-                      <th scope="col">운영 Forecast</th>
-                      <th scope="col">Shadow Forecast</th>
-                      <th scope="col">Actual</th>
+                      <th scope="col">운영 예측값</th>
+                      <th scope="col">Shadow 예측값</th>
+                      <th scope="col">실제값</th>
                       <th scope="col">운영 오차</th>
                       <th scope="col">Shadow 오차</th>
                       <th scope="col">Shadow 방향</th>
@@ -333,7 +333,7 @@ export function AdminShadowValidation({ session }: { session: ShadowValidationSe
         </details>
 
         <p className="admin-decision__note">
-          Shadow 예측은 운영 Forecast, FSC, 신뢰도, 공개 대시보드에 사용하지 않는 진단 데이터입니다.
+          Shadow 예측값은 운영 예측값, FSC, 신뢰도, 공개 대시보드에 사용하지 않는 진단 데이터입니다.
         </p>
       </div>
     </SectionCard>

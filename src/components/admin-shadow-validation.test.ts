@@ -73,11 +73,12 @@ test('an in-flight session shows progress and marks the numbers as interim', () 
 
   assert.match(markup, /Shadow 튜닝 후보 검증/);
   assert.match(markup, /검증 중 · 2\/13/);
-  assert.match(markup, /새 Actual을 기준으로 운영 모델과 Shadow 후보를 동시에 검증하고 있습니다/);
+  assert.match(markup, /새 실제값을 기준으로 현재 운영 설정과 Shadow 후보를 동시에 검증하고 있습니다/);
   assert.match(markup, /Model B · 추세 기간 8주 · Dubai · 반영 시차 1주 · 비중 20%/);
   assert.match(markup, /Model B · 추세 기간 6주 · Dubai · 반영 시차 1주 · 비중 20%/);
   assert.match(markup, /표본 13주가 확보되기 전까지는 중간 결과이며 우열을 판정하지 않습니다/);
   assert.doesNotMatch(markup, /운영 적용 검토 가능/);
+  assert.doesNotMatch(markup, /Actual|운영 Forecast|Shadow Forecast|cooldown/);
 });
 
 test('the comparison table pairs operating and shadow metrics', () => {
@@ -86,7 +87,10 @@ test('the comparison table pairs operating and shadow metrics', () => {
   assert.match(markup, /MAE<\/th><td data-label="현재 운영">25\.00원\/L<\/td><td data-label="Shadow">12\.50원\/L<\/td>/);
   assert.match(markup, /-12\.50원\/L/);
   assert.match(markup, /방향 정확도/);
-  assert.match(markup, /Forecast 변동성/);
+  assert.match(markup, /예측값 변동성/);
+  assert.match(markup, /운영 예측값/);
+  assert.match(markup, /Shadow 예측값/);
+  assert.match(markup, /실제값/);
 });
 
 test('a completed session that meets the existing rules is review-ready, not applied', () => {
@@ -98,7 +102,7 @@ test('a completed session that meets the existing rules is review-ready, not app
   assert.match(markup, /<span class="status-tag status-tag--ok">운영 적용 검토 가능<\/span>/);
   assert.match(markup, /운영 모델은 아직 변경되지 않았습니다/);
   assert.match(markup, /MAE·MAPE 개선<\/dt><dd>충족<\/dd>/);
-  assert.match(markup, /운영 변경 조건<\/dt><dd>별도 cooldown 확인 필요<\/dd>/);
+  assert.match(markup, /운영 변경 조건<\/dt><dd>운영 변경 대기 기간 확인 필요<\/dd>/);
   assert.doesNotMatch(markup, /<button/);
   assert.doesNotMatch(markup, /Shadow 적용|바로 승격|자동 튜닝/);
 });

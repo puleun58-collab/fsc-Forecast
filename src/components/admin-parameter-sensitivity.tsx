@@ -42,7 +42,7 @@ const GROUP_LABEL: Record<ParameterSensitivityGroupKey, string> = {
   dubai: 'Dubai 민감도',
   usdKrw: 'USD/KRW 민감도',
   cap: '외부 보정 상한 민감도',
-  bias: 'Bias 보정 민감도',
+  bias: '편향 보정 민감도',
   dailySignal: '일별 단기 신호 민감도',
 };
 
