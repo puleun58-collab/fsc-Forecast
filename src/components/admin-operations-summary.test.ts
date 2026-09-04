@@ -7,6 +7,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import {
   AdminOperationsSummary,
   type AdminOperationsSummaryProps,
+  type NextStepInput,
+  resolveNextStep,
 } from './admin-operations-summary';
 import type { ModelTransitionView } from './admin-model-transition';
 import type { PostTransitionView } from './admin-post-transition';
@@ -83,11 +85,6 @@ function render(overrides: Partial<AdminOperationsSummaryProps> = {}): string {
       recentMaeKrwPerL: 28.37,
       recentSampleCount: 13,
       reliabilityGrade: 'A',
-      persistence: null,
-      tuningCandidateCount: 0,
-      shadow: null,
-      transition: TRANSITION,
-      postTransition: null,
       ...overrides,
     }),
   );
@@ -105,16 +102,28 @@ test('the summary leads with the operating model and its recent next-week perfor
   assert.match(markup, /최근 13주의 다음 주 예측 결과를 기준으로 산정한 성능입니다/);
 });
 
-test('only one next step is shown and idle runs report no candidate', () => {
+test('the summary drops progress state and keeps only the operating setting', () => {
   const markup = render();
-  const steps = markup.match(/class="admin-summary__next /g) ?? [];
 
-  assert.equal(steps.length, 1);
-  assert.match(markup, /튜닝 후보 없음/);
+  assert.match(markup, /현재 운영 중인 예측 설정과 최근 성능을 한눈에 보여줍니다/);
+  assert.match(markup, /현재 운영 중인 설정입니다/);
+  assert.doesNotMatch(markup, /admin-summary__next/);
+  assert.doesNotMatch(markup, /동일 후보 확인|Shadow 검증을 시작|다음 확인 단계/);
 });
 
+function nextStep(overrides: Partial<NextStepInput> = {}) {
+  return resolveNextStep({
+    persistence: null,
+    tuningCandidateCount: 0,
+    shadow: null,
+    transition: TRANSITION,
+    postTransition: null,
+    ...overrides,
+  });
+}
+
 test('candidate confirmation and shadow progress are reported as the next step', () => {
-  const confirming = render({
+  const confirming = nextStep({
     tuningCandidateCount: 2,
     persistence: {
       version: 1,
@@ -129,7 +138,7 @@ test('candidate confirmation and shadow progress are reported as the next step',
       updatedAt: '2026-08-19T00:00:00.000Z',
     },
   });
-  const validating = render({
+  const validating = nextStep({
     shadow: shadowSession([
       { targetDate: '2026-06-08T00:00:00.000Z', actual: 1510 },
       { targetDate: '2026-06-15T00:00:00.000Z', actual: 1512 },
@@ -137,17 +146,17 @@ test('candidate confirmation and shadow progress are reported as the next step',
     ]),
   });
 
-  assert.match(confirming, /동일 후보 확인 1\/2주/);
-  assert.match(validating, /Shadow 검증 중 · 2\/13주/);
-  assert.doesNotMatch(validating, /동일 후보 확인/);
+  assert.equal(nextStep().label, '튜닝 후보 없음');
+  assert.equal(confirming.label, '동일 후보 확인 1/2주');
+  assert.equal(validating.label, 'Shadow 검증 중 · 2/13주');
 });
 
 test('states that need an admin decision outrank progress states', () => {
-  const approvable = render({
+  const approvable = nextStep({
     transition: { ...TRANSITION, status: 'approvable' },
     shadow: shadowSession([{ targetDate: '2026-06-08T00:00:00.000Z', actual: 1510 }]),
   });
-  const rollback = render({
+  const rollback = nextStep({
     transition: { ...TRANSITION, status: 'approvable' },
     postTransition: {
       monitoring: {
@@ -196,10 +205,8 @@ test('states that need an admin decision outrank progress states', () => {
     },
   });
 
-  assert.match(approvable, /운영 전환 승인 필요/);
-  assert.doesNotMatch(approvable, /Shadow 검증 중/);
-  assert.match(rollback, /롤백 검토 필요/);
-  assert.doesNotMatch(rollback, /운영 전환 승인 필요/);
+  assert.equal(approvable.label, '운영 전환 승인 필요');
+  assert.equal(rollback.label, '롤백 검토 필요');
 });
 
 test('a run without diagnostics renders the empty state', () => {

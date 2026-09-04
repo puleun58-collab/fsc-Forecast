@@ -65,7 +65,8 @@ test('a single observation is shown once without the collapsed list', () => {
     key: 'candidate-persistence',
     severity: 'watch',
     title: '동일 후보 확인 1/2주',
-    detail: '추세 기간 8주 · Dubai · 반영 시차 2주 · 비중 5% · 같은 후보가 한 번 더 통과하면 Shadow 검증을 시작합니다.',
+    detail:
+      '현재 1순위 후보 · 추세 기간 8주 · Dubai · 반영 시차 2주 · 비중 5% · 같은 후보가 한 번 더 통과하면 Shadow 검증을 시작합니다.',
     source: 'tuning',
   });
   const markup = render(center({ status: 'watch', observations: [observation] }));
@@ -74,6 +75,9 @@ test('a single observation is shown once without the collapsed list', () => {
   assert.doesNotMatch(markup, /전체 상태 보기/);
   assert.doesNotMatch(markup, /진행 중인 검증과 관찰 항목이 있습니다/);
   assert.doesNotMatch(markup, /현재 단계 ·/);
+  assert.match(markup, /현재 Forecast 상태와 진행 중인 검증 단계를 한눈에 보여줍니다/);
+  assert.match(markup, /현재 1순위 후보 · 추세 기간 8주/);
+  assert.doesNotMatch(markup, /지금 Forecast가 정상인지/);
 });
 
 test('only one primary action is highlighted and never repeated', () => {

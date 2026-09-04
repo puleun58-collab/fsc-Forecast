@@ -272,7 +272,7 @@ export function buildOperationsStatusCenter({
       detail:
         topCandidateLabel === null
           ? "같은 후보가 새 주간 데이터에서 한 번 더 통과하면 Shadow 검증을 시작합니다."
-          : `${topCandidateLabel} · 같은 후보가 한 번 더 통과하면 Shadow 검증을 시작합니다.`,
+          : `현재 1순위 후보 · ${topCandidateLabel} · 같은 후보가 한 번 더 통과하면 Shadow 검증을 시작합니다.`,
       source: "tuning",
     });
   }

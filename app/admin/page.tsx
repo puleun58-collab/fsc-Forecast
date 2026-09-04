@@ -209,11 +209,6 @@ export default async function AdminPage() {
             forecastDiagnosticsEntries[0]?.diagnostics.recentOneStep?.sampleCount ?? null
           }
           reliabilityGrade={activeResultDto?.reliabilityGrade ?? null}
-          persistence={persistence}
-          tuningCandidateCount={sensitivity?.tuningCandidates.length ?? 0}
-          shadow={shadowSession}
-          transition={transitionSection.transition}
-          postTransition={transitionSection.postTransition}
           drift={performanceDrift}
         />
 

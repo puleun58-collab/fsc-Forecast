@@ -11,17 +11,20 @@ import type { PostTransitionView } from './admin-post-transition';
 import type { ShadowValidationSession } from '@/lib/forecast/shadow-validation';
 import { summarizeShadowValidation } from '@/lib/forecast/shadow-validation';
 
+export interface NextStepInput {
+  persistence: CandidatePersistence | null;
+  tuningCandidateCount: number;
+  shadow: ShadowValidationSession | null;
+  transition: ModelTransitionView;
+  postTransition: PostTransitionView | null;
+}
+
 export interface AdminOperationsSummaryProps {
   modelParams: ForecastModelParams | null;
   recentMapePct: number | null;
   recentMaeKrwPerL: number | null;
   recentSampleCount: number | null;
   reliabilityGrade: string | null;
-  persistence: CandidatePersistence | null;
-  tuningCandidateCount: number;
-  shadow: ShadowValidationSession | null;
-  transition: ModelTransitionView;
-  postTransition: PostTransitionView | null;
   /** 최근 성능 드리프트 진단. 기능 적용 이전 run에서는 null이다. */
   drift?: PerformanceDrift | null;
 }
@@ -40,17 +43,17 @@ function formatMae(value: number | null): string {
   return value === null ? '산정 전' : formatPriceText(value);
 }
 
-/** 관리자가 지금 해야 할 일 하나만 고른다. 조치가 필요한 상태를 항상 앞세운다. */
+/**
+ * 관리자가 지금 해야 할 일 하나만 고른다. 조치가 필요한 상태를 항상 앞세운다.
+ * 진행 단계 표시는 `Forecast 운영 상태` 카드가 단독으로 담당하므로 결과는 그쪽에서만 렌더한다.
+ */
 export function resolveNextStep({
   persistence,
   tuningCandidateCount,
   shadow,
   transition,
   postTransition,
-}: Pick<
-  AdminOperationsSummaryProps,
-  'persistence' | 'tuningCandidateCount' | 'shadow' | 'transition' | 'postTransition'
->): NextStep {
+}: NextStepInput): NextStep {
   if (postTransition !== null && postTransition.summary.status === 'rollback_reviewable') {
     return {
       label: '롤백 검토 필요',
@@ -234,11 +237,6 @@ export function AdminOperationsSummary({
   recentMaeKrwPerL,
   recentSampleCount,
   reliabilityGrade,
-  persistence,
-  tuningCandidateCount,
-  shadow,
-  transition,
-  postTransition,
   drift = null,
 }: AdminOperationsSummaryProps) {
   if (modelParams === null) {
@@ -246,7 +244,7 @@ export function AdminOperationsSummary({
       <SectionCard
         title="운영 요약"
         badge="예측 없음"
-        description="현재 운영 중인 예측 설정과 최근 성능, 다음 확인 단계를 한눈에 보여줍니다."
+        description="현재 운영 중인 예측 설정과 최근 성능을 한눈에 보여줍니다."
         className="admin-summary"
         emptyStateTitle="예측 실행 기록이 없습니다."
         emptyStateCopy="다음 예측 실행부터 운영 상태가 표시됩니다."
@@ -254,19 +252,11 @@ export function AdminOperationsSummary({
     );
   }
 
-  const nextStep = resolveNextStep({
-    persistence,
-    tuningCandidateCount,
-    shadow,
-    transition,
-    postTransition,
-  });
-
   return (
     <SectionCard
       title="운영 요약"
       badge={`현재 Model ${modelParams.modelId}`}
-      description="현재 운영 중인 예측 설정과 최근 성능, 다음 확인 단계를 한눈에 보여줍니다."
+      description="현재 운영 중인 예측 설정과 최근 성능을 한눈에 보여줍니다."
       className="admin-summary"
     >
       <div className="admin-detail-stack">
@@ -286,20 +276,7 @@ export function AdminOperationsSummary({
 
         <p className="admin-decision__note">{formatModelParams(modelParams)}</p>
 
-        <div className={`admin-summary__next admin-summary__next--${nextStep.tone}`}>
-          <span
-            className={`status-tag ${
-              nextStep.tone === 'action'
-                ? 'status-tag--warning'
-                : nextStep.tone === 'progress'
-                  ? 'status-tag--ok'
-                  : ''
-            }`.trim()}
-          >
-            {nextStep.label}
-          </span>
-          <p className="admin-decision__note">{nextStep.detail}</p>
-        </div>
+        <p className="admin-decision__note">현재 운영 중인 설정입니다.</p>
 
         {drift === null ? null : <PerformanceDriftBlock drift={drift} />}
 
