@@ -74,7 +74,7 @@ function describeDetail(event: TuningTimelineEvent): string | null {
   }
 
   if (event.confirmedCount !== null && event.requiredCount !== null) {
-    const progress = `동일 후보 확인 ${event.confirmedCount}/${event.requiredCount}주`;
+    const progress = `1순위 후보 연속 확인 ${event.confirmedCount}/${event.requiredCount}주`;
 
     return event.confirmedCount >= event.requiredCount ? `${progress} 완료` : progress;
   }
@@ -140,7 +140,7 @@ export function AdminTuningTimeline({ events }: { events: readonly TuningTimelin
                   )}
                   {event.type === 'candidate-changed' ? (
                     <p className="admin-decision__note">
-                      후보 변경으로 동일 후보 확인 기간이 다시 시작됩니다.
+                      후보 변경으로 1순위 후보 연속 확인 기간이 다시 시작됩니다.
                     </p>
                   ) : null}
                   {detail === null ? null : <p className="admin-decision__note">{detail}</p>}

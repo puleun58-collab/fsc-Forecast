@@ -25,7 +25,7 @@ function item(overrides: Partial<OperationsStatusItem> = {}): OperationsStatusIt
 
 function stages(current: 'candidate' | 'shadow' | 'transition'): OperationsStatusCenter['stages'] {
   return [
-    { key: 'candidate', label: '동일 후보 확인 1/2', current: current === 'candidate' },
+    { key: 'candidate', label: '1순위 후보 연속 확인 1/2', current: current === 'candidate' },
     { key: 'shadow', label: current === 'candidate' ? 'Shadow 대기' : 'Shadow 5/13', current: current === 'shadow' },
     {
       key: 'transition',
@@ -64,14 +64,14 @@ test('a single observation is shown once without the collapsed list', () => {
   const observation = item({
     key: 'candidate-persistence',
     severity: 'watch',
-    title: '동일 후보 확인 1/2주',
+    title: '1순위 후보 연속 확인 1/2주',
     detail:
-      '현재 1순위 후보 · 추세 기간 8주 · Dubai · 반영 시차 2주 · 비중 5% · 같은 후보가 한 번 더 통과하면 Shadow 검증을 시작합니다.',
+      '현재 1순위 후보 · 추세 기간 8주 · Dubai · 반영 시차 2주 · 비중 5% · 같은 후보가 다음 주에도 1순위를 유지하면 Shadow 검증을 시작합니다.',
     source: 'tuning',
   });
   const markup = render(center({ status: 'watch', observations: [observation] }));
 
-  assert.equal(markup.match(/동일 후보 확인 1\/2주/g)?.length, 1);
+  assert.equal(markup.match(/1순위 후보 연속 확인 1\/2주/g)?.length, 1);
   assert.doesNotMatch(markup, /전체 상태 보기/);
   assert.doesNotMatch(markup, /진행 중인 검증과 관찰 항목이 있습니다/);
   assert.doesNotMatch(markup, /현재 단계 ·/);
@@ -119,7 +119,7 @@ test('the flow marks only the current stage', () => {
   const shadow = render(center({ status: 'watch', stages: stages('shadow') }));
   const transition = render(center({ status: 'action-required', stages: stages('transition') }));
 
-  assert.match(candidate, /operations-status__stage--current">동일 후보 확인 1\/2</);
+  assert.match(candidate, /operations-status__stage--current">1순위 후보 연속 확인 1\/2</);
   assert.match(shadow, /operations-status__stage--current">Shadow 5\/13</);
   assert.match(transition, /operations-status__stage--current">운영 전환 검토</);
   assert.equal(candidate.match(/operations-status__stage--current/g)?.length, 1);

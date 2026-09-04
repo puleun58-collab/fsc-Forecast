@@ -49,7 +49,7 @@ const GROUP_LABEL: Record<ParameterSensitivityGroupKey, string> = {
 const TUNING_FLOW_STEPS = [
   '자동 비교',
   '후보 최대 3개',
-  '동일 후보 확인 2주',
+  '1순위 후보 연속 확인 2주',
   'Shadow 검증 · 새 실제 데이터 13주',
   '운영 적용 검토',
 ];
@@ -100,7 +100,7 @@ function ShadowEntryStatus({ persistence }: { persistence: CandidatePersistence 
       <p className="admin-decision__note">
         {confirmed
           ? '같은 후보가 새 주간 데이터에서 2회 연속 확인되어 Shadow 검증을 시작할 수 있습니다.'
-          : '같은 후보가 다음 새 주간 데이터에서도 기준을 통과하면 Shadow 검증을 시작합니다.'}
+          : '같은 후보가 다음 주에도 1순위를 유지하면 Shadow 검증을 시작합니다.'}
       </p>
       {persistence.status === 'reset' ? (
         <p className="admin-decision__note">최신 1순위 후보가 변경되어 확인을 다시 시작합니다.</p>

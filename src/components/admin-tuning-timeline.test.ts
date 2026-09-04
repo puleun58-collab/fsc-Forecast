@@ -51,7 +51,7 @@ test('each event states its week, title and candidate', () => {
   assert.match(markup, /9월 1주차/);
   assert.match(markup, /1순위 후보 확인 시작/);
   assert.match(markup, /외부 보정 상한 ±1%/);
-  assert.match(markup, /동일 후보 확인 1\/2주/);
+  assert.match(markup, /1순위 후보 연속 확인 1\/2주/);
   assert.doesNotMatch(markup, /Trend |Lag |Weight |Cap ±|현재<\/span>/);
 });
 
@@ -94,7 +94,7 @@ test('a candidate change shows the setting it replaced', () => {
   assert.match(markup, /이전 주 1순위 · .*외부 보정 상한 ±1%/);
   assert.match(markup, /추세 기간 6주/);
   assert.match(markup, /이전 주 1순위 대비 변경 · 추세 기간 8주 → 6주 · 외부 보정 상한 ±1% → ±2%/);
-  assert.match(markup, /후보 변경으로 동일 후보 확인 기간이 다시 시작됩니다\./);
+  assert.match(markup, /후보 변경으로 1순위 후보 연속 확인 기간이 다시 시작됩니다\./);
 });
 
 test('operational transitions continue the same list', () => {

@@ -104,8 +104,8 @@ function buildStages({
       key: "candidate",
       label:
         persistence === null || persistence.candidateFingerprint === null
-          ? "동일 후보 확인 대기"
-          : `동일 후보 확인 ${persistence.confirmedCount}/${persistence.requiredCount}`,
+          ? "1순위 후보 연속 확인 대기"
+          : `1순위 후보 연속 확인 ${persistence.confirmedCount}/${persistence.requiredCount}`,
       current: candidateConfirming,
     },
     {
@@ -268,11 +268,11 @@ export function buildOperationsStatusCenter({
     items.push({
       key: "candidate-persistence",
       severity: "watch",
-      title: `동일 후보 확인 ${persistence.confirmedCount}/${persistence.requiredCount}주`,
+      title: `1순위 후보 연속 확인 ${persistence.confirmedCount}/${persistence.requiredCount}주`,
       detail:
         topCandidateLabel === null
-          ? "같은 후보가 새 주간 데이터에서 한 번 더 통과하면 Shadow 검증을 시작합니다."
-          : `현재 1순위 후보 · ${topCandidateLabel} · 같은 후보가 한 번 더 통과하면 Shadow 검증을 시작합니다.`,
+          ? "같은 후보가 다음 주에도 1순위를 유지하면 Shadow 검증을 시작합니다."
+          : `현재 1순위 후보 · ${topCandidateLabel} · 같은 후보가 다음 주에도 1순위를 유지하면 Shadow 검증을 시작합니다.`,
       source: "tuning",
     });
   }

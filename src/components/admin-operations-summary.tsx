@@ -108,9 +108,9 @@ export function resolveNextStep({
 
   if (persistence !== null && persistence.candidateFingerprint !== null) {
     return {
-      label: `동일 후보 확인 ${persistence.confirmedCount}/${persistence.requiredCount}주`,
+      label: `1순위 후보 연속 확인 ${persistence.confirmedCount}/${persistence.requiredCount}주`,
       tone: 'progress',
-      detail: '같은 후보가 새 주간 데이터에서 한 번 더 통과하면 Shadow 검증을 시작합니다.',
+      detail: '같은 후보가 다음 주에도 1순위를 유지하면 Shadow 검증을 시작합니다.',
     };
   }
 

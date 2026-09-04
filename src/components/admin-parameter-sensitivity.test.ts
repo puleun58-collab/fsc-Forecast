@@ -74,7 +74,7 @@ function render(
       sensitivity,
       persistence,
       regimeComparisons,
-      stageLabel: '동일 후보 확인 1/2주',
+      stageLabel: '1순위 후보 연속 확인 1/2주',
     }),
   );
 }
@@ -212,7 +212,7 @@ test('the card leads with the automatic tuning flow guide', () => {
   assert.deepEqual(stepLabels, [
     '자동 비교',
     '후보 최대 3개',
-    '동일 후보 확인 2주',
+    '1순위 후보 연속 확인 2주',
     'Shadow 검증 · 새 실제 데이터 13주',
     '운영 적용 검토',
   ]);
@@ -224,7 +224,7 @@ test('shadow entry progress is visible while the candidate is being confirmed', 
   const markup = render(CURRENT, 6, persistenceState());
 
   assert.match(markup, /Shadow 진입 확인 · 1\/2주</);
-  assert.match(markup, /같은 후보가 다음 새 주간 데이터에서도 기준을 통과하면 Shadow 검증을 시작합니다/);
+  assert.match(markup, /같은 후보가 다음 주에도 1순위를 유지하면 Shadow 검증을 시작합니다/);
   assert.doesNotMatch(markup, /최신 1순위 후보가 변경되어/);
 });
 
@@ -364,7 +364,7 @@ test('the daily signal group states the observation window it compared', () => {
 test('the current setting never carries the first choice badge', () => {
   const markup = render(CURRENT, null);
 
-  assert.doesNotMatch(markup, /1순위 후보/);
+  assert.doesNotMatch(markup, />1순위 후보</);
   assert.match(markup, /현재<\/span>/);
 });
 
@@ -401,7 +401,7 @@ test('the excluded candidate keeps its lowest-value flag while failing the guard
 
   assert.match(markup, /최저<\/span>/);
   assert.match(markup, /후보 제외/);
-  assert.doesNotMatch(markup, /1순위 후보/);
+  assert.doesNotMatch(markup, />1순위 후보</);
 });
 
 test('the first choice is summarized against the current setting with its stage', () => {
@@ -414,7 +414,7 @@ test('the first choice is summarized against the current setting with its stage'
   assert.match(summary, /19\.3% 개선/);
   assert.match(summary, /1\.27% → 1\.02%/);
   assert.match(summary, /24\.50원\/L → 20\.10원\/L/);
-  assert.match(summary, /동일 후보 확인 1\/2주/);
+  assert.match(summary, /1순위 후보 연속 확인 1\/2주/);
 });
 
 test('without a ranked candidate the summary says so instead of showing numbers', () => {

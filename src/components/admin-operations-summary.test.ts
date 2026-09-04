@@ -108,7 +108,7 @@ test('the summary drops progress state and keeps only the operating setting', ()
   assert.match(markup, /현재 운영 중인 예측 설정과 최근 성능을 한눈에 보여줍니다/);
   assert.match(markup, /현재 운영 중인 설정입니다/);
   assert.doesNotMatch(markup, /admin-summary__next/);
-  assert.doesNotMatch(markup, /동일 후보 확인|Shadow 검증을 시작|다음 확인 단계/);
+  assert.doesNotMatch(markup, /1순위 후보 연속 확인|Shadow 검증을 시작|다음 확인 단계/);
 });
 
 function nextStep(overrides: Partial<NextStepInput> = {}) {
@@ -147,8 +147,27 @@ test('candidate confirmation and shadow progress are reported as the next step',
   });
 
   assert.equal(nextStep().label, '튜닝 후보 없음');
-  assert.equal(confirming.label, '동일 후보 확인 1/2주');
+  assert.equal(confirming.label, '1순위 후보 연속 확인 1/2주');
   assert.equal(validating.label, 'Shadow 검증 중 · 2/13주');
+
+  const confirmed = nextStep({
+    tuningCandidateCount: 2,
+    persistence: {
+      version: 1,
+      status: 'confirmed',
+      candidateFingerprint: 'v1|B|6|1:0.2|none|0.03',
+      candidateParams: { ...PARAMS, trendLookbackWeeks: 6 },
+      candidateSource: 'parameter-sensitivity:trendLookback',
+      confirmedCount: 2,
+      requiredCount: 2,
+      lastConfirmedWeekEndDate: '2026-08-26T00:00:00.000Z',
+      startedAt: '2026-08-19T00:00:00.000Z',
+      updatedAt: '2026-08-26T00:00:00.000Z',
+    },
+  });
+
+  assert.equal(confirmed.label, '1순위 후보 연속 확인 2/2주');
+  assert.equal(confirming.detail, '같은 후보가 다음 주에도 1순위를 유지하면 Shadow 검증을 시작합니다.');
 });
 
 test('states that need an admin decision outrank progress states', () => {
