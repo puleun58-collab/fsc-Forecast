@@ -6,9 +6,9 @@ import {
   isShadowEntryConfirmed,
   readCandidatePersistence,
   resolveCandidatePersistence,
-  selectPersistenceCandidate,
   type CandidatePersistence,
 } from "./candidate-persistence";
+import { selectRawTopCandidate } from "./candidate-switch";
 import type { ForecastModelParams } from "./forecast-model-config";
 import {
   buildCandidateFingerprint,
@@ -141,11 +141,11 @@ test("only quality-passing candidates that differ from the baseline are gated", 
   };
   const rejected: ShadowCandidateInput = { ...TREND_CANDIDATE, meetsPromotionQuality: false };
 
-  assert.equal(selectPersistenceCandidate([], BASELINE, MODEL_VERSION), null);
-  assert.equal(selectPersistenceCandidate([baselineTwin], BASELINE, MODEL_VERSION), null);
-  assert.equal(selectPersistenceCandidate([rejected], BASELINE, MODEL_VERSION), null);
+  assert.equal(selectRawTopCandidate([], BASELINE, MODEL_VERSION), null);
+  assert.equal(selectRawTopCandidate([baselineTwin], BASELINE, MODEL_VERSION), null);
+  assert.equal(selectRawTopCandidate([rejected], BASELINE, MODEL_VERSION), null);
   assert.equal(
-    selectPersistenceCandidate([rejected, TREND_CANDIDATE], BASELINE, MODEL_VERSION),
+    selectRawTopCandidate([rejected, TREND_CANDIDATE], BASELINE, MODEL_VERSION),
     TREND_CANDIDATE,
   );
 });

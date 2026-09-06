@@ -5,6 +5,7 @@ import type { CandidatePersistence } from "./candidate-persistence";
 import type { HorizonPerformance } from "./horizon-performance";
 import type { PerformanceDrift } from "./performance-drift";
 import type { SignalReviewDecision } from "./signal-review";
+import { evaluateShadowDegradation } from "./shadow-degradation";
 import { summarizeShadowValidation, type ShadowValidationSession } from "./shadow-validation";
 
 export type OperationsStatus = "healthy" | "watch" | "attention" | "action-required" | "unknown";
@@ -104,8 +105,10 @@ function buildStages({
       key: "candidate",
       label:
         persistence === null || persistence.candidateFingerprint === null
-          ? "1순위 후보 연속 확인 대기"
-          : `1순위 후보 연속 확인 ${persistence.confirmedCount}/${persistence.requiredCount}`,
+          ? shadowRunning
+            ? "차기 Shadow 후보 대기"
+            : "1순위 후보 연속 확인 대기"
+          : `${shadowRunning ? "차기 Shadow 후보 확인" : "1순위 후보 연속 확인"} ${persistence.confirmedCount}/${persistence.requiredCount}`,
       current: candidateConfirming,
     },
     {
@@ -261,16 +264,44 @@ export function buildOperationsStatusCenter({
     }
   }
 
-  // Shadow 진행 중에는 후보 확인 문구를 중복해서 올리지 않는다.
+  // Shadow 진행 중이면 후보 확인은 "차기 Shadow 후보"로만 보조 표시한다.
   const shadowRunning = items.some((item) => item.key === "shadow-progress");
+  const degradation = evaluateShadowDegradation(shadow);
 
-  if (!shadowRunning && persistence !== null && persistence.candidateFingerprint !== null) {
+  if (degradation !== null && degradation.status !== "stable" && degradation.status !== "insufficient-samples") {
+    const stopReady = degradation.status === "stop-recommended";
+
+    items.push({
+      key: "shadow-degradation",
+      severity: stopReady ? "attention" : "watch",
+      title: stopReady
+        ? `Shadow 중도중단 조건 충족 · ${degradation.confirmedCount}/${degradation.requiredCount}주`
+        : `Shadow 성능 악화 확인 · ${degradation.confirmedCount}/${degradation.requiredCount}주`,
+      detail: stopReady
+        ? "운영 모델 대비 누적 MAE 악화가 2주 연속 확인되었습니다. 중단 여부는 관리자가 결정합니다."
+        : "다음 신규 Actual 반영 후에도 같은 조건이면 중도중단 조건을 충족합니다.",
+      source: "shadow",
+    });
+  }
+
+  if (persistence !== null && persistence.candidateFingerprint !== null) {
+    const confirmed = persistence.confirmedCount >= persistence.requiredCount;
+    const progress = `${persistence.confirmedCount}/${persistence.requiredCount}주`;
+    const candidateNote = topCandidateLabel === null ? "" : `${topCandidateLabel} · `;
+
     items.push({
       key: "candidate-persistence",
       severity: "watch",
-      title: `1순위 후보 연속 확인 ${persistence.confirmedCount}/${persistence.requiredCount}주`,
-      detail:
-        topCandidateLabel === null
+      title: shadowRunning
+        ? confirmed
+          ? "차기 Shadow 후보 확정"
+          : `차기 Shadow 후보 확인 ${progress}`
+        : `1순위 후보 연속 확인 ${progress}`,
+      detail: shadowRunning
+        ? confirmed
+          ? `${candidateNote}연속 확인 완료 ${progress} · 현재 Shadow 검증 완료 또는 중단 후 최신 기준으로 다시 확인합니다.`
+          : `${candidateNote}현재 Shadow 검증과 별도로 차기 후보의 연속 성능을 확인합니다.`
+        : topCandidateLabel === null
           ? "같은 후보가 다음 주에도 1순위를 유지하면 Shadow 검증을 시작합니다."
           : `현재 1순위 후보 · ${topCandidateLabel} · 같은 후보가 다음 주에도 1순위를 유지하면 Shadow 검증을 시작합니다.`,
       source: "tuning",

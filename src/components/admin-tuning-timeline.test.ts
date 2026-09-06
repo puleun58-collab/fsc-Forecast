@@ -25,6 +25,9 @@ function event(overrides: Partial<TuningTimelineEvent> = {}): TuningTimelineEven
     shadowSampleCount: null,
     shadowRequiredSampleCount: null,
     shadowMaeKrwPerL: null,
+    switchReason: null,
+    maeImprovementRatio: null,
+    maeImprovementKrwPerL: null,
     ...overrides,
   };
 }
@@ -50,9 +53,9 @@ test('each event states its week, title and candidate', () => {
 
   assert.match(markup, /9월 1주차/);
   assert.match(markup, /1순위 후보 확인 시작/);
-  assert.match(markup, /외부 보정 상한 ±1%/);
+  assert.match(markup, /추세 기간 8주 · Dubai · 미사용/);
   assert.match(markup, /1순위 후보 연속 확인 1\/2주/);
-  assert.doesNotMatch(markup, /Trend |Lag |Weight |Cap ±|현재<\/span>/);
+  assert.doesNotMatch(markup, /Model |USD\/KRW|외부 보정 상한|Trend |Lag |Weight |Cap ±|현재<\/span>/);
 });
 
 test('the rank badge only marks candidate events, newest first', () => {
@@ -91,10 +94,51 @@ test('a candidate change shows the setting it replaced', () => {
   ]);
 
   assert.match(markup, /1순위 후보가 변경됨/);
-  assert.match(markup, /이전 주 1순위 · .*외부 보정 상한 ±1%/);
+  assert.match(markup, /이전 후보<\/span><p class="admin-decision__note">.*외부 보정 상한 ±1%/);
   assert.match(markup, /추세 기간 6주/);
-  assert.match(markup, /이전 주 1순위 대비 변경 · 추세 기간 8주 → 6주 · 외부 보정 상한 ±1% → ±2%/);
-  assert.match(markup, /후보 변경으로 1순위 후보 연속 확인 기간이 다시 시작됩니다\./);
+  assert.match(markup, /변경점<\/span><p class="tuning-timeline__change">추세 기간 8주 → 6주 · 외부 보정 상한 ±1% → ±2%/);
+  assert.match(markup, /의미 있는 성능 개선이 확인되어 연속 확인을 1\/2주부터 다시 시작합니다\./);
+  assert.match(markup, /이번 주 1순위<\/span>/);
+  assert.doesNotMatch(markup, /현재 1순위<\/span>/);
+});
+
+test('a changed candidate reports the relative MAE gain that justified it', () => {
+  const markup = render([
+    event({
+      type: 'candidate-changed',
+      candidateParams: TREND_CANDIDATE,
+      previousCandidateParams: CAP_CANDIDATE,
+      switchReason: 'significant-improvement',
+      maeImprovementRatio: 0.1113,
+      maeImprovementKrwPerL: 1.78,
+    }),
+  ]);
+
+  assert.match(markup, /성능 개선<\/span><p class="admin-decision__note">MAE 상대 개선 11\.1% · 1\.78원\/L 개선/);
+  assert.doesNotMatch(markup, /MAPE/);
+});
+
+test('a candidate dropped for quality explains the immediate replacement', () => {
+  const markup = render([
+    event({
+      type: 'candidate-changed',
+      candidateParams: TREND_CANDIDATE,
+      previousCandidateParams: CAP_CANDIDATE,
+      switchReason: 'tracked-candidate-unqualified',
+    }),
+  ]);
+
+  assert.match(markup, /기존 후보가 품질 기준을 벗어나 새로운 1순위 후보로 변경되었습니다/);
+});
+
+test('a maintained candidate week skips the previous and change rows', () => {
+  const markup = render([
+    event({ type: 'candidate-confirmed', confirmedCount: 2, previousCandidateParams: null }),
+  ]);
+
+  assert.match(markup, /현재 1순위<\/span>/);
+  assert.doesNotMatch(markup, /이전 후보|변경점|성능 개선/);
+  assert.match(markup, /1순위 후보 연속 확인 2\/2주 완료/);
 });
 
 test('operational transitions continue the same list', () => {

@@ -148,6 +148,8 @@ export interface ShadowCandidateInput {
   params: ForecastModelParams;
   meetsPromotionQuality: boolean;
   source: string;
+  /** 후보 교체 최소 개선폭 판정에 쓰는 최근 13주 다음 주 예측 MAE. */
+  recentOneStepMaeKrwPerL?: number | null;
 }
 
 export interface ResolveShadowSessionInput {

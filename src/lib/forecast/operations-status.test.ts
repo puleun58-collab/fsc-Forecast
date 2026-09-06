@@ -145,8 +145,9 @@ test("verification in progress stays an observation, not a warning", () => {
   assert.equal(center.primaryAction, null);
   assert.deepEqual(
     center.observations.map((item) => item.key),
-    ["shadow-progress"],
+    ["shadow-progress", "candidate-persistence"],
   );
+  assert.equal(center.observations[0].key, "shadow-progress");
 });
 
 test("a drift alert raises attention while a watch stays an observation", () => {
@@ -194,13 +195,29 @@ test("a stopped shadow session never asks for approval", () => {
   assert.match(center.observations[0].detail, /현재 운영 모델을 유지합니다/);
 });
 
-test("candidate progress is hidden while shadow validation runs", () => {
-  const center = build({ persistence: persistence(1), shadow: shadow(4) });
+test("a running shadow turns candidate progress into the next shadow candidate", () => {
+  const confirming = build({ persistence: persistence(1), shadow: shadow(4) });
+  const confirmed = build({ persistence: persistence(2), shadow: shadow(4) });
+  const idle = build({ persistence: persistence(1) });
 
-  assert.equal(
-    center.observations.some((item) => item.key === "candidate-persistence"),
-    false,
+  assert.match(
+    confirming.observations.find((item) => item.key === "candidate-persistence")?.title ?? "",
+    /차기 Shadow 후보 확인 1\/2주/,
   );
+  assert.match(
+    confirming.observations.find((item) => item.key === "candidate-persistence")?.detail ?? "",
+    /현재 Shadow 검증과 별도로 차기 후보의 연속 성능을 확인합니다/,
+  );
+  assert.equal(
+    confirmed.observations.find((item) => item.key === "candidate-persistence")?.title,
+    "차기 Shadow 후보 확정",
+  );
+  assert.match(
+    idle.observations.find((item) => item.key === "candidate-persistence")?.title ?? "",
+    /1순위 후보 연속 확인 1\/2주/,
+  );
+  assert.equal(confirmed.stages[0].label, "차기 Shadow 후보 확인 2/2");
+  assert.equal(idle.stages[0].label, "1순위 후보 연속 확인 1/2");
 });
 
 test("a removal review and a narrow interval are separate attention items", () => {

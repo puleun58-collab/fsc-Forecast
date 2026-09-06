@@ -5,6 +5,11 @@ import { formatDashboardDate } from '@/lib/dashboard/dashboard-time';
 import { formatPriceText } from '@/lib/dashboard/display-format';
 import { formatModelParams } from '@/lib/forecast/describe-model-params';
 import {
+  evaluateShadowDegradation,
+  type ShadowDegradation,
+  type ShadowDegradationStatus,
+} from '@/lib/forecast/shadow-degradation';
+import {
   summarizeShadowValidation,
   type ShadowObservation,
   type ShadowSessionStatus,
@@ -149,14 +154,14 @@ function ComparisonTable({
         <thead>
           <tr>
             <th scope="col">지표</th>
-            <th scope="col">현재 운영</th>
+            <th scope="col">운영 모델</th>
             <th scope="col">Shadow</th>
             <th scope="col">차이</th>
           </tr>
         </thead>
         <tbody>
           <ComparisonRow
-            label="MAE"
+            label="누적 MAE"
             baseline={formatMae(baseline.maeKrwPerL)}
             shadow={formatMae(shadow.maeKrwPerL)}
             delta={formatDelta(baseline.maeKrwPerL, shadow.maeKrwPerL, '원/L')}
@@ -196,6 +201,77 @@ function ComparisonTable({
   );
 }
 
+const DEGRADATION_VIEW: Record<
+  ShadowDegradationStatus,
+  { label: string; className: string; detail: string }
+> = {
+  'insufficient-samples': {
+    label: '성능 판정 대기',
+    className: '',
+    detail: '신규 Actual이 최소 개수만큼 쌓이기 전에는 성능으로 중도중단을 판정하지 않습니다.',
+  },
+  stable: {
+    label: '누적 성능 정상',
+    className: 'status-tag--ok',
+    detail: '운영 모델 대비 누적 MAE가 중도중단 기준 안에 있습니다.',
+  },
+  watch: {
+    label: 'Shadow 성능 악화 확인',
+    className: '',
+    detail: '다음 신규 Actual 반영 후 같은 조건이 다시 확인되면 중도중단 조건을 충족합니다.',
+  },
+  'stop-recommended': {
+    label: 'Shadow 중도중단 조건 충족',
+    className: 'status-tag--warning',
+    detail: '운영 모델 대비 누적 MAE 악화가 2주 연속 확인되었습니다. 중단 여부는 관리자가 결정합니다.',
+  },
+};
+
+function ShadowDegradationBlock({ degradation }: { degradation: ShadowDegradation }) {
+  const view = DEGRADATION_VIEW[degradation.status];
+
+  return (
+    <div className="admin-panel shadow-degradation">
+      <div className="shadow-degradation__head">
+        <span className={`status-tag ${view.className}`.trim()}>
+          {degradation.status === 'watch' || degradation.status === 'stop-recommended'
+            ? `${view.label} · ${degradation.confirmedCount}/${degradation.requiredCount}주`
+            : view.label}
+        </span>
+        <span className="dashboard-shell__metric-label">
+          신규 Actual {degradation.sampleCount}개 · 최소 {degradation.minSampleCount}개
+        </span>
+      </div>
+      <div className="admin-metric-grid">
+        <div className="admin-metric">
+          <span className="dashboard-shell__metric-label">Shadow 누적 MAE</span>
+          <strong>{formatMae(degradation.shadowCumulativeMaeKrwPerL)}</strong>
+        </div>
+        <div className="admin-metric">
+          <span className="dashboard-shell__metric-label">운영 모델 누적 MAE</span>
+          <strong>{formatMae(degradation.baselineCumulativeMaeKrwPerL)}</strong>
+        </div>
+        <div className="admin-metric">
+          <span className="dashboard-shell__metric-label">운영 모델 대비</span>
+          <strong>
+            {degradation.relativeGapRatio === null || degradation.absoluteGapKrwPerL === null
+              ? '산정 전'
+              : `${degradation.relativeGapRatio > 0 ? '+' : ''}${(
+                  degradation.relativeGapRatio * 100
+                ).toFixed(1)}% · ${degradation.absoluteGapKrwPerL > 0 ? '+' : ''}${formatPriceText(
+                  degradation.absoluteGapKrwPerL,
+                )}`}
+          </strong>
+        </div>
+      </div>
+      <p className="admin-decision__note">{view.detail}</p>
+      <p className="admin-decision__note">
+        차기 후보가 더 좋다는 이유만으로는 현재 Shadow를 중단하지 않습니다.
+      </p>
+    </div>
+  );
+}
+
 export function AdminShadowValidation({ session }: { session: ShadowValidationSession | null }) {
   if (session === null) {
     return (
@@ -212,6 +288,7 @@ export function AdminShadowValidation({ session }: { session: ShadowValidationSe
 
   const summary = summarizeShadowValidation(session);
   const view = STATUS_VIEW[summary.status];
+  const degradation = evaluateShadowDegradation(session);
 
   return (
     <SectionCard
@@ -236,7 +313,7 @@ export function AdminShadowValidation({ session }: { session: ShadowValidationSe
           )}
           <dl className="quality-trend-status__facts">
             <div>
-              <dt>현재 운영</dt>
+              <dt>운영 모델</dt>
               <dd>{formatModelParams(session.baselineParams)}</dd>
             </div>
             <div>
@@ -255,6 +332,8 @@ export function AdminShadowValidation({ session }: { session: ShadowValidationSe
             </div>
           </dl>
         </div>
+
+        {degradation === null ? null : <ShadowDegradationBlock degradation={degradation} />}
 
         <ComparisonTable baseline={summary.baseline} shadow={summary.shadow} />
 

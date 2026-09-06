@@ -44,7 +44,7 @@ import { buildSignalReview } from '@/lib/forecast/signal-review';
 import { buildTuningTimeline } from '@/lib/forecast/tuning-timeline';
 import { readMarketRegimeAnalysis } from '@/lib/forecast/market-regime';
 import { readParameterSensitivity } from '@/lib/forecast/parameter-sensitivity';
-import { readShadowValidation } from '@/lib/forecast/shadow-validation';
+import { readShadowValidation, summarizeShadowValidation } from '@/lib/forecast/shadow-validation';
 import { loadAdminTransitionSection } from '@/lib/forecast/load-model-transition-view';
 import { readForecastModelDiagnostics } from '@/lib/forecast/forecast-diagnostics';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
@@ -251,6 +251,10 @@ export default async function AdminPage() {
           persistence={persistence}
           regimeComparisons={readCandidateRegimeComparisons(forecastRuns[0]?.metadata) ?? []}
           stageLabel={tuningStage.label}
+          shadowActive={
+            shadowSession !== null &&
+            summarizeShadowValidation(shadowSession).status === 'validating'
+          }
         />
 
         <AdminHorizonProfile

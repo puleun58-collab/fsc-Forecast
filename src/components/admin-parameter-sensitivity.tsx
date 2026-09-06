@@ -77,30 +77,44 @@ function TuningFlowGuide() {
   );
 }
 
-function ShadowEntryStatus({ persistence }: { persistence: CandidatePersistence }) {
+function ShadowEntryStatus({
+  persistence,
+  shadowActive,
+}: {
+  persistence: CandidatePersistence;
+  shadowActive: boolean;
+}) {
   if (persistence.candidateFingerprint === null) {
     return (
       <p className="admin-decision__note">
         {persistence.status === 'reset'
-          ? '1순위 후보가 사라져 Shadow 진입 확인을 다시 시작합니다.'
-          : '기준을 통과한 1순위 후보가 확인되면 Shadow 진입 확인을 시작합니다.'}
+          ? '1순위 후보가 사라져 연속 확인을 다시 시작합니다.'
+          : shadowActive
+            ? '기준을 통과한 후보가 확인되면 차기 Shadow 후보로 추적합니다.'
+            : '기준을 통과한 1순위 후보가 확인되면 연속 확인을 시작합니다.'}
       </p>
     );
   }
 
   const confirmed = persistence.confirmedCount >= persistence.requiredCount;
+  const progress = `${persistence.confirmedCount}/${persistence.requiredCount}주`;
+  const label = shadowActive
+    ? confirmed
+      ? `차기 Shadow 후보 확정 · 연속 확인 완료 ${progress}`
+      : `차기 Shadow 후보 확인 · ${progress}`
+    : `1순위 후보 연속 확인 · ${progress}${confirmed ? ' 완료' : ''}`;
 
   return (
     <div className="shadow-entry">
-      <span className={`status-tag ${confirmed ? 'status-tag--ok' : ''}`.trim()}>
-        {`Shadow 진입 확인 · ${persistence.confirmedCount}/${persistence.requiredCount}주${
-          confirmed ? ' 완료' : ''
-        }`}
-      </span>
+      <span className={`status-tag ${confirmed ? 'status-tag--ok' : ''}`.trim()}>{label}</span>
       <p className="admin-decision__note">
-        {confirmed
-          ? '같은 후보가 새 주간 데이터에서 2회 연속 확인되어 Shadow 검증을 시작할 수 있습니다.'
-          : '같은 후보가 다음 주에도 1순위를 유지하면 Shadow 검증을 시작합니다.'}
+        {shadowActive
+          ? confirmed
+            ? '현재 Shadow 검증 완료 또는 중단 후 최신 기준으로 다시 확인합니다. 두 번째 Shadow를 동시에 시작하지 않습니다.'
+            : '현재 Shadow 검증과 별도로 차기 후보의 연속 성능을 확인합니다.'
+          : confirmed
+            ? '같은 후보가 2주 연속 기준을 충족해 Shadow 검증 조건을 확보했습니다.'
+            : '같은 후보가 다음 주에도 1순위를 유지하면 Shadow 검증을 시작합니다.'}
       </p>
       {persistence.status === 'reset' ? (
         <p className="admin-decision__note">최신 1순위 후보가 변경되어 확인을 다시 시작합니다.</p>
@@ -802,12 +816,15 @@ export function AdminParameterSensitivity({
   persistence = null,
   regimeComparisons = [],
   stageLabel = null,
+  shadowActive = false,
 }: {
   sensitivity: ParameterSensitivity | null;
   persistence?: CandidatePersistence | null;
   regimeComparisons?: readonly CandidateRegimeComparison[];
   /** 운영 요약 카드와 같은 진행 단계 문구를 재사용한다. */
   stageLabel?: string | null;
+  /** Shadow가 검증 중이면 연속 확인은 차기 Shadow 후보 추적으로 표시한다. */
+  shadowActive?: boolean;
 }) {
   if (sensitivity === null) {
     return (
@@ -889,6 +906,11 @@ export function AdminParameterSensitivity({
             1순위는 최근 13주의 다음 주 예측 성능을 우선 기준으로 선정합니다. 26주 성능과 최대 오차·변동성은
             품질 기준 확인에 함께 사용합니다.
           </p>
+          <p className="admin-decision__note">
+            매주 새 Actual 데이터로 후보를 다시 평가하며, 같은 후보가 2주 연속 1순위를 유지해야 Shadow
+            검증으로 진행합니다. 최근 13주 MAE가 상대 5% · 절대 0.5원/L 이상 좋아질 때만 연속 확인 중인
+            후보를 교체합니다.
+          </p>
           {!sensitivity.sampleSufficient ? (
             <p className="backtest-detail__empty">
               백테스트 표본이 충분하지 않아 튜닝 후보를 제안하지 않습니다.
@@ -916,7 +938,9 @@ export function AdminParameterSensitivity({
               ))}
             </ol>
           )}
-          {persistence === null ? null : <ShadowEntryStatus persistence={persistence} />}
+          {persistence === null ? null : (
+            <ShadowEntryStatus persistence={persistence} shadowActive={shadowActive} />
+          )}
           <p className="admin-decision__note">
             후보는 과거 데이터 비교 결과입니다. 조합 후보도 실제 적용 전에 새 실제 데이터를 이용한 검증을
             거치며, 이 화면에서 운영 모델이나 파라미터를 변경하지 않습니다.

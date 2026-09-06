@@ -60,6 +60,7 @@ function render(
   betterTrendWeeks: number | null = 6,
   persistence: CandidatePersistence | null = null,
   regimeComparisons: readonly CandidateRegimeComparison[] = [],
+  shadowActive = false,
 ) {
   const sensitivity = buildParameterSensitivity({
     currentParams,
@@ -75,6 +76,7 @@ function render(
       persistence,
       regimeComparisons,
       stageLabel: '1순위 후보 연속 확인 1/2주',
+      shadowActive,
     }),
   );
 }
@@ -228,18 +230,35 @@ test('the card leads with the automatic tuning flow guide', () => {
 test('shadow entry progress is visible while the candidate is being confirmed', () => {
   const markup = render(CURRENT, 6, persistenceState());
 
-  assert.match(markup, /Shadow 진입 확인 · 1\/2주</);
+  assert.match(markup, /1순위 후보 연속 확인 · 1\/2주</);
   assert.match(markup, /같은 후보가 다음 주에도 1순위를 유지하면 Shadow 검증을 시작합니다/);
   assert.doesNotMatch(markup, /최신 1순위 후보가 변경되어/);
+});
+
+test('a running shadow reframes the confirmation as the next shadow candidate', () => {
+  const confirming = render(CURRENT, 6, persistenceState(), [], true);
+  const confirmed = render(
+    CURRENT,
+    6,
+    persistenceState({ status: 'confirmed', confirmedCount: 2 }),
+    [],
+    true,
+  );
+
+  assert.match(confirming, /차기 Shadow 후보 확인 · 1\/2주</);
+  assert.match(confirming, /현재 Shadow 검증과 별도로 차기 후보의 연속 성능을 확인합니다/);
+  assert.match(confirmed, /차기 Shadow 후보 확정 · 연속 확인 완료 2\/2주</);
+  assert.match(confirmed, /두 번째 Shadow를 동시에 시작하지 않습니다/);
+  assert.doesNotMatch(confirming, /1순위 후보 연속 확인 · /);
 });
 
 test('a completed confirmation and a restarted one read differently', () => {
   const done = render(CURRENT, 6, persistenceState({ status: 'confirmed', confirmedCount: 2 }));
   const restarted = render(CURRENT, 6, persistenceState({ status: 'reset' }));
 
-  assert.match(done, /Shadow 진입 확인 · 2\/2주 완료</);
+  assert.match(done, /1순위 후보 연속 확인 · 2\/2주 완료</);
   assert.match(done, /status-tag status-tag--ok/);
-  assert.match(restarted, /Shadow 진입 확인 · 1\/2주</);
+  assert.match(restarted, /1순위 후보 연속 확인 · 1\/2주</);
   assert.match(restarted, /최신 1순위 후보가 변경되어 확인을 다시 시작합니다/);
 });
 
@@ -258,7 +277,7 @@ test('without an eligible candidate the gate explains that nothing is being conf
     }),
   );
 
-  assert.match(markup, /기준을 통과한 1순위 후보가 확인되면 Shadow 진입 확인을 시작합니다/);
+  assert.match(markup, /기준을 통과한 1순위 후보가 확인되면 연속 확인을 시작합니다/);
   assert.doesNotMatch(markup, /Shadow 진입 확인 · /);
 });
 

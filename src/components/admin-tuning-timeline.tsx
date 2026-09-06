@@ -60,8 +60,9 @@ function describeWeek(weekEndDate: string | null): string {
   }
 }
 
+/** 이력 기본 화면은 변경이 잦은 핵심 설정만 보여준다. 나머지는 진단 카드에서 확인한다. */
 function describeCandidate(params: ForecastModelParams | null): string | null {
-  return params === null ? null : formatModelParams(params);
+  return params === null ? null : formatModelParams(params, { compact: true });
 }
 
 function describeDetail(event: TuningTimelineEvent): string | null {
@@ -80,6 +81,31 @@ function describeDetail(event: TuningTimelineEvent): string | null {
   }
 
   return null;
+}
+
+/** 후보 교체 판단에 쓴 MAE 개선폭. MAPE와 혼동되지 않게 "MAE 상대 개선"으로 적는다. */
+function describeImprovement(event: TuningTimelineEvent): string | null {
+  if (
+    event.type !== 'candidate-changed' ||
+    event.maeImprovementRatio === null ||
+    event.maeImprovementKrwPerL === null
+  ) {
+    return null;
+  }
+
+  return `MAE 상대 개선 ${(event.maeImprovementRatio * 100).toFixed(1)}% · ${formatPriceText(
+    event.maeImprovementKrwPerL,
+  )} 개선`;
+}
+
+function describeRestartNote(event: TuningTimelineEvent): string | null {
+  if (event.type !== 'candidate-changed') {
+    return null;
+  }
+
+  return event.switchReason === 'tracked-candidate-unqualified'
+    ? '기존 후보가 품질 기준을 벗어나 새로운 1순위 후보로 변경되었습니다. 연속 확인을 1/2주부터 다시 시작합니다.'
+    : '신규 Actual 반영 후 의미 있는 성능 개선이 확인되어 연속 확인을 1/2주부터 다시 시작합니다.';
 }
 
 export function AdminTuningTimeline({ events }: { events: readonly TuningTimelineEvent[] }) {
@@ -114,6 +140,8 @@ export function AdminTuningTimeline({ events }: { events: readonly TuningTimelin
                       diffModelParams(event.previousCandidateParams, event.candidateParams),
                     );
               const detail = describeDetail(event);
+              const improvement = describeImprovement(event);
+              const restartNote = describeRestartNote(event);
 
               return (
                 <li
@@ -130,19 +158,34 @@ export function AdminTuningTimeline({ events }: { events: readonly TuningTimelin
                     ) : null}
                   </div>
                   {candidate === null ? null : (
-                    <p className="tuning-timeline__candidate">{candidate}</p>
+                    <div className="tuning-timeline__row">
+                      <span className="dashboard-shell__metric-label">
+                        {previous === null ? '현재 1순위' : '이번 주 1순위'}
+                      </span>
+                      <p className="tuning-timeline__candidate">{candidate}</p>
+                    </div>
                   )}
                   {previous === null ? null : (
-                    <p className="admin-decision__note">이전 주 1순위 · {previous}</p>
+                    <div className="tuning-timeline__row">
+                      <span className="dashboard-shell__metric-label">이전 후보</span>
+                      <p className="admin-decision__note">{previous}</p>
+                    </div>
                   )}
                   {changed === null ? null : (
-                    <p className="tuning-timeline__change">이전 주 1순위 대비 변경 · {changed}</p>
+                    <div className="tuning-timeline__row">
+                      <span className="dashboard-shell__metric-label">변경점</span>
+                      <p className="tuning-timeline__change">{changed}</p>
+                    </div>
                   )}
-                  {event.type === 'candidate-changed' ? (
-                    <p className="admin-decision__note">
-                      후보 변경으로 1순위 후보 연속 확인 기간이 다시 시작됩니다.
-                    </p>
-                  ) : null}
+                  {improvement === null ? null : (
+                    <div className="tuning-timeline__row">
+                      <span className="dashboard-shell__metric-label">성능 개선</span>
+                      <p className="admin-decision__note">{improvement}</p>
+                    </div>
+                  )}
+                  {restartNote === null ? null : (
+                    <p className="admin-decision__note">{restartNote}</p>
+                  )}
                   {detail === null ? null : <p className="admin-decision__note">{detail}</p>}
                 </li>
               );

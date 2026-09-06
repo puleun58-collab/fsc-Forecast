@@ -39,8 +39,8 @@ import {
   isShadowEntryConfirmed,
   readCandidatePersistence,
   resolveCandidatePersistence,
-  selectPersistenceCandidate,
 } from "./candidate-persistence";
+import { resolveTrackedCandidate } from "./candidate-switch";
 import { buildCandidateRegimeComparisons } from "./candidate-regime-comparison";
 import {
   readShadowValidation,
@@ -696,20 +696,28 @@ async function executeForecastPipeline(
           candidate.kind === "combination"
             ? `parameter-combination:${candidate.factorKeys.join("+")}`
             : `parameter-sensitivity:${candidate.groupKey}`,
+        recentOneStepMaeKrwPerL: candidate.recentOneStep.maeKrwPerL,
       }))
     : [];
-  const persistenceCandidate = selectPersistenceCandidate(
-    shadowCandidates,
-    selection.selectedParams,
-    FORECAST_MODEL_VERSION,
-  );
+  const previousPersistence = readCandidatePersistence(previousRun?.metadata ?? null);
+  // Raw 1순위가 바뀌어도 최소 개선폭을 넘지 못하면 연속 확인 중인 후보를 그대로 둔다.
+  const trackedDecision = resolveTrackedCandidate({
+    trackedFingerprint: previousPersistence?.candidateFingerprint ?? null,
+    candidates: shadowCandidates,
+    baselineParams: selection.selectedParams,
+    modelVersion: FORECAST_MODEL_VERSION,
+  });
+  const persistenceCandidate = trackedDecision.candidate;
   // 같은 후보가 서로 다른 새 주간 데이터에서 두 번 확인되어야 Shadow 슬롯을 차지한다.
   const candidatePersistence = resolveCandidatePersistence({
-    previous: readCandidatePersistence(previousRun?.metadata ?? null),
+    previous: previousPersistence,
     candidate: persistenceCandidate,
     modelVersion: FORECAST_MODEL_VERSION,
     latestWeekEndDate: weeklySeries[weeklySeries.length - 1]?.targetDate ?? null,
     now: startedAt,
+    switchReason: trackedDecision.reason,
+    maeImprovementRatio: trackedDecision.maeImprovementRatio,
+    maeImprovementKrwPerL: trackedDecision.maeImprovementKrwPerL,
   });
   const shadowSession = resolveShadowSession({
     previousSession: readShadowValidation(previousRun?.metadata ?? null),

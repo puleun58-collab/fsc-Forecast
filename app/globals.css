@@ -2215,6 +2215,28 @@ summary.operation-history-row::-webkit-details-marker {
   font-size: 0.86rem;
 }
 
+/* 이력 카드는 라벨과 값을 한 줄씩 짝지어 읽히게 한다. */
+.tuning-timeline__row {
+  display: grid;
+  gap: 2px;
+}
+
+.tuning-timeline__row + .tuning-timeline__row {
+  margin-top: 6px;
+}
+
+.shadow-degradation {
+  display: grid;
+  gap: 8px;
+}
+
+.shadow-degradation__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .signal-review__list {
   display: grid;
   gap: 10px;

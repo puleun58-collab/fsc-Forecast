@@ -78,7 +78,41 @@ test('an in-flight session shows progress and marks the numbers as interim', () 
   assert.match(markup, /Model B · 추세 기간 6주 · Dubai · 반영 시차 1주 · 비중 20%/);
   assert.match(markup, /표본 13주가 확보되기 전까지는 중간 결과이며 우열을 판정하지 않습니다/);
   assert.doesNotMatch(markup, /운영 적용 검토 가능/);
-  assert.doesNotMatch(markup, /Actual|운영 Forecast|Shadow Forecast|cooldown/);
+  assert.doesNotMatch(markup, /운영 Forecast|Shadow Forecast|cooldown|data-label="Actual"/);
+  assert.doesNotMatch(markup, /(?<!신규 )Actual(?!\s*[가-힣])/);
+});
+
+test('the cumulative comparison waits for the minimum number of new actuals', () => {
+  const markup = render(session());
+
+  assert.match(markup, /성능 판정 대기/);
+  assert.match(markup, /신규 Actual 2개 · 최소 4개/);
+  assert.match(markup, /Shadow 누적 MAE/);
+  assert.match(markup, /운영 모델 누적 MAE/);
+});
+
+test('two degraded cumulative weeks report the stop condition without stopping the run', () => {
+  const degraded = render(
+    session({
+      observations: Array.from({ length: 5 }, (_, index) => observation(index + 1, 20, 26)),
+    }),
+  );
+
+  assert.match(degraded, /Shadow 중도중단 조건 충족 · 2\/2주/);
+  assert.match(degraded, /운영 모델 대비<\/span><strong>\+30\.0% · \+6\.00원\/L<\/strong>/);
+  assert.match(degraded, /중단 여부는 관리자가 결정합니다/);
+  assert.match(degraded, /차기 후보가 더 좋다는 이유만으로는 현재 Shadow를 중단하지 않습니다/);
+});
+
+test('a single degraded window is only a watch state', () => {
+  const watch = render(
+    session({
+      observations: Array.from({ length: 4 }, (_, index) => observation(index + 1, 20, 25)),
+    }),
+  );
+
+  assert.match(watch, /Shadow 성능 악화 확인 · 1\/2주/);
+  assert.match(watch, /다음 신규 Actual 반영 후 같은 조건이 다시 확인되면 중도중단 조건을 충족합니다/);
 });
 
 test('the comparison table pairs operating and shadow metrics', () => {

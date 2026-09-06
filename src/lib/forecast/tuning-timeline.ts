@@ -1,4 +1,5 @@
 import { readCandidatePersistence, type CandidatePersistence } from "./candidate-persistence";
+import type { CandidateSwitchReason } from "./candidate-switch";
 import type { ForecastModelParams } from "./forecast-model-config";
 import {
   readShadowValidation,
@@ -34,6 +35,11 @@ export interface TuningTimelineEvent {
   shadowSampleCount: number | null;
   shadowRequiredSampleCount: number | null;
   shadowMaeKrwPerL: number | null;
+  /** 후보가 왜 유지·교체되었는지. 기능 적용 이전 run에서는 null이다. */
+  switchReason: CandidateSwitchReason | null;
+  /** 교체 판단에 사용한 현재 후보 대비 MAE 개선폭. */
+  maeImprovementRatio: number | null;
+  maeImprovementKrwPerL: number | null;
 }
 
 export interface TuningTimelineRunInput {
@@ -132,6 +138,9 @@ function emitPersistenceEvents(
               shadowSampleCount: null,
               shadowRequiredSampleCount: null,
               shadowMaeKrwPerL: null,
+              switchReason: persistence.switchReason ?? null,
+              maeImprovementRatio: null,
+              maeImprovementKrwPerL: null,
             },
           ],
           next,
@@ -167,6 +176,9 @@ function emitPersistenceEvents(
         shadowSampleCount: null,
         shadowRequiredSampleCount: null,
         shadowMaeKrwPerL: null,
+        switchReason: persistence.switchReason ?? null,
+        maeImprovementRatio: persistence.maeImprovementRatio ?? null,
+        maeImprovementKrwPerL: persistence.maeImprovementKrwPerL ?? null,
       },
     ],
     next,
@@ -206,6 +218,9 @@ function emitShadowEvents(
     shadowSampleCount: summary.completedSampleCount,
     shadowRequiredSampleCount: summary.requiredSampleCount,
     shadowMaeKrwPerL: summary.shadow.maeKrwPerL,
+    switchReason: null,
+    maeImprovementRatio: null,
+    maeImprovementKrwPerL: null,
   };
   const events: TuningTimelineEvent[] = [];
   const statusChanged = previous.status !== session.status;
@@ -242,6 +257,9 @@ function transitionEvents(
       shadowSampleCount: null,
       shadowRequiredSampleCount: null,
       shadowMaeKrwPerL: null,
+      switchReason: null,
+      maeImprovementRatio: null,
+      maeImprovementKrwPerL: null,
     };
     const events: TuningTimelineEvent[] = [
       {
