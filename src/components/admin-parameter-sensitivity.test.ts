@@ -288,6 +288,10 @@ test('the candidate panel states the next-week evaluation basis', () => {
     markup,
     /1순위는 최근 13주의 다음 주 예측 성능을 우선 기준으로 선정합니다\. 26주 성능과 최대 오차·변동성은\s+품질 기준 확인에 함께 사용합니다\./,
   );
+  assert.match(
+    markup,
+    /Shadow 검증으로 진행합니다\.<br\/>최근 13주 MAE가 상대 5% · 절대 0\.5원\/L 이상 좋아질 때만/,
+  );
 });
 
 test('a candidate exposes its market regime comparison behind a collapsed disclosure', () => {

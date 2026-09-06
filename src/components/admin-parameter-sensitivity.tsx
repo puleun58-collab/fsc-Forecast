@@ -908,8 +908,9 @@ export function AdminParameterSensitivity({
           </p>
           <p className="admin-decision__note">
             매주 새 Actual 데이터로 후보를 다시 평가하며, 같은 후보가 2주 연속 1순위를 유지해야 Shadow
-            검증으로 진행합니다. 최근 13주 MAE가 상대 5% · 절대 0.5원/L 이상 좋아질 때만 연속 확인 중인
-            후보를 교체합니다.
+            검증으로 진행합니다.
+            <br />
+            최근 13주 MAE가 상대 5% · 절대 0.5원/L 이상 좋아질 때만 연속 확인 중인 후보를 교체합니다.
           </p>
           {!sensitivity.sampleSufficient ? (
             <p className="backtest-detail__empty">
