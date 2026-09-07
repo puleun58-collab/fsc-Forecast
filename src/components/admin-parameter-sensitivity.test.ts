@@ -145,6 +145,7 @@ test('the card shows the operating parameters and one collapsed group per factor
   const markup = render();
 
   assert.match(markup, /파라미터 민감도 분석/);
+  assert.match(markup, /예측 정확도를 높이기 위해 주요 설정과 보조 신호의 효과를 비교합니다/);
   assert.match(markup, /결과는 참고용이며 자동으로 적용되지 않습니다/);
   assert.match(markup, /Model<\/span><strong>B<\/strong>/);
   assert.match(markup, /추세 기간<\/span><strong>8주<\/strong>/);
@@ -336,6 +337,7 @@ test('runs without stored sensitivity metadata fall back cleanly', () => {
   );
 
   assert.match(markup, /민감도 분석 데이터가 없습니다/);
+  assert.match(markup, /예측 정확도를 높이기 위해 주요 설정과 보조 신호의 효과를 비교합니다/);
   assert.match(markup, /다음 예측 실행부터 설정별 성능 비교가 시작됩니다/);
   assert.doesNotMatch(markup, /walk-forward/);
   assert.doesNotMatch(markup, /<table/);

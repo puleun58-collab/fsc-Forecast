@@ -831,7 +831,7 @@ export function AdminParameterSensitivity({
       <SectionCard
         title="파라미터 민감도 분석"
         badge="분석 없음"
-        description="현재 예측 설정과 다른 설정을 비교해 더 나은 후보가 있는지 확인합니다. 결과는 참고용이며 자동으로 적용되지 않습니다."
+        description="예측 정확도를 높이기 위해 주요 설정과 보조 신호의 효과를 비교합니다. 결과는 참고용이며 자동으로 적용되지 않습니다."
         className="admin-sensitivity"
         emptyStateTitle="민감도 분석 데이터가 없습니다."
         emptyStateCopy="다음 예측 실행부터 설정별 성능 비교가 시작됩니다."
@@ -857,7 +857,7 @@ export function AdminParameterSensitivity({
           ? '검토 후보 없음'
           : `검토 후보 ${sensitivity.tuningCandidates.length}건`
       }
-      description="현재 예측 설정과 다른 설정을 비교해 더 나은 후보가 있는지 확인합니다. 결과는 참고용이며 자동으로 적용되지 않습니다."
+      description="예측 정확도를 높이기 위해 주요 설정과 보조 신호의 효과를 비교합니다. 결과는 참고용이며 자동으로 적용되지 않습니다."
       className="admin-sensitivity"
     >
       <div className="admin-detail-stack">
