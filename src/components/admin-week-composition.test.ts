@@ -191,43 +191,182 @@ test('a completed quarter without forecast weeks renders actual-only composition
   assert.match(markup, /Forecast<\/span><strong>0주<\/strong>/);
   assert.doesNotMatch(markup, /Forecast 산출 근거/);
 });
-test('forecast basis shows the stored first forecast decomposition in calculation order', () => {
+
+test('forecast basis leads with the dominant cause and the core calculation path', () => {
   const markup = render(WEEKS, '1851.370', SEPTEMBER_FORECAST_BASIS);
   const basisStart = markup.indexOf('Forecast 산출 근거');
   const basisBlock = markup.slice(basisStart);
-  const labels = [
+  const coreLabels = [
     '기준 Actual',
     '기본 추세',
-    '추세 적용 후',
     'Dubai 보정',
     'USD/KRW 보정',
-    '외부 신호 합산',
     '실제 외부 보정',
-    '외부 보정 상한',
     '첫 Forecast',
   ];
 
   assert.doesNotMatch(basisBlock.slice(0, 80), /\sopen(?:=|>|\s)/);
-  labels.reduce((previousIndex, label) => {
+  coreLabels.reduce((previousIndex, label) => {
     const index = basisBlock.indexOf(`${label}</span>`);
-    assert.ok(index > previousIndex, `${label} should follow the preceding calculation step`);
+    assert.ok(index > previousIndex, `${label} should follow the preceding core step`);
     return index;
   }, -1);
-  assert.match(basisBlock, /기준 Actual<\/span><strong>1,844\.48원\/L<\/strong>/);
-  assert.match(basisBlock, /기본 추세<\/span><strong>-2\.57원\/L<\/strong>/);
-  assert.match(basisBlock, /추세 적용 후<\/span><strong>1,841\.91원\/L<\/strong>/);
-  assert.match(basisBlock, /Dubai 보정<\/span><strong>\+31\.76원\/L<\/strong>/);
+  const firstForecastIndex = basisBlock.indexOf('첫 Forecast</span>');
+  const causeSummaryIndex = basisBlock.indexOf('첫 Forecast 상승의 주원인');
+  const auxiliaryIndex = basisBlock.indexOf('추세 적용 후</span>');
+  const settingsIndex = basisBlock.indexOf('예측 방식</span>');
+
+  assert.ok(causeSummaryIndex > firstForecastIndex);
+  assert.ok(auxiliaryIndex > causeSummaryIndex);
+  assert.ok(settingsIndex > auxiliaryIndex);
+  assert.equal(
+    basisBlock.match(/admin-metric forecast-basis__metric/g)?.length,
+    9,
+  );
   assert.match(
     basisBlock,
-    /2026\.08\.27 92\.32 → 2026\.09\.03 100\.28 · 변화 \+8\.62% · 기여 \+1\.72%/,
+    /forecast-basis__metric--dominant"><span class="dashboard-shell__metric-label">Dubai 보정<\/span><strong class="forecast-basis__value">\+31\.76원\/L<\/strong>/,
   );
-  assert.match(basisBlock, /USD\/KRW 보정<\/span><strong>미사용 · 0\.00원\/L<\/strong>/);
-  assert.match(basisBlock, /외부 신호 합산<\/span><strong>\+1\.72%<\/strong>/);
-  assert.match(basisBlock, /실제 외부 보정<\/span><strong>\+1\.72% · \+31\.76원\/L<\/strong>/);
-  assert.match(basisBlock, /외부 보정 상한<\/span><strong>미적용 · 설정 ±3%<\/strong>/);
-  assert.match(basisBlock, /첫 Forecast<\/span><strong>1,873\.67원\/L<\/strong>/);
+  assert.match(
+    basisBlock,
+    /92\.32 → 100\.28 · \+8\.62%<\/span><span>비중 20% · 기여 \+1\.72%/,
+  );
+  assert.doesNotMatch(basisBlock, /2026\.08\.27|2026\.09\.03/);
+  assert.match(
+    basisBlock,
+    /forecast-basis__metric--trend"><span class="dashboard-shell__metric-label">기본 추세<\/span><strong class="forecast-basis__value">-2\.57원\/L<\/strong>/,
+  );
+  assert.match(
+    basisBlock,
+    /forecast-basis__metric--inactive"><span class="dashboard-shell__metric-label">USD\/KRW 보정<\/span><strong class="forecast-basis__value">미사용 · 0\.00원\/L<\/strong>/,
+  );
+  assert.match(
+    basisBlock,
+    /forecast-basis__metric--result"><span class="dashboard-shell__metric-label">첫 Forecast<\/span><strong class="forecast-basis__value">1,873\.67원\/L<\/strong>/,
+  );
   assert.match(basisBlock, /예측 시작 구간 변동 · \+29\.19원\/L · \+1\.58%/);
+  assert.match(
+    basisBlock,
+    /첫 Forecast 상승의 주원인 ·<\/span><strong>Dubai 보정 \+31\.76원\/L<\/strong>/,
+  );
+  assert.match(
+    basisBlock,
+    /기본 추세 -2\.57원\/L<span aria-hidden="true">\+<\/span>Dubai 보정 \+31\.76원\/L<span aria-hidden="true">=<\/span>첫 Forecast 변화 \+29\.19원\/L/,
+  );
+  assert.match(
+    basisBlock,
+    /추세 적용 후<\/span><strong class="forecast-basis__value">1,841\.91원\/L<\/strong>/,
+  );
+  assert.match(
+    basisBlock,
+    /외부 신호 합산<\/span><strong class="forecast-basis__value">\+1\.72%<\/strong>/,
+  );
+  assert.match(
+    basisBlock,
+    /외부 보정 상한<\/span><strong class="forecast-basis__value">미적용 · 설정 ±3%<\/strong>/,
+  );
   assert.doesNotMatch(basisBlock, /저장된 산출 근거로 재현되지 않습니다/);
+});
+
+test('dominant cause follows the largest aligned contribution instead of a fixed signal', () => {
+  const calculation = readWeeklyForecastCalculation({
+    weeklyForecast: {
+      status: 'ready',
+      anchorWeekEndDate: '2026-09-03T00:00:00.000Z',
+      anchorPriceKrwPerL: 1000,
+      trendDeltaKrwPerL: -5,
+      trendLookbackCount: 8,
+      externalAdjustmentRatio: 0.022,
+      externalAdjustmentCapRatio: 0.03,
+      externalAdjustmentCapReached: false,
+      dubai: {
+        indicatorCode: 'dubai',
+        lagWeeks: 1,
+        weight: 0.1,
+        basisWeekEndDate: '2026-09-03T00:00:00.000Z',
+        basisValue: 102,
+        previousWeekEndDate: '2026-08-27T00:00:00.000Z',
+        previousValue: 100,
+        changeRatio: 0.02,
+        contributionRatio: 0.002,
+      },
+      usdKrw: {
+        indicatorCode: 'usdKrw',
+        lagWeeks: 1,
+        weight: 0.1,
+        basisWeekEndDate: '2026-09-03T00:00:00.000Z',
+        basisValue: 1200,
+        previousWeekEndDate: '2026-08-27T00:00:00.000Z',
+        previousValue: 1000,
+        changeRatio: 0.2,
+        contributionRatio: 0.02,
+      },
+    },
+  });
+  const explanation = explainFirstWeeklyForecast(calculation, 1016.89);
+  assert.ok(explanation);
+
+  const markup = render(WEEKS, '1005.00', {
+    modelId: 'C',
+    trendLookbackWeeks: 8,
+    dubai: { lagWeeks: 1, weight: 0.1 },
+    usdKrw: { lagWeeks: 1, weight: 0.1 },
+    explanation,
+  });
+  const basisBlock = markup.slice(markup.indexOf('Forecast 산출 근거'));
+
+  assert.match(
+    basisBlock,
+    /forecast-basis__metric--dominant"><span class="dashboard-shell__metric-label">USD\/KRW 보정<\/span><strong class="forecast-basis__value">\+19\.90원\/L<\/strong>/,
+  );
+  assert.match(
+    basisBlock,
+    /첫 Forecast 상승의 주원인 ·<\/span><strong>USD\/KRW 보정 \+19\.90원\/L<\/strong>/,
+  );
+  assert.doesNotMatch(
+    basisBlock,
+    /첫 Forecast 상승의 주원인 ·<\/span><strong>Dubai 보정/,
+  );
+});
+
+test('rounded additive relationship stays hidden when displayed values do not reconcile', () => {
+  const calculation = readWeeklyForecastCalculation({
+    weeklyForecast: {
+      status: 'ready',
+      anchorWeekEndDate: '2026-09-03T00:00:00.000Z',
+      anchorPriceKrwPerL: 100,
+      trendDeltaKrwPerL: 0.004,
+      trendLookbackCount: 8,
+      externalAdjustmentRatio: 0.00004,
+      externalAdjustmentCapRatio: 0.03,
+      externalAdjustmentCapReached: false,
+      dubai: {
+        indicatorCode: 'dubai',
+        lagWeeks: 1,
+        weight: 0.2,
+        basisWeekEndDate: '2026-09-03T00:00:00.000Z',
+        basisValue: 100.02,
+        previousWeekEndDate: '2026-08-27T00:00:00.000Z',
+        previousValue: 100,
+        changeRatio: 0.0002,
+        contributionRatio: 0.00004,
+      },
+      usdKrw: null,
+    },
+  });
+  const explanation = explainFirstWeeklyForecast(calculation, 100.008);
+  assert.ok(explanation);
+  assert.equal(explanation.formulaMatchesStoredForecast, true);
+
+  const markup = render(WEEKS, '100.00', {
+    modelId: 'B',
+    trendLookbackWeeks: 8,
+    dubai: { lagWeeks: 1, weight: 0.2 },
+    usdKrw: null,
+    explanation,
+  });
+
+  assert.doesNotMatch(markup, /forecast-basis__equation/);
 });
 
 test('a quarter without any week data explains how the composition appears', () => {
