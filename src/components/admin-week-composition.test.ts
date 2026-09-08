@@ -10,6 +10,11 @@ import {
   type AdminWeekCompositionWeek,
 } from './admin-week-composition';
 
+import {
+  explainFirstWeeklyForecast,
+  readWeeklyForecastCalculation,
+} from '@/lib/forecast/forecast-diagnostics';
+
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
 function week(overrides: Partial<AdminWeekCompositionWeek> = {}): AdminWeekCompositionWeek {
@@ -51,6 +56,41 @@ const WEEKS: AdminWeekCompositionWeek[] = [
     fallbackUsed: true,
   }),
 ];
+
+const SEPTEMBER_CALCULATION = readWeeklyForecastCalculation({
+  weeklyForecast: {
+    status: 'ready',
+    anchorWeekEndDate: '2026-09-03T00:00:00.000Z',
+    anchorPriceKrwPerL: 1844.478,
+    trendDeltaKrwPerL: -2.569,
+    trendLookbackCount: 8,
+    externalAdjustmentRatio: 0.01724436741767766,
+    externalAdjustmentCapRatio: 0.03,
+    externalAdjustmentCapReached: false,
+    dubai: {
+      indicatorCode: 'dubai',
+      lagWeeks: 1,
+      weight: 0.2,
+      basisWeekEndDate: '2026-09-03T00:00:00.000Z',
+      basisValue: 100.28,
+      previousWeekEndDate: '2026-08-27T00:00:00.000Z',
+      previousValue: 92.32,
+      changeRatio: 0.0862218370883883,
+      contributionRatio: 0.01724436741767766,
+    },
+    usdKrw: null,
+  },
+});
+const SEPTEMBER_EXPLANATION = explainFirstWeeklyForecast(SEPTEMBER_CALCULATION, 1873.672);
+assert.ok(SEPTEMBER_EXPLANATION);
+
+const SEPTEMBER_FORECAST_BASIS: AdminForecastBasis = {
+  modelId: 'B',
+  trendLookbackWeeks: 8,
+  dubai: { lagWeeks: 1, weight: 0.2 },
+  usdKrw: null,
+  explanation: SEPTEMBER_EXPLANATION,
+};
 
 function render(
   weeks: readonly AdminWeekCompositionWeek[],
@@ -140,6 +180,7 @@ test('a completed quarter without forecast weeks renders actual-only composition
     createElement(AdminWeekComposition, {
       actualWeekCount: 13,
       forecastWeekCount: 0,
+
       quarterAverageKrwPerL: '1774.500',
       weeks: [week()],
       forecastBasis: null,
@@ -149,6 +190,44 @@ test('a completed quarter without forecast weeks renders actual-only composition
   assert.match(markup, /Actual<\/span><strong>13주<\/strong>/);
   assert.match(markup, /Forecast<\/span><strong>0주<\/strong>/);
   assert.doesNotMatch(markup, /Forecast 산출 근거/);
+});
+test('forecast basis shows the stored first forecast decomposition in calculation order', () => {
+  const markup = render(WEEKS, '1851.370', SEPTEMBER_FORECAST_BASIS);
+  const basisStart = markup.indexOf('Forecast 산출 근거');
+  const basisBlock = markup.slice(basisStart);
+  const labels = [
+    '기준 Actual',
+    '기본 추세',
+    '추세 적용 후',
+    'Dubai 보정',
+    'USD/KRW 보정',
+    '외부 신호 합산',
+    '실제 외부 보정',
+    '외부 보정 상한',
+    '첫 Forecast',
+  ];
+
+  assert.doesNotMatch(basisBlock.slice(0, 80), /\sopen(?:=|>|\s)/);
+  labels.reduce((previousIndex, label) => {
+    const index = basisBlock.indexOf(`${label}</span>`);
+    assert.ok(index > previousIndex, `${label} should follow the preceding calculation step`);
+    return index;
+  }, -1);
+  assert.match(basisBlock, /기준 Actual<\/span><strong>1,844\.48원\/L<\/strong>/);
+  assert.match(basisBlock, /기본 추세<\/span><strong>-2\.57원\/L<\/strong>/);
+  assert.match(basisBlock, /추세 적용 후<\/span><strong>1,841\.91원\/L<\/strong>/);
+  assert.match(basisBlock, /Dubai 보정<\/span><strong>\+31\.76원\/L<\/strong>/);
+  assert.match(
+    basisBlock,
+    /2026\.08\.27 92\.32 → 2026\.09\.03 100\.28 · 변화 \+8\.62% · 기여 \+1\.72%/,
+  );
+  assert.match(basisBlock, /USD\/KRW 보정<\/span><strong>미사용 · 0\.00원\/L<\/strong>/);
+  assert.match(basisBlock, /외부 신호 합산<\/span><strong>\+1\.72%<\/strong>/);
+  assert.match(basisBlock, /실제 외부 보정<\/span><strong>\+1\.72% · \+31\.76원\/L<\/strong>/);
+  assert.match(basisBlock, /외부 보정 상한<\/span><strong>미적용 · 설정 ±3%<\/strong>/);
+  assert.match(basisBlock, /첫 Forecast<\/span><strong>1,873\.67원\/L<\/strong>/);
+  assert.match(basisBlock, /예측 시작 구간 변동 · \+29\.19원\/L · \+1\.58%/);
+  assert.doesNotMatch(basisBlock, /저장된 산출 근거로 재현되지 않습니다/);
 });
 
 test('a quarter without any week data explains how the composition appears', () => {

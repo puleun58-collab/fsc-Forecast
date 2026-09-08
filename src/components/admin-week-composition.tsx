@@ -1,5 +1,7 @@
 import { AdminDisclosureToggle } from './admin-disclosure-toggle';
 import {
+  formatSignedPriceText,
+  formatSignedRatioText,
   formatWeekDisplayName,
   mapForecastSourceKind,
   mapWeekKind,
@@ -7,7 +9,11 @@ import {
 import { SectionCard } from './section-card';
 
 import { formatDashboardDate } from '@/lib/dashboard/dashboard-time';
-import { formatPriceText } from '@/lib/dashboard/display-format';
+import { formatPriceNumber, formatPriceText } from '@/lib/dashboard/display-format';
+import type {
+  FirstForecastExplanation,
+  ForecastIndicatorCalculation,
+} from '@/lib/forecast/forecast-diagnostics';
 
 export type AdminWeekCompositionWeek = {
   sequenceNo: number;
@@ -26,6 +32,7 @@ export type AdminForecastBasis = {
   trendLookbackWeeks: number;
   dubai: { lagWeeks: number; weight: number } | null;
   usdKrw: { lagWeeks: number; weight: number } | null;
+  explanation?: FirstForecastExplanation | null;
 };
 
 type AdminWeekCompositionProps = {
@@ -40,6 +47,21 @@ function formatIndicator(indicator: AdminForecastBasis['dubai']): string {
   return indicator === null
     ? '미사용'
     : `반영 시차 ${indicator.lagWeeks}주 · 비중 ${Number((indicator.weight * 100).toFixed(1))}%`;
+}
+
+function formatIndicatorCalculation(indicator: ForecastIndicatorCalculation): string {
+  const contribution = `기여 ${formatSignedRatioText(indicator.contributionRatio)}`;
+  if (
+    indicator.previousWeekEndDate === null ||
+    indicator.previousValue === null ||
+    indicator.basisWeekEndDate === null ||
+    indicator.basisValue === null ||
+    indicator.changeRatio === null
+  ) {
+    return `비교값 없음 · ${contribution}`;
+  }
+
+  return `${formatDashboardDate(indicator.previousWeekEndDate)} ${formatPriceNumber(indicator.previousValue)} → ${formatDashboardDate(indicator.basisWeekEndDate)} ${formatPriceNumber(indicator.basisValue)} · 변화 ${formatSignedRatioText(indicator.changeRatio)} · ${contribution}`;
 }
 
 /** 표준 산출 경로(주간 예측값)를 벗어난 주차만 행에서 따로 알린다. */
@@ -68,6 +90,71 @@ export function AdminWeekComposition({
   }
 
   const orderedWeeks = [...weeks].sort((left, right) => left.sequenceNo - right.sequenceNo);
+  const explanation = forecastBasis?.explanation ?? null;
+  const breakdownMetrics =
+    explanation === null
+      ? []
+      : [
+          {
+            label: '기준 Actual',
+            value: formatPriceText(explanation.anchorPriceKrwPerL),
+            detail: null,
+          },
+          {
+            label: '기본 추세',
+            value: formatSignedPriceText(explanation.trendDeltaKrwPerL, '원/L'),
+            detail: null,
+          },
+          {
+            label: '추세 적용 후',
+            value: formatPriceText(explanation.baseForecastKrwPerL),
+            detail: null,
+          },
+          {
+            label: 'Dubai 보정',
+            value:
+              explanation.dubai === null
+                ? '미사용 · 0.00원/L'
+                : `${formatSignedPriceText(explanation.dubai.correctionBeforeCapKrwPerL, '원/L')}${explanation.externalAdjustmentCapReached ? ' (상한 전)' : ''}`,
+            detail:
+              explanation.dubai === null
+                ? null
+                : formatIndicatorCalculation(explanation.dubai),
+          },
+          {
+            label: 'USD/KRW 보정',
+            value:
+              explanation.usdKrw === null
+                ? '미사용 · 0.00원/L'
+                : `${formatSignedPriceText(explanation.usdKrw.correctionBeforeCapKrwPerL, '원/L')}${explanation.externalAdjustmentCapReached ? ' (상한 전)' : ''}`,
+            detail:
+              explanation.usdKrw === null
+                ? null
+                : formatIndicatorCalculation(explanation.usdKrw),
+          },
+          {
+            label: '외부 신호 합산',
+            value: formatSignedRatioText(explanation.rawExternalAdjustmentRatio),
+            detail: null,
+          },
+          {
+            label: '실제 외부 보정',
+            value: `${formatSignedRatioText(explanation.appliedExternalAdjustmentRatio)} · ${formatSignedPriceText(explanation.appliedExternalCorrectionKrwPerL, '원/L')}`,
+            detail: null,
+          },
+          {
+            label: '외부 보정 상한',
+            value: explanation.externalAdjustmentCapReached
+              ? `±${Number((explanation.externalAdjustmentCapRatio * 100).toFixed(2))}% 적용`
+              : `미적용 · 설정 ±${Number((explanation.externalAdjustmentCapRatio * 100).toFixed(2))}%`,
+            detail: null,
+          },
+          {
+            label: '첫 Forecast',
+            value: formatPriceText(explanation.firstForecastKrwPerL),
+            detail: null,
+          },
+        ];
 
   return (
     <SectionCard
@@ -151,6 +238,36 @@ export function AdminWeekComposition({
                   </div>
                 ))}
               </div>
+              {explanation === null ? null : (
+                <>
+                  <div className="admin-metric-grid forecast-basis__breakdown">
+                    {breakdownMetrics.map((metric) => (
+                      <div key={metric.label} className="admin-metric">
+                        <span className="dashboard-shell__metric-label">{metric.label}</span>
+                        <strong>{metric.value}</strong>
+                        {metric.detail === null ? null : (
+                          <span className="admin-decision__note">{metric.detail}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="admin-decision__note">
+                    예측 시작 구간 변동 ·{' '}
+                    {formatSignedPriceText(explanation.firstForecastChangeKrwPerL, '원/L')} ·{' '}
+                    {formatSignedRatioText(explanation.firstForecastChangeRatio)}
+                  </p>
+                  {explanation.externalAdjustmentCapReached ? (
+                    <p className="admin-decision__note">
+                      개별 신호 보정은 상한 적용 전 금액이며, 실제 외부 보정은 설정 상한으로 제한됩니다.
+                    </p>
+                  ) : null}
+                  {explanation.formulaMatchesStoredForecast ? null : (
+                    <p className="admin-decision__note">
+                      기록된 첫 Forecast가 저장된 산출 근거로 재현되지 않습니다.
+                    </p>
+                  )}
+                </>
+              )}
             </div>
           </details>
         )}

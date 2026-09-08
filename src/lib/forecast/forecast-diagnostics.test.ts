@@ -2,9 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  explainFirstWeeklyForecast,
   FORECAST_PROMOTION_THRESHOLDS,
   mapPromotionReason,
   readForecastModelDiagnostics,
+  readWeeklyForecastCalculation,
 } from './forecast-diagnostics';
 
 const MODEL_A_PARAMS = {
@@ -173,4 +175,119 @@ test('promotion thresholds are read from the forecast model config', () => {
     FORECAST_PROMOTION_THRESHOLDS.find((threshold) => threshold.label === '승격 최소 표본 수'),
     { label: '승격 최소 표본 수', value: '13개' },
   );
+});
+
+const SEPTEMBER_DUBAI_CALCULATION = {
+  indicatorCode: 'dubai',
+  lagWeeks: 1,
+  weight: 0.2,
+  basisWeekEndDate: '2026-09-03T00:00:00.000Z',
+  basisValue: 100.28,
+  previousWeekEndDate: '2026-08-27T00:00:00.000Z',
+  previousValue: 92.32,
+  changeRatio: 0.0862218370883883,
+  contributionRatio: 0.01724436741767766,
+} as const;
+
+function createWeeklyForecastMetadata(overrides: Record<string, unknown> = {}) {
+  return {
+    weeklyForecast: {
+      status: 'ready',
+      anchorWeekEndDate: '2026-09-03T00:00:00.000Z',
+      anchorPriceKrwPerL: 1844.478,
+      trendDeltaKrwPerL: -2.569,
+      trendLookbackCount: 8,
+      externalAdjustmentRatio: SEPTEMBER_DUBAI_CALCULATION.contributionRatio,
+      externalAdjustmentCapRatio: 0.03,
+      externalAdjustmentCapReached: false,
+      dubai: SEPTEMBER_DUBAI_CALCULATION,
+      usdKrw: null,
+      ...overrides,
+    },
+  };
+}
+
+test('first forecast explanation reproduces the September Dubai-only calculation once', () => {
+  const calculation = readWeeklyForecastCalculation(createWeeklyForecastMetadata());
+  const explanation = explainFirstWeeklyForecast(calculation, 1873.672);
+
+  assert.ok(explanation);
+  assert.equal(explanation.anchorPriceKrwPerL, 1844.478);
+  assert.equal(explanation.baseForecastKrwPerL, 1841.909);
+  assert.equal(explanation.dubai?.basisWeekEndDate, '2026-09-03T00:00:00.000Z');
+  assert.equal(explanation.dubai?.basisValue, 100.28);
+  assert.equal(explanation.dubai?.previousWeekEndDate, '2026-08-27T00:00:00.000Z');
+  assert.equal(explanation.dubai?.previousValue, 92.32);
+  assert.equal(explanation.dubai?.changeRatio, 0.0862218370883883);
+  assert.equal(explanation.dubai?.contributionRatio, 0.01724436741767766);
+  assert.equal(explanation.rawExternalAdjustmentRatio, 0.01724436741767766);
+  assert.equal(explanation.appliedExternalAdjustmentRatio, 0.01724436741767766);
+  assert.equal(explanation.externalAdjustmentCapReached, false);
+  assert.equal(explanation.reproducedFirstForecastKrwPerL, 1873.672);
+  assert.equal(explanation.firstForecastKrwPerL, 1873.672);
+  assert.equal(explanation.formulaMatchesStoredForecast, true);
+  assert.ok(Math.abs(explanation.appliedExternalCorrectionKrwPerL - 31.763) < 1e-9);
+});
+
+test('first forecast explanation sums Dubai and USD/KRW without averaging', () => {
+  const usdKrw = {
+    indicatorCode: 'usdKrw',
+    lagWeeks: 2,
+    weight: 0.1,
+    basisWeekEndDate: '2026-09-03T00:00:00.000Z',
+    basisValue: 1320,
+    previousWeekEndDate: '2026-08-27T00:00:00.000Z',
+    previousValue: 1307,
+    changeRatio: 0.01,
+    contributionRatio: 0.001,
+  };
+  const calculation = readWeeklyForecastCalculation(
+    createWeeklyForecastMetadata({
+      anchorPriceKrwPerL: 1000,
+      trendDeltaKrwPerL: 10,
+      dubai: { ...SEPTEMBER_DUBAI_CALCULATION, contributionRatio: 0.02 },
+      usdKrw,
+      externalAdjustmentRatio: 0.021,
+    }),
+  );
+  const explanation = explainFirstWeeklyForecast(calculation, 1031.21);
+
+  assert.ok(explanation);
+  assert.equal(explanation.rawExternalAdjustmentRatio, 0.021);
+  assert.equal(explanation.dubai?.correctionBeforeCapKrwPerL, 20.2);
+  assert.equal(explanation.usdKrw?.correctionBeforeCapKrwPerL, 1.01);
+  assert.equal(explanation.appliedExternalCorrectionKrwPerL.toFixed(2), '21.21');
+  assert.equal(explanation.formulaMatchesStoredForecast, true);
+});
+
+test('first forecast explanation distinguishes raw signal total from a reached cap', () => {
+  const calculation = readWeeklyForecastCalculation(
+    createWeeklyForecastMetadata({
+      anchorPriceKrwPerL: 1000,
+      trendDeltaKrwPerL: 0,
+      dubai: { ...SEPTEMBER_DUBAI_CALCULATION, contributionRatio: 0.02 },
+      usdKrw: {
+        ...SEPTEMBER_DUBAI_CALCULATION,
+        indicatorCode: 'usdKrw',
+        contributionRatio: 0.01,
+      },
+      externalAdjustmentRatio: 0.01,
+      externalAdjustmentCapRatio: 0.01,
+      externalAdjustmentCapReached: true,
+    }),
+  );
+  const explanation = explainFirstWeeklyForecast(calculation, 1010);
+
+  assert.ok(explanation);
+  assert.equal(explanation.rawExternalAdjustmentRatio, 0.03);
+  assert.equal(explanation.rawExternalCorrectionKrwPerL, 30);
+  assert.equal(explanation.appliedExternalAdjustmentRatio, 0.01);
+  assert.equal(explanation.appliedExternalCorrectionKrwPerL, 10);
+  assert.equal(explanation.externalAdjustmentCapReached, true);
+  assert.equal(explanation.formulaMatchesStoredForecast, true);
+});
+
+test('weekly calculation reader rejects pending or incomplete metadata', () => {
+  assert.equal(readWeeklyForecastCalculation(null), null);
+  assert.equal(readWeeklyForecastCalculation({ weeklyForecast: { status: 'pending' } }), null);
 });

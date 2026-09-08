@@ -46,7 +46,11 @@ import { readMarketRegimeAnalysis } from '@/lib/forecast/market-regime';
 import { readParameterSensitivity } from '@/lib/forecast/parameter-sensitivity';
 import { readShadowValidation, summarizeShadowValidation } from '@/lib/forecast/shadow-validation';
 import { loadAdminTransitionSection } from '@/lib/forecast/load-model-transition-view';
-import { readForecastModelDiagnostics } from '@/lib/forecast/forecast-diagnostics';
+import {
+  explainFirstWeeklyForecast,
+  readForecastModelDiagnostics,
+  readWeeklyForecastCalculation,
+} from '@/lib/forecast/forecast-diagnostics';
 import { ensureActiveQuarter } from '@/lib/quarter/ensure-active-quarter';
 
 
@@ -135,6 +139,22 @@ export default async function AdminPage() {
           },
         ];
   });
+  const activeForecastRun =
+    activeResult?.forecastRunId === null || activeResult?.forecastRunId === undefined
+      ? null
+      : (forecastRuns.find((run) => run.id === activeResult.forecastRunId) ?? null);
+  const activeForecastDiagnostics =
+    activeForecastRun === null ? null : readForecastModelDiagnostics(activeForecastRun.metadata);
+  const firstForecastPriceKrwPerL =
+    activeResult?.weeks.find(
+      (week) => week.priceKind === 'forecast' && week.priceKrwPerL !== null,
+    )?.priceKrwPerL ?? null;
+  const firstForecastExplanation = explainFirstWeeklyForecast(
+    activeForecastRun === null
+      ? null
+      : readWeeklyForecastCalculation(activeForecastRun.metadata),
+    firstForecastPriceKrwPerL?.toString(),
+  );
 
 
   const latestRunMetadata = forecastRuns[0]?.metadata;
@@ -309,15 +329,16 @@ export default async function AdminPage() {
           quarterAverageKrwPerL={activeResultDto?.quarterAverageKrwPerL ?? null}
           weeks={activeResultDto?.weeks ?? []}
           forecastBasis={
-            forecastDiagnosticsEntries[0]
-              ? {
-                  modelId: forecastDiagnosticsEntries[0].diagnostics.selectedParams.modelId,
+            activeForecastDiagnostics === null
+              ? null
+              : {
+                  modelId: activeForecastDiagnostics.selectedParams.modelId,
                   trendLookbackWeeks:
-                    forecastDiagnosticsEntries[0].diagnostics.selectedParams.trendLookbackWeeks,
-                  dubai: forecastDiagnosticsEntries[0].diagnostics.selectedParams.dubai,
-                  usdKrw: forecastDiagnosticsEntries[0].diagnostics.selectedParams.usdKrw,
+                    activeForecastDiagnostics.selectedParams.trendLookbackWeeks,
+                  dubai: activeForecastDiagnostics.selectedParams.dubai,
+                  usdKrw: activeForecastDiagnostics.selectedParams.usdKrw,
+                  explanation: firstForecastExplanation,
                 }
-              : null
           }
         />
 

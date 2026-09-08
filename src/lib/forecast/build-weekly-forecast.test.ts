@@ -5,6 +5,7 @@ import { ForecastHorizonKind } from '@prisma/client';
 
 import {
   buildWeeklyForecast,
+  projectWeeklyPrice,
   type ForecastIndicatorWeeklyPoint,
 } from './build-weekly-forecast';
 import {
@@ -145,6 +146,41 @@ test('external adjustment is capped by the configured ratio', () => {
   assert.equal(result.externalAdjustmentCapReached, true);
   assert.equal(result.externalAdjustmentRatio, 0.01);
   assert.equal(result.points[0].pointKrwPerL, 1838.2);
+});
+
+test('one external signal ratio is applied exactly once across all thirteen horizons', () => {
+  const params: ForecastModelParams = {
+    ...FALLBACK_FORECAST_MODEL_PARAMS,
+    modelId: 'B',
+    dubai: { lagWeeks: 1, weight: 0.1 },
+    externalAdjustmentCapRatio: 0.03,
+  };
+  const result = buildWeeklyForecast({
+    weeklySeries: createWeeklySeries([1900, 1880, 1860, 1840]),
+    indicatorSeries: {
+      dubai: createIndicatorSeries([80, 80, 80, 88]),
+      usdKrw: [],
+    },
+    params,
+    horizonCount: 13,
+  });
+
+  assert.equal(result.externalAdjustmentRatio.toFixed(4), '0.0100');
+  assert.equal(result.externalAdjustmentCapReached, false);
+  assert.deepEqual(
+    result.points.map((point) => point.pointKrwPerL),
+    [
+      1838.2, 1818, 1797.8, 1777.6, 1757.4, 1737.2, 1717, 1696.8, 1676.6, 1656.4,
+      1636.2, 1616, 1595.8,
+    ],
+  );
+  result.points.forEach((point, index) => {
+    assert.equal(
+      point.pointKrwPerL,
+      projectWeeklyPrice(1840, -20, index + 1, result.externalAdjustmentRatio),
+    );
+  });
+  assert.notEqual(result.points[0].pointKrwPerL, Number((1820 * 1.01 * 1.01).toFixed(3)));
 });
 
 test('expected range comes from horizon backtest errors, not from horizon distance', () => {

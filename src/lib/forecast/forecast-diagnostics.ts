@@ -13,6 +13,7 @@ import {
   LONG_EVALUATION_WEEKS,
   type ForecastModelId,
 } from "./forecast-model-config";
+import { projectWeeklyPrice } from "./build-weekly-forecast";
 
 const PROMOTION_REASON_TEXT: Record<string, string> = {
   kept_current_model: "현재 모델을 유지했습니다.",
@@ -241,5 +242,140 @@ export function readForecastModelDiagnostics(metadata: unknown): ForecastModelDi
     longOneStep: model.longOneStep,
     currentModelRecentOneStep: model.currentModelRecentOneStep,
     candidates,
+  };
+}
+
+const ForecastIndicatorCalculationSchema = z
+  .object({
+    indicatorCode: z.enum(["dubai", "usdKrw"]),
+    lagWeeks: z.number().int().nonnegative(),
+    weight: z.number(),
+    basisWeekEndDate: z.string().nullish().transform((value) => value ?? null),
+    basisValue: NullableNumber,
+    previousWeekEndDate: z.string().nullish().transform((value) => value ?? null),
+    previousValue: NullableNumber,
+    changeRatio: NullableNumber,
+    contributionRatio: z.number(),
+  })
+  .nullish()
+  .transform((value) => value ?? null);
+
+const WeeklyForecastCalculationSchema = z.object({
+  weeklyForecast: z.object({
+    status: z.literal("ready"),
+    anchorWeekEndDate: z.string(),
+    anchorPriceKrwPerL: z.number(),
+    trendDeltaKrwPerL: z.number(),
+    trendLookbackCount: z.number().int().nonnegative(),
+    externalAdjustmentRatio: z.number(),
+    externalAdjustmentCapRatio: z.number().nonnegative(),
+    externalAdjustmentCapReached: z.boolean(),
+    dubai: ForecastIndicatorCalculationSchema,
+    usdKrw: ForecastIndicatorCalculationSchema,
+  }),
+});
+
+export type ForecastIndicatorCalculation = NonNullable<
+  z.infer<typeof ForecastIndicatorCalculationSchema>
+>;
+export type WeeklyForecastCalculation = z.infer<
+  typeof WeeklyForecastCalculationSchema
+>["weeklyForecast"];
+
+export interface FirstForecastExplanation {
+  anchorPriceKrwPerL: number;
+  trendDeltaKrwPerL: number;
+  baseForecastKrwPerL: number;
+  dubai: (ForecastIndicatorCalculation & { correctionBeforeCapKrwPerL: number }) | null;
+  usdKrw: (ForecastIndicatorCalculation & { correctionBeforeCapKrwPerL: number }) | null;
+  rawExternalAdjustmentRatio: number;
+  rawExternalCorrectionKrwPerL: number;
+  appliedExternalAdjustmentRatio: number;
+  appliedExternalCorrectionKrwPerL: number;
+  externalAdjustmentCapRatio: number;
+  externalAdjustmentCapReached: boolean;
+  firstForecastKrwPerL: number;
+  firstForecastChangeKrwPerL: number;
+  firstForecastChangeRatio: number | null;
+  reproducedFirstForecastKrwPerL: number;
+  formulaMatchesStoredForecast: boolean;
+}
+
+export function readWeeklyForecastCalculation(
+  metadata: unknown,
+): WeeklyForecastCalculation | null {
+  const parsed = WeeklyForecastCalculationSchema.safeParse(metadata);
+  return parsed.success ? parsed.data.weeklyForecast : null;
+}
+
+export function explainFirstWeeklyForecast(
+  calculation: WeeklyForecastCalculation | null,
+  storedFirstForecastKrwPerL: number | string | null | undefined,
+): FirstForecastExplanation | null {
+  if (
+    calculation === null ||
+    storedFirstForecastKrwPerL === null ||
+    storedFirstForecastKrwPerL === undefined
+  ) {
+    return null;
+  }
+
+  const firstForecastKrwPerL = Number(storedFirstForecastKrwPerL);
+  if (!Number.isFinite(firstForecastKrwPerL)) {
+    return null;
+  }
+
+  const baseForecastKrwPerL =
+    calculation.anchorPriceKrwPerL + calculation.trendDeltaKrwPerL;
+  const rawExternalAdjustmentRatio =
+    (calculation.dubai?.contributionRatio ?? 0) +
+    (calculation.usdKrw?.contributionRatio ?? 0);
+  const reproducedFirstForecastKrwPerL = projectWeeklyPrice(
+    calculation.anchorPriceKrwPerL,
+    calculation.trendDeltaKrwPerL,
+    1,
+    calculation.externalAdjustmentRatio,
+  );
+  const dubai =
+    calculation.dubai === null
+      ? null
+      : {
+          ...calculation.dubai,
+          correctionBeforeCapKrwPerL:
+            baseForecastKrwPerL * calculation.dubai.contributionRatio,
+        };
+  const usdKrw =
+    calculation.usdKrw === null
+      ? null
+      : {
+          ...calculation.usdKrw,
+          correctionBeforeCapKrwPerL:
+            baseForecastKrwPerL * calculation.usdKrw.contributionRatio,
+        };
+
+  return {
+    anchorPriceKrwPerL: calculation.anchorPriceKrwPerL,
+    trendDeltaKrwPerL: calculation.trendDeltaKrwPerL,
+    baseForecastKrwPerL,
+    dubai,
+    usdKrw,
+    rawExternalAdjustmentRatio,
+    rawExternalCorrectionKrwPerL:
+      baseForecastKrwPerL * rawExternalAdjustmentRatio,
+    appliedExternalAdjustmentRatio: calculation.externalAdjustmentRatio,
+    appliedExternalCorrectionKrwPerL:
+      firstForecastKrwPerL - baseForecastKrwPerL,
+    externalAdjustmentCapRatio: calculation.externalAdjustmentCapRatio,
+    externalAdjustmentCapReached: calculation.externalAdjustmentCapReached,
+    firstForecastKrwPerL,
+    firstForecastChangeKrwPerL:
+      firstForecastKrwPerL - calculation.anchorPriceKrwPerL,
+    firstForecastChangeRatio:
+      calculation.anchorPriceKrwPerL === 0
+        ? null
+        : firstForecastKrwPerL / calculation.anchorPriceKrwPerL - 1,
+    reproducedFirstForecastKrwPerL,
+    formulaMatchesStoredForecast:
+      Math.abs(reproducedFirstForecastKrwPerL - firstForecastKrwPerL) < 0.0005,
   };
 }
