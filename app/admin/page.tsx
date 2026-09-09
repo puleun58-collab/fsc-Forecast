@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import type { ComponentProps, ReactNode } from 'react';
 
 import { AdminDataHealthPanel } from '@/components/admin-data-health-panel';
 import { AdminForecastDiagnostics, type ForecastRunHistoryEntry } from '@/components/admin-forecast-diagnostics';
@@ -23,6 +24,7 @@ import { db } from '@/lib/db';
 import { loadAdminDataHealth } from '@/lib/data-health/load-admin-data-health';
 import { loadAdminOperationHistory } from '@/lib/admin-operation-history/load-admin-operation-history';
 import { loadForecastQualityTrend } from '@/lib/forecast-quality-trend/load-forecast-quality-trend';
+import { formatDashboardDateTime } from '@/lib/dashboard/dashboard-time';
 
 import { findLatestBaseFscResultByQuarter } from '@/lib/fsc/load-latest-fsc-result';
 import { serializeFscResultDto } from '@/lib/fsc/serialize-fsc-dto';
@@ -65,11 +67,157 @@ function formatQuarterPeriod(start: Date, end: Date): string {
   return `${start.toISOString().slice(0, 10).replaceAll('-', '.')} ~ ${end.toISOString().slice(0, 10).replaceAll('-', '.')}`;
 }
 
-export default async function AdminPage() {
-  if (getAdminSession() === null) {
-    redirect('/admin/login');
-  }
+function AdminSectionHeader({
+  id,
+  title,
+  description,
+}: {
+  id: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <header className="admin-page-section__header">
+      <h2 id={id}>{title}</h2>
+      <p>{description}</p>
+    </header>
+  );
+}
 
+type AdminPageView = {
+  operatingContext: string;
+  operations: {
+    status: ComponentProps<typeof AdminOperationsStatus>;
+    summary: ComponentProps<typeof AdminOperationsSummary>;
+    quarter: ComponentProps<typeof AdminQuarterCard>;
+    week: ComponentProps<typeof AdminWeekComposition>;
+  };
+  diagnostics: {
+    dataHealth: ComponentProps<typeof AdminDataHealthPanel>;
+    qualityTrend: ComponentProps<typeof AdminForecastQualityTrend>;
+    forecast: ComponentProps<typeof AdminForecastDiagnostics>;
+    marketRegime: ComponentProps<typeof AdminMarketRegime>;
+    horizon: ComponentProps<typeof AdminHorizonProfile>;
+    signal: ComponentProps<typeof AdminSignalReview>;
+  };
+  tuning: {
+    sensitivity: ComponentProps<typeof AdminParameterSensitivity>;
+    shadow: ComponentProps<typeof AdminShadowValidation>;
+    timeline: ComponentProps<typeof AdminTuningTimeline>;
+    transition: ComponentProps<typeof AdminModelTransition>;
+    postTransition: ComponentProps<typeof AdminPostTransition>;
+  };
+  management: {
+    operationHistory: ComponentProps<typeof AdminOperationHistory>;
+    quarterManagement: ComponentProps<typeof AdminQuarterManagement>;
+  };
+};
+
+function AdminPageSection({
+  id,
+  title,
+  description,
+  children,
+}: {
+  id: string;
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="admin-page-section" aria-labelledby={id}>
+      <AdminSectionHeader id={id} title={title} description={description} />
+      <div className="admin-page-section__content">{children}</div>
+    </section>
+  );
+}
+
+function AdminOperationsSection({ view }: { view: AdminPageView['operations'] }) {
+  return (
+    <AdminPageSection
+      id="admin-operations-title"
+      title="운영 현황"
+      description="현재 Forecast와 분기 산출 상태를 확인합니다."
+    >
+      <AdminOperationsStatus {...view.status} />
+      <AdminOperationsSummary {...view.summary} />
+      <AdminQuarterCard {...view.quarter} />
+      <AdminWeekComposition {...view.week} />
+    </AdminPageSection>
+  );
+}
+
+function AdminDiagnosticsSection({ view }: { view: AdminPageView['diagnostics'] }) {
+  return (
+    <AdminPageSection
+      id="admin-diagnostics-title"
+      title="예측 품질·진단"
+      description="데이터 품질과 Forecast 성능의 변화 원인을 점검합니다."
+    >
+      <AdminDataHealthPanel {...view.dataHealth} />
+      <AdminForecastQualityTrend {...view.qualityTrend} />
+      <AdminForecastDiagnostics {...view.forecast} />
+      <AdminMarketRegime {...view.marketRegime} />
+      <AdminHorizonProfile {...view.horizon} />
+      <AdminSignalReview {...view.signal} />
+    </AdminPageSection>
+  );
+}
+
+function AdminTuningSection({ view }: { view: AdminPageView['tuning'] }) {
+  return (
+    <AdminPageSection
+      id="admin-tuning-title"
+      title="튜닝·검증"
+      description="후보 설정의 민감도와 운영 전환 검증 단계를 확인합니다."
+    >
+      <AdminParameterSensitivity {...view.sensitivity} />
+      <AdminShadowValidation {...view.shadow} />
+      <AdminTuningTimeline {...view.timeline} />
+      <AdminModelTransition {...view.transition} />
+      <AdminPostTransition {...view.postTransition} />
+    </AdminPageSection>
+  );
+}
+
+function AdminManagementSection({ view }: { view: AdminPageView['management'] }) {
+  return (
+    <AdminPageSection
+      id="admin-management-title"
+      title="관리·이력"
+      description="운영 실행 기록과 분기 설정을 관리합니다."
+    >
+      <AdminOperationHistory {...view.operationHistory} />
+      <AdminQuarterManagement {...view.quarterManagement} />
+    </AdminPageSection>
+  );
+}
+
+function AdminDashboard({ view }: { view: AdminPageView }) {
+  return (
+    <main id="main-content" className="dashboard-shell admin-grid">
+      <section className="dashboard-shell__masthead dashboard-shell__masthead--compact">
+        <h1 className="dashboard-shell__title">FSC Admin</h1>
+        <div className="admin-row">
+          <div className="admin-masthead__copy">
+            <p className="dashboard-shell__lead">FSC Forecast 운영 및 데이터 상태를 관리합니다.</p>
+            <p className="admin-masthead__context">{view.operatingContext}</p>
+          </div>
+          <AdminLogoutButton />
+        </div>
+      </section>
+
+      <div className="dashboard-shell__grid">
+        <AdminOperationsSection view={view.operations} />
+        <AdminDiagnosticsSection view={view.diagnostics} />
+        <AdminTuningSection view={view.tuning} />
+        <AdminManagementSection view={view.management} />
+      </div>
+    </main>
+  );
+}
+
+async function loadAdminPageView(): Promise<AdminPageView> {
 
   const activeQuarter = await ensureActiveQuarter();
   const [
@@ -205,155 +353,152 @@ export default async function AdminPage() {
     transition: transitionSection.transition,
     postTransition: transitionSection.postTransition,
   });
+  const currentModelParams = forecastDiagnosticsEntries[0]?.diagnostics.selectedParams ?? null;
+  const operatingContext = [
+    quarterLabel(activeQuarter.targetYear, activeQuarter.targetQuarter),
+    `데이터 기준 시각 ${formatDashboardDateTime(activeResultDto?.dataBasisAt ?? null)}`,
+    `현재 Model ${currentModelParams?.modelId ?? '산정 전'}`,
+  ].join(' · ');
 
-  return (
-    <main id="main-content" className="dashboard-shell admin-grid">
-      <section className="dashboard-shell__masthead dashboard-shell__masthead--compact">
-        <h1 className="dashboard-shell__title">FSC Admin</h1>
-        <div className="admin-row">
-          <p className="dashboard-shell__lead">FSC Forecast 운영 및 데이터 상태를 관리합니다.</p>
-          <AdminLogoutButton />
-        </div>
-      </section>
+  return {
+    operatingContext,
+    operations: {
+      status: { center: operationsStatus },
+      summary: {
+        modelParams: currentModelParams,
+        recentMapePct: forecastDiagnosticsEntries[0]?.diagnostics.recentOneStep?.mapePct ?? null,
+        recentMaeKrwPerL:
+          forecastDiagnosticsEntries[0]?.diagnostics.recentOneStep?.maeKrwPerL ?? null,
+        recentSampleCount:
+          forecastDiagnosticsEntries[0]?.diagnostics.recentOneStep?.sampleCount ?? null,
+        reliabilityGrade: activeResultDto?.reliabilityGrade ?? null,
+        drift: performanceDrift,
+      },
+      quarter: {
+        quarterLabel: quarterLabel(activeQuarter.targetYear, activeQuarter.targetQuarter),
+        referenceQuarterLabel: quarterLabel(
+          activeQuarter.referenceYear,
+          activeQuarter.referenceQuarter,
+        ),
+        periodLabel: formatQuarterPeriod(
+          activeQuarter.quarterStartDate,
+          activeQuarter.quarterEndDate,
+        ),
+        result:
+          activeResultDto === null
+            ? null
+            : {
+                id: activeResultDto.id,
+                approvalStatus: activeResultDto.approvalStatus,
+                dataFreshnessStatus: activeResultDto.dataFreshnessStatus,
+                reliabilityGrade: activeResultDto.reliabilityGrade,
+                reliabilitySampleCount: activeResultDto.reliabilitySampleCount,
+                reliabilityMinimumSampleCount: activeResultDto.reliabilityMinimumSampleCount,
+                recent13wWeeklyPriceMape: activeResultDto.qualityMetrics.recent13wWeeklyPriceMape,
+                actualWeekCount: activeResultDto.actualWeekCount,
+                forecastWeekCount: activeResultDto.forecastWeekCount,
+                quarterAverageKrwPerL: activeResultDto.quarterAverageKrwPerL,
+                previousQuarterAverageKrwPerL:
+                  previousResultDto?.quarterAverageKrwPerL ?? null,
+              },
+      },
+      week: {
+        actualWeekCount: activeResultDto?.actualWeekCount ?? 0,
+        forecastWeekCount: activeResultDto?.forecastWeekCount ?? 0,
+        quarterAverageKrwPerL: activeResultDto?.quarterAverageKrwPerL ?? null,
+        weeks: activeResultDto?.weeks ?? [],
+        forecastBasis:
+          activeForecastDiagnostics === null
+            ? null
+            : {
+                modelId: activeForecastDiagnostics.selectedParams.modelId,
+                trendLookbackWeeks: activeForecastDiagnostics.selectedParams.trendLookbackWeeks,
+                dubai: activeForecastDiagnostics.selectedParams.dubai,
+                usdKrw: activeForecastDiagnostics.selectedParams.usdKrw,
+                explanation: firstForecastExplanation,
+              },
+      },
+    },
+    diagnostics: {
+      dataHealth: {
+        summary: dataHealth,
+        inputQuality,
+      },
+      qualityTrend: {
+        trend: qualityTrend,
+        backtestPoints: readBacktestOneStepPoints(forecastRuns[0]?.metadata),
+        errorAnalysis: readForecastErrorAnalysis(forecastRuns[0]?.metadata),
+      },
+      forecast: {
+        latest: forecastDiagnosticsEntries[0] ?? null,
+        history: forecastDiagnosticsEntries,
+        reliability:
+          activeResultDto === null
+            ? null
+            : {
+                grade: activeResultDto.reliabilityGrade,
+                sampleCount: activeResultDto.reliabilitySampleCount,
+                recent13wWeeklyPriceMae:
+                  activeResultDto.qualityMetrics.recent13wWeeklyPriceMae === null
+                    ? null
+                    : Number(activeResultDto.qualityMetrics.recent13wWeeklyPriceMae),
+                recent13wWeeklyPriceMape:
+                  activeResultDto.qualityMetrics.recent13wWeeklyPriceMape === null
+                    ? null
+                    : Number(activeResultDto.qualityMetrics.recent13wWeeklyPriceMape),
+              },
+      },
+      marketRegime: {
+        analysis: readMarketRegimeAnalysis(forecastRuns[0]?.metadata),
+      },
+      horizon: {
+        performance: horizonPerformance,
+        interval: predictionInterval,
+        forwardInterval: intervalForwardValidation,
+        publicationEnabled: env.predictionIntervalPublic,
+      },
+      signal: {
+        contribution: signalContribution,
+        forwardValidation: signalForwardValidation,
+        review: signalReview,
+      },
+    },
+    tuning: {
+      sensitivity: {
+        sensitivity,
+        persistence,
+        regimeComparisons: readCandidateRegimeComparisons(forecastRuns[0]?.metadata) ?? [],
+        stageLabel: tuningStage.label,
+        shadowActive:
+          shadowSession !== null &&
+          summarizeShadowValidation(shadowSession).status === 'validating',
+      },
+      shadow: { session: shadowSession },
+      timeline: { events: tuningTimeline },
+      transition: { view: transitionSection.transition },
+      postTransition: { view: transitionSection.postTransition },
+    },
+    management: {
+      operationHistory: { events: operationHistory },
+      quarterManagement: {
+        quarters: quarters.map((quarter) => ({
+          id: quarter.id,
+          targetYear: quarter.targetYear,
+          targetQuarter: quarter.targetQuarter,
+          label: quarterLabel(quarter.targetYear, quarter.targetQuarter),
+          referenceLabel: quarterLabel(quarter.referenceYear, quarter.referenceQuarter),
+          status: quarter.status,
+          isActive: quarter.isActive,
+        })),
+      },
+    },
+  };
+}
 
-      <div className="dashboard-shell__grid">
-        <AdminOperationsStatus center={operationsStatus} />
+export default async function AdminPage() {
+  if (getAdminSession() === null) {
+    redirect('/admin/login');
+  }
 
-        <AdminOperationsSummary
-          modelParams={forecastDiagnosticsEntries[0]?.diagnostics.selectedParams ?? null}
-          recentMapePct={forecastDiagnosticsEntries[0]?.diagnostics.recentOneStep?.mapePct ?? null}
-          recentMaeKrwPerL={
-            forecastDiagnosticsEntries[0]?.diagnostics.recentOneStep?.maeKrwPerL ?? null
-          }
-          recentSampleCount={
-            forecastDiagnosticsEntries[0]?.diagnostics.recentOneStep?.sampleCount ?? null
-          }
-          reliabilityGrade={activeResultDto?.reliabilityGrade ?? null}
-          drift={performanceDrift}
-        />
-
-        <AdminDataHealthPanel
-          summary={dataHealth}
-          inputQuality={inputQuality}
-        />
-
-        <AdminForecastDiagnostics
-          latest={forecastDiagnosticsEntries[0] ?? null}
-          history={forecastDiagnosticsEntries}
-          reliability={
-            activeResultDto === null
-              ? null
-              : {
-                  grade: activeResultDto.reliabilityGrade,
-                  sampleCount: activeResultDto.reliabilitySampleCount,
-                  recent13wWeeklyPriceMae:
-                    activeResultDto.qualityMetrics.recent13wWeeklyPriceMae === null
-                      ? null
-                      : Number(activeResultDto.qualityMetrics.recent13wWeeklyPriceMae),
-                  recent13wWeeklyPriceMape:
-                    activeResultDto.qualityMetrics.recent13wWeeklyPriceMape === null
-                      ? null
-                      : Number(activeResultDto.qualityMetrics.recent13wWeeklyPriceMape),
-                }
-          }
-        />
-
-        <AdminForecastQualityTrend
-          trend={qualityTrend}
-          backtestPoints={readBacktestOneStepPoints(forecastRuns[0]?.metadata)}
-          errorAnalysis={readForecastErrorAnalysis(forecastRuns[0]?.metadata)}
-        />
-
-        <AdminMarketRegime analysis={readMarketRegimeAnalysis(forecastRuns[0]?.metadata)} />
-
-        <AdminParameterSensitivity
-          sensitivity={sensitivity}
-          persistence={persistence}
-          regimeComparisons={readCandidateRegimeComparisons(forecastRuns[0]?.metadata) ?? []}
-          stageLabel={tuningStage.label}
-          shadowActive={
-            shadowSession !== null &&
-            summarizeShadowValidation(shadowSession).status === 'validating'
-          }
-        />
-
-        <AdminHorizonProfile
-          performance={horizonPerformance}
-          interval={predictionInterval}
-          forwardInterval={intervalForwardValidation}
-          publicationEnabled={env.predictionIntervalPublic}
-        />
-
-        <AdminSignalReview
-          contribution={signalContribution}
-          forwardValidation={signalForwardValidation}
-          review={signalReview}
-        />
-
-        <AdminShadowValidation session={shadowSession} />
-
-        <AdminTuningTimeline events={tuningTimeline} />
-
-        <AdminModelTransition view={transitionSection.transition} />
-
-        <AdminPostTransition view={transitionSection.postTransition} />
-
-        <AdminQuarterCard
-          quarterLabel={quarterLabel(activeQuarter.targetYear, activeQuarter.targetQuarter)}
-          referenceQuarterLabel={quarterLabel(activeQuarter.referenceYear, activeQuarter.referenceQuarter)}
-          periodLabel={formatQuarterPeriod(activeQuarter.quarterStartDate, activeQuarter.quarterEndDate)}
-          result={
-            activeResultDto === null
-              ? null
-              : {
-                  id: activeResultDto.id,
-                  approvalStatus: activeResultDto.approvalStatus,
-                  dataFreshnessStatus: activeResultDto.dataFreshnessStatus,
-                  reliabilityGrade: activeResultDto.reliabilityGrade,
-                  reliabilitySampleCount: activeResultDto.reliabilitySampleCount,
-                  reliabilityMinimumSampleCount: activeResultDto.reliabilityMinimumSampleCount,
-                  recent13wWeeklyPriceMape: activeResultDto.qualityMetrics.recent13wWeeklyPriceMape,
-                  actualWeekCount: activeResultDto.actualWeekCount,
-                  forecastWeekCount: activeResultDto.forecastWeekCount,
-                  quarterAverageKrwPerL: activeResultDto.quarterAverageKrwPerL,
-                  previousQuarterAverageKrwPerL: previousResultDto?.quarterAverageKrwPerL ?? null,
-                }
-          }
-        />
-
-        <AdminOperationHistory events={operationHistory} />
-
-        <AdminWeekComposition
-          actualWeekCount={activeResultDto?.actualWeekCount ?? 0}
-          forecastWeekCount={activeResultDto?.forecastWeekCount ?? 0}
-          quarterAverageKrwPerL={activeResultDto?.quarterAverageKrwPerL ?? null}
-          weeks={activeResultDto?.weeks ?? []}
-          forecastBasis={
-            activeForecastDiagnostics === null
-              ? null
-              : {
-                  modelId: activeForecastDiagnostics.selectedParams.modelId,
-                  trendLookbackWeeks:
-                    activeForecastDiagnostics.selectedParams.trendLookbackWeeks,
-                  dubai: activeForecastDiagnostics.selectedParams.dubai,
-                  usdKrw: activeForecastDiagnostics.selectedParams.usdKrw,
-                  explanation: firstForecastExplanation,
-                }
-          }
-        />
-
-        <AdminQuarterManagement
-          quarters={quarters.map((quarter) => ({
-            id: quarter.id,
-            targetYear: quarter.targetYear,
-            targetQuarter: quarter.targetQuarter,
-            label: quarterLabel(quarter.targetYear, quarter.targetQuarter),
-            referenceLabel: quarterLabel(quarter.referenceYear, quarter.referenceQuarter),
-            status: quarter.status,
-            isActive: quarter.isActive,
-          }))}
-        />
-      </div>
-    </main>
-  );
+  return <AdminDashboard view={await loadAdminPageView()} />;
 }

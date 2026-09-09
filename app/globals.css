@@ -192,6 +192,20 @@ main {
   align-items: center;
 }
 
+.admin-masthead__copy {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-masthead__context {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
 @media (max-width: 640px) {
   .dashboard-shell__masthead--compact {
     padding: var(--space-4);
@@ -1134,6 +1148,58 @@ main {
 .dashboard-shell__grid {
   display: grid;
   gap: var(--space-5);
+}
+
+.admin-page-section,
+.admin-page-section__content,
+.admin-page-section__header {
+  display: grid;
+}
+
+.admin-page-section {
+  gap: var(--space-4);
+}
+
+.admin-page-section + .admin-page-section {
+  margin-top: var(--space-3);
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--border-default);
+}
+
+.admin-page-section__content {
+  gap: var(--space-5);
+}
+
+.admin-page-section__header {
+  gap: 4px;
+  padding: 0 2px;
+}
+
+.admin-page-section__header h2,
+.admin-page-section__header p {
+  margin: 0;
+}
+
+.admin-page-section__header h2 {
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+}
+
+.admin-page-section__header p {
+  max-width: 65ch;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+@media (max-width: 700px) {
+  .admin-page-section + .admin-page-section {
+    margin-top: var(--space-2);
+    padding-top: var(--space-6);
+  }
 }
 
 .admin-metric-grid {
@@ -2355,45 +2421,16 @@ summary.operation-history-row::-webkit-details-marker {
   font-weight: 700;
 }
 
-.performance-drift {
+.admin-summary__performance {
   display: grid;
-  gap: 10px;
+  gap: 6px;
 }
 
-.performance-drift__head {
+.admin-summary__performance-head {
   display: flex;
-  align-items: center;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
-}
-
-@media (max-width: 700px) {
-  .performance-drift-table thead {
-    display: none;
-  }
-
-  .performance-drift-table tbody tr {
-    display: grid;
-    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
-    gap: 4px 12px;
-    padding: 10px 0;
-  }
-
-  .performance-drift-table tbody th,
-  .performance-drift-table tbody td {
-    display: grid;
-    grid-template-columns: subgrid;
-    grid-column: 1 / -1;
-    padding: 0;
-  }
-
-  .performance-drift-table tbody th::before,
-  .performance-drift-table tbody td::before {
-    content: attr(data-label);
-    color: var(--text-secondary);
-    font-size: 0.74rem;
-    font-weight: 700;
-  }
 }
 
 .admin-table__flag {

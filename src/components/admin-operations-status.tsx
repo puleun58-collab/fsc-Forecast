@@ -11,7 +11,7 @@ const STATUS_VIEW: Record<OperationsStatus, { label: string; className: string }
   healthy: { label: '정상', className: 'status-tag--ok' },
   watch: { label: '관찰', className: '' },
   attention: { label: '확인 필요', className: 'status-tag--warning' },
-  'action-required': { label: '조치 필요', className: 'status-tag--warning' },
+  'action-required': { label: '조치 필요', className: 'status-tag--critical' },
   unknown: { label: '판단 전', className: '' },
 };
 

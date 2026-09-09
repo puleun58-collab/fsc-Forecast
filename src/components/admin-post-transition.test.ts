@@ -94,6 +94,8 @@ test('monitoring renders progress as interim evidence without a rollback action'
   assert.match(markup, /이전 설정/);
   assert.doesNotMatch(markup, /이전 설정으로 롤백 승인/);
   assert.match(markup, /자동으로 되돌리지 않습니다/);
+  assert.match(markup, /<strong>전환 후 상세<\/strong>/);
+  assert.doesNotMatch(markup, /<details[^>]*\sopen/);
 });
 
 test('a reviewable regression exposes rollback approval but never applies it automatically', () => {

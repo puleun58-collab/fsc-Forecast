@@ -14,7 +14,6 @@ const STATUS_VIEW: Record<AdminOperationStatus, { label: string; className: stri
   pending: { label: '대기', className: '' },
 };
 
-const OPERATION_HISTORY_PREVIEW_COUNT = 5;
 
 function OperationRow({ event }: { event: AdminOperationEvent }) {
   const statusView = STATUS_VIEW[event.status];
@@ -69,7 +68,7 @@ export function AdminOperationHistory({ events }: { events: readonly AdminOperat
   if (events.length === 0) {
     return (
       <SectionCard
-        title="최근 운영 이력"
+        title="운영 이력"
         badge="이력 없음"
         description="최근 데이터 수집 및 Forecast/FSC 실행 흐름입니다."
         className="admin-operation-history"
@@ -81,31 +80,24 @@ export function AdminOperationHistory({ events }: { events: readonly AdminOperat
 
   return (
     <SectionCard
-      title="최근 운영 이력"
+      title="운영 이력"
       badge={`최근 ${events.length}건`}
       description="최근 데이터 수집 및 Forecast/FSC 실행 흐름입니다."
       className="admin-operation-history"
     >
-      <ul className="operation-history-list">
-        {events.slice(0, OPERATION_HISTORY_PREVIEW_COUNT).map((event) => (
-          <OperationRow key={event.id} event={event} />
-        ))}
-      </ul>
-      {events.length > OPERATION_HISTORY_PREVIEW_COUNT ? (
-        <details className="admin-disclosure admin-disclosure--inline">
-          <summary className="admin-disclosure__summary">
-            <strong>전체 이력 {events.length}건</strong>
-            <AdminDisclosureToggle />
-          </summary>
-          <div className="admin-disclosure__body">
-            <ul className="operation-history-list">
-              {events.slice(OPERATION_HISTORY_PREVIEW_COUNT).map((event) => (
-                <OperationRow key={event.id} event={event} />
-              ))}
-            </ul>
-          </div>
-        </details>
-      ) : null}
+      <details className="admin-disclosure admin-disclosure--inline">
+        <summary className="admin-disclosure__summary">
+          <strong>운영 이력 보기</strong>
+          <AdminDisclosureToggle />
+        </summary>
+        <div className="admin-disclosure__body">
+          <ul className="operation-history-list">
+            {events.map((event) => (
+              <OperationRow key={event.id} event={event} />
+            ))}
+          </ul>
+        </div>
+      </details>
     </SectionCard>
   );
 }

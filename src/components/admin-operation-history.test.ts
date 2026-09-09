@@ -48,9 +48,12 @@ const EVENTS: AdminOperationEvent[] = [
 test('the operation history renders compact rows with KST times and status tags', () => {
   const markup = renderToStaticMarkup(createElement(AdminOperationHistory, { events: EVENTS }));
 
-  assert.match(markup, /최근 운영 이력/);
+  assert.match(markup, /운영 이력/);
   assert.match(markup, /최근 데이터 수집 및 Forecast\/FSC 실행 흐름입니다/);
   assert.match(markup, /최근 3건/);
+  assert.match(markup, /운영 이력 보기/);
+  assert.match(markup, /<details class="admin-disclosure admin-disclosure--inline">/);
+  assert.doesNotMatch(markup, /<details[^>]*\sopen/);
   assert.match(markup, /2026\.09\.01 16:20 KST/);
   assert.match(markup, /<span class="status-tag status-tag--ok">성공<\/span>/);
   assert.match(markup, /<span class="status-tag status-tag--critical">실패<\/span>/);
@@ -91,7 +94,6 @@ test('an event without details renders a plain row and no toggle', () => {
   );
 
   assert.equal(markup.match(/<details class="operation-history-entry">/g)?.length, 1);
-  assert.equal(markup.match(/보기 ▾/g)?.length, 1);
   assert.match(markup, /<li class="operation-history-item operation-history-item--success"><div class="operation-history-row">/);
 });
 
@@ -103,7 +105,7 @@ test('an empty operation history explains how entries appear', () => {
   assert.doesNotMatch(markup, /operation-history-row/);
 });
 
-test('only the five newest events stay visible and the rest move behind one disclosure', () => {
+test('all events stay inside one collapsed history disclosure', () => {
   const events: AdminOperationEvent[] = Array.from({ length: 8 }, (_, index) => ({
     ...EVENTS[2]!,
     id: `ingest:run-${index}`,
@@ -113,22 +115,21 @@ test('only the five newest events stay visible and the rest move behind one disc
   const markup = renderToStaticMarkup(createElement(AdminOperationHistory, { events }));
   const disclosureStart = markup.indexOf('<details class="admin-disclosure admin-disclosure--inline">');
   const preview = markup.slice(0, disclosureStart);
-  const rest = markup.slice(disclosureStart);
+  const history = markup.slice(disclosureStart);
 
   assert.match(markup, /최근 8건/);
-  assert.equal(preview.match(/<li class="operation-history-item /g)?.length, 5);
-  assert.equal(rest.match(/<li class="operation-history-item /g)?.length, 3);
-  assert.match(preview, /수집 4/);
-  assert.doesNotMatch(preview, /수집 5/);
-  assert.match(rest, /수집 7/);
-  assert.match(rest, /<strong>전체 이력 8건<\/strong>/);
+  assert.equal(preview.match(/<li class="operation-history-item /g)?.length ?? 0, 0);
+  assert.equal(history.match(/<li class="operation-history-item /g)?.length, 8);
+  assert.match(history, /수집 0/);
+  assert.match(history, /수집 7/);
+  assert.match(history, /<strong>운영 이력 보기<\/strong>/);
   assert.doesNotMatch(markup.slice(disclosureStart, disclosureStart + 70), /\sopen(?:=|>|\s)/);
-  assert.equal(markup.match(/보기 ▾/g)?.length, 9);
 });
 
-test('five or fewer events render without the extra disclosure', () => {
+test('five or fewer events also stay collapsed initially', () => {
   const markup = renderToStaticMarkup(createElement(AdminOperationHistory, { events: EVENTS }));
 
-  assert.doesNotMatch(markup, /admin-disclosure--inline/);
-  assert.doesNotMatch(markup, /전체 이력/);
+  assert.match(markup, /admin-disclosure--inline/);
+  assert.match(markup, /운영 이력 보기/);
+  assert.doesNotMatch(markup, /<details[^>]*\sopen/);
 });

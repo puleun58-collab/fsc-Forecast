@@ -1,3 +1,4 @@
+import { AdminDisclosureToggle } from './admin-disclosure-toggle';
 import { AdminActionButton } from './admin-action-button';
 import { ComparisonMetricsTable, ParameterDiffList } from './admin-model-transition';
 import { SectionCard } from './section-card';
@@ -89,37 +90,7 @@ export function AdminPostTransition({ view }: { view: PostTransitionView | null 
               <span>{view.earlyWarningText}</span>
             </p>
           )}
-          <dl className="quality-trend-status__facts">
-            <div>
-              <dt>비교 시작</dt>
-              <dd>{formatDashboardDate(monitoring.startedAt)}</dd>
-            </div>
-            <div>
-              <dt>표본</dt>
-              <dd>
-                {summary.completedSampleCount} / {summary.requiredSampleCount}
-              </dd>
-            </div>
-          </dl>
         </div>
-
-        <ParameterDiffList
-          baselineParams={monitoring.rollbackParams}
-          candidateParams={monitoring.currentParams}
-        />
-
-        <ComparisonMetricsTable
-          baselineLabel="현재"
-          candidateLabel="이전 설정"
-          baseline={summary.current}
-          candidate={summary.rollback}
-        />
-
-        {summary.status === 'monitoring' ? (
-          <p className="admin-decision__note">
-            표본 {summary.requiredSampleCount}주가 확보되기 전까지는 중간 결과이며 우열을 판정하지 않습니다.
-          </p>
-        ) : null}
 
         {view.rollbackBlockedText === null ? null : (
           <p className="quality-trend-status__notice">
@@ -137,9 +108,48 @@ export function AdminPostTransition({ view }: { view: PostTransitionView | null 
           />
         ) : null}
 
-        <p className="admin-decision__note">
-          이전 설정 예측은 비교용 진단 데이터이며 운영 Forecast, FSC, 신뢰도, 공개 대시보드에 사용하지 않습니다.
-        </p>
+        <details className="admin-disclosure admin-disclosure--inline">
+          <summary className="admin-disclosure__summary">
+            <strong>전환 후 상세</strong>
+            <AdminDisclosureToggle />
+          </summary>
+          <div className="admin-disclosure__body">
+            <dl className="quality-trend-status__facts">
+              <div>
+                <dt>비교 시작</dt>
+                <dd>{formatDashboardDate(monitoring.startedAt)}</dd>
+              </div>
+              <div>
+                <dt>표본</dt>
+                <dd>
+                  {summary.completedSampleCount} / {summary.requiredSampleCount}
+                </dd>
+              </div>
+            </dl>
+
+            <ParameterDiffList
+              baselineParams={monitoring.rollbackParams}
+              candidateParams={monitoring.currentParams}
+            />
+
+            <ComparisonMetricsTable
+              baselineLabel="현재"
+              candidateLabel="이전 설정"
+              baseline={summary.current}
+              candidate={summary.rollback}
+            />
+
+            {summary.status === 'monitoring' ? (
+              <p className="admin-decision__note">
+                표본 {summary.requiredSampleCount}주가 확보되기 전까지는 중간 결과이며 우열을 판정하지 않습니다.
+              </p>
+            ) : null}
+
+            <p className="admin-decision__note">
+              이전 설정 예측은 비교용 진단 데이터이며 운영 Forecast, FSC, 신뢰도, 공개 대시보드에 사용하지 않습니다.
+            </p>
+          </div>
+        </details>
       </div>
     </SectionCard>
   );

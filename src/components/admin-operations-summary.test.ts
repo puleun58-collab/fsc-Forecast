@@ -261,17 +261,17 @@ function drift(overrides: Partial<PerformanceDrift> = {}): PerformanceDrift {
   };
 }
 
-test('a stable performance state is summarized with the three windows', () => {
+test('performance status stays compact without repeating quality trend detail', () => {
   const markup = render({ drift: drift() });
 
   assert.match(markup, /Forecast 성능 상태/);
   assert.match(markup, /안정/);
-  assert.match(markup, /최근 4주 MAE<\/span><strong>22\.40원\/L/);
-  assert.match(markup, /최근 26주 MAE<\/span><strong>31\.70원\/L/);
-  assert.match(markup, /최근 4주 예측 오차가 최근 13주 수준과 비슷합니다/);
+  assert.match(markup, /최근 Forecast 성능이 기준 범위 안에서 유지되고 있습니다/);
+  assert.doesNotMatch(markup, /최근 4주 MAE|최근 26주 MAE/);
+  assert.doesNotMatch(markup, /성능 변화 상세 보기|performance-drift-table/);
 });
 
-test('a repeated degradation states the next things to check', () => {
+test('a repeated degradation keeps only the current performance state', () => {
   const markup = render({
     drift: drift({
       status: 'alert',
@@ -282,28 +282,9 @@ test('a repeated degradation states the next things to check', () => {
   });
 
   assert.match(markup, /악화 감지/);
-  assert.match(markup, /예측 오차 증가가 반복되고 있습니다/);
-  assert.match(markup, /입력 데이터 상태 → 시장 국면 → 신호 기여도/);
-  assert.doesNotMatch(markup, /<button/);
-});
-
-test('a single large miss and a direction drop are shown as side notes', () => {
-  const markup = render({
-    drift: drift({ reasons: ['single-large-error', 'direction-accuracy-down'] }),
-  });
-
-  assert.match(markup, /최근 4주에 단일 큰 오차가 있었습니다/);
-  assert.match(markup, /최근 4주 방향 적중률이 낮아졌습니다/);
-});
-
-test('the window table stays collapsed and never claims an automatic action', () => {
-  const markup = render({ drift: drift() });
-  const detailStart = markup.indexOf('성능 변화 상세 보기');
-
-  assert.ok(detailStart > 0);
-  assert.doesNotMatch(markup, /<details[^>]*\sopen/);
-  assert.match(markup, /data-label="MAPE"/);
-  assert.match(markup, /후보 순위·Shadow·운영 전환을 자동으로 바꾸지 않습니다/);
+  assert.match(markup, /최근 예측 오차 증가가 반복되었습니다/);
+  assert.doesNotMatch(markup, /입력 데이터 상태 → 시장 국면 → 신호 기여도/);
+  assert.doesNotMatch(markup, /data-label="MAPE"/);
 });
 
 test('runs from before the feature keep the summary unchanged', () => {
