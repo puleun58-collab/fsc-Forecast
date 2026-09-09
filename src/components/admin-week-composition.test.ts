@@ -171,7 +171,7 @@ test('one shared disclosure explains how forecast weeks are produced', () => {
   assert.match(basisBlock, /예측 방식<\/span><strong>주간 실제값 기준 추세 연장<\/strong>/);
   assert.match(basisBlock, /사용 모델<\/span><strong>Model B<\/strong>/);
   assert.match(basisBlock, /추세 기간<\/span><strong>8주<\/strong>/);
-  assert.match(basisBlock, /Dubai<\/span><strong>반영 시차 2주 · 비중 20%<\/strong>/);
+  assert.match(basisBlock, /Dubai<\/span><strong>Forecast 반영 시차 2주 · 비중 20%<\/strong>/);
   assert.match(basisBlock, /USD\/KRW<\/span><strong>미사용<\/strong>/);
 });
 
@@ -229,9 +229,17 @@ test('forecast basis leads with the dominant cause and the core calculation path
   );
   assert.match(
     basisBlock,
-    /92\.32 → 100\.28 · \+8\.62%<\/span><span>비중 20% · 기여 \+1\.72%/,
+    /8\/27 → 9\/03 · \+8\.62%<\/span><span>92\.32 → 100\.28<\/span><span>비중 20% · 기여 \+1\.72%/,
   );
   assert.doesNotMatch(basisBlock, /2026\.08\.27|2026\.09\.03/);
+  assert.match(
+    basisBlock,
+    /Dubai<\/span><strong>Forecast 반영 시차 1주 · 비중 20%<\/strong>/,
+  );
+  assert.ok(
+    basisBlock.indexOf('8/27 → 9/03') <
+      basisBlock.indexOf('Forecast 반영 시차 1주 · 비중 20%'),
+  );
   assert.match(
     basisBlock,
     /forecast-basis__metric--trend"><span class="dashboard-shell__metric-label">기본 추세<\/span><strong class="forecast-basis__value">-2\.57원\/L<\/strong>/,

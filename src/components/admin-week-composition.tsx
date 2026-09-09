@@ -46,7 +46,7 @@ type AdminWeekCompositionProps = {
 function formatIndicator(indicator: AdminForecastBasis['dubai']): string {
   return indicator === null
     ? '미사용'
-    : `반영 시차 ${indicator.lagWeeks}주 · 비중 ${Number((indicator.weight * 100).toFixed(1))}%`;
+    : `Forecast 반영 시차 ${indicator.lagWeeks}주 · 비중 ${Number((indicator.weight * 100).toFixed(1))}%`;
 }
 
 type ForecastCauseKey = 'trend' | 'dubai' | 'usdKrw' | 'external';
@@ -67,16 +67,37 @@ type ForecastBreakdownMetric = {
 
 function describeIndicatorCalculation(indicator: ForecastIndicatorCalculation): readonly string[] {
   const attribution = `비중 ${Number((indicator.weight * 100).toFixed(1))}% · 기여 ${formatSignedRatioText(indicator.contributionRatio)}`;
+  let measurementPeriod = '측정 기간 기록 없음';
+
+  if (indicator.previousWeekEndDate !== null && indicator.basisWeekEndDate !== null) {
+    const [, previousMonth, previousDay] = formatDashboardDate(
+      indicator.previousWeekEndDate,
+    ).split('.');
+    const [, basisMonth, basisDay] = formatDashboardDate(
+      indicator.basisWeekEndDate,
+    ).split('.');
+
+    if (
+      previousMonth !== undefined &&
+      previousDay !== undefined &&
+      basisMonth !== undefined &&
+      basisDay !== undefined
+    ) {
+      measurementPeriod = `${Number(previousMonth)}/${previousDay} → ${Number(basisMonth)}/${basisDay}`;
+    }
+  }
+
   if (
     indicator.previousValue === null ||
     indicator.basisValue === null ||
     indicator.changeRatio === null
   ) {
-    return ['비교값 없음', attribution];
+    return [measurementPeriod, '비교값 없음', attribution];
   }
 
   return [
-    `${formatPriceNumber(indicator.previousValue)} → ${formatPriceNumber(indicator.basisValue)} · ${formatSignedRatioText(indicator.changeRatio)}`,
+    `${measurementPeriod} · ${formatSignedRatioText(indicator.changeRatio)}`,
+    `${formatPriceNumber(indicator.previousValue)} → ${formatPriceNumber(indicator.basisValue)}`,
     attribution,
   ];
 }
@@ -297,7 +318,10 @@ function ForecastExplanationDetails({
             <span className="dashboard-shell__metric-label">{metric.label}</span>
             <strong className="forecast-basis__value">{metric.value}</strong>
             {metric.details.length === 0 ? null : (
-              <span className="forecast-basis__signal-detail">
+              <span
+                className="forecast-basis__signal-detail"
+                aria-label={`${metric.label} 시장 지표 변화 측정 기간 및 기여 정보`}
+              >
                 {metric.details.map((detail) => (
                   <span key={detail}>{detail}</span>
                 ))}
