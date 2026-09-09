@@ -98,6 +98,7 @@ html {
     "Segoe UI Variable", "Pretendard Variable", "Noto Sans KR", system-ui,
     sans-serif;
   background: var(--bg-app);
+  scroll-behavior: smooth;
 }
 
 body {
@@ -204,6 +205,79 @@ main {
   font-variant-numeric: tabular-nums;
   line-height: 1.5;
   word-break: keep-all;
+}
+
+.admin-grid > .dashboard-shell__masthead {
+  margin-bottom: 0;
+}
+
+.admin-section-nav {
+  position: sticky;
+  top: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-control);
+  background: var(--bg-card);
+}
+
+.admin-section-nav__list {
+  display: flex;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-section-nav__link {
+  position: relative;
+  display: inline-flex;
+  flex: 1 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.admin-section-nav__link::after {
+  position: absolute;
+  right: var(--space-4);
+  bottom: 0;
+  left: var(--space-4);
+  height: 2px;
+  background: transparent;
+  content: "";
+}
+
+.admin-section-nav__link:hover {
+  color: var(--text-primary);
+}
+
+.admin-section-nav__link[aria-current="location"] {
+  color: var(--brand);
+  font-weight: 700;
+}
+
+.admin-section-nav__link[aria-current="location"]::after {
+  background: var(--brand);
+}
+
+@media (max-width: 700px) {
+  .admin-section-nav__link {
+    flex: 0 0 auto;
+    min-height: 48px;
+    padding: 0 18px;
+  }
+
+  .admin-section-nav__list::-webkit-scrollbar {
+    height: 3px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1158,6 +1232,7 @@ main {
 
 .admin-page-section {
   gap: var(--space-4);
+  scroll-margin-top: calc(44px + var(--space-6));
 }
 
 .admin-page-section + .admin-page-section {

@@ -6,6 +6,7 @@ import { AdminForecastDiagnostics, type ForecastRunHistoryEntry } from '@/compon
 import { AdminMarketRegime } from '@/components/admin-market-regime';
 import { AdminForecastQualityTrend } from '@/components/admin-forecast-quality-trend';
 import { AdminLogoutButton } from '@/components/admin-logout-button';
+import { AdminSectionNavigation } from '@/components/admin-section-navigation';
 import { AdminParameterSensitivity } from '@/components/admin-parameter-sensitivity';
 import { AdminOperationHistory } from '@/components/admin-operation-history';
 import { AdminQuarterCard } from '@/components/admin-quarter-card';
@@ -124,9 +125,11 @@ function AdminPageSection({
   description: string;
   children: ReactNode;
 }) {
+  const headingId = `${id}-title`;
+
   return (
-    <section className="admin-page-section" aria-labelledby={id}>
-      <AdminSectionHeader id={id} title={title} description={description} />
+    <section id={id} className="admin-page-section" aria-labelledby={headingId}>
+      <AdminSectionHeader id={headingId} title={title} description={description} />
       <div className="admin-page-section__content">{children}</div>
     </section>
   );
@@ -135,7 +138,7 @@ function AdminPageSection({
 function AdminOperationsSection({ view }: { view: AdminPageView['operations'] }) {
   return (
     <AdminPageSection
-      id="admin-operations-title"
+      id="operations"
       title="운영 현황"
       description="현재 Forecast와 분기 산출 상태를 확인합니다."
     >
@@ -150,7 +153,7 @@ function AdminOperationsSection({ view }: { view: AdminPageView['operations'] })
 function AdminDiagnosticsSection({ view }: { view: AdminPageView['diagnostics'] }) {
   return (
     <AdminPageSection
-      id="admin-diagnostics-title"
+      id="diagnostics"
       title="예측 품질·진단"
       description="데이터 품질과 Forecast 성능의 변화 원인을 점검합니다."
     >
@@ -167,7 +170,7 @@ function AdminDiagnosticsSection({ view }: { view: AdminPageView['diagnostics'] 
 function AdminTuningSection({ view }: { view: AdminPageView['tuning'] }) {
   return (
     <AdminPageSection
-      id="admin-tuning-title"
+      id="tuning"
       title="튜닝·검증"
       description="후보 설정의 민감도와 운영 전환 검증 단계를 확인합니다."
     >
@@ -183,7 +186,7 @@ function AdminTuningSection({ view }: { view: AdminPageView['tuning'] }) {
 function AdminManagementSection({ view }: { view: AdminPageView['management'] }) {
   return (
     <AdminPageSection
-      id="admin-management-title"
+      id="management"
       title="관리·이력"
       description="운영 실행 기록과 분기 설정을 관리합니다."
     >
@@ -206,6 +209,8 @@ function AdminDashboard({ view }: { view: AdminPageView }) {
           <AdminLogoutButton />
         </div>
       </section>
+
+      <AdminSectionNavigation />
 
       <div className="dashboard-shell__grid">
         <AdminOperationsSection view={view.operations} />
