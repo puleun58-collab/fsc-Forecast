@@ -232,17 +232,28 @@ main {
 .admin-section-nav__link {
   position: relative;
   display: inline-flex;
-  flex: 1 0 auto;
+  flex: 1 1 25%;
   align-items: center;
   justify-content: center;
   min-height: 44px;
   padding: 0 var(--space-4);
+  background: var(--bg-card);
   color: var(--text-secondary);
+  cursor: pointer;
   font-size: 0.86rem;
   font-weight: 600;
   line-height: 1.2;
   text-decoration: none;
   white-space: nowrap;
+}
+
+.admin-section-nav__link + .admin-section-nav__link {
+  border-left: 1px solid var(--border-default);
+}
+
+.admin-section-nav__link:focus-visible {
+  z-index: 1;
+  outline-offset: -3px;
 }
 
 .admin-section-nav__link::after {
@@ -255,11 +266,13 @@ main {
   content: "";
 }
 
-.admin-section-nav__link:hover {
+.admin-section-nav__link:not([aria-current="location"]):hover {
+  background: color-mix(in srgb, var(--brand-soft) 45%, var(--bg-card));
   color: var(--text-primary);
 }
 
 .admin-section-nav__link[aria-current="location"] {
+  background: var(--brand-soft);
   color: var(--brand);
   font-weight: 700;
 }
@@ -271,6 +284,7 @@ main {
 @media (max-width: 700px) {
   .admin-section-nav__link {
     flex: 0 0 auto;
+    min-width: 112px;
     min-height: 48px;
     padding: 0 18px;
   }
