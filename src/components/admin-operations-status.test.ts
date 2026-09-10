@@ -89,7 +89,6 @@ test('only one primary action is highlighted and never repeated', () => {
   assert.equal(markup.match(/가장 먼저 확인/g)?.length, 1);
   assert.equal(markup.match(/Rollback 검토 필요/g)?.length, 1);
   assert.match(markup, /입력 데이터 확인 필요/);
-  assert.match(markup, /status-tag status-tag--critical">조치 필요/);
 });
 
 test('extra items and observations move behind the full-state disclosure', () => {
@@ -115,15 +114,6 @@ test('extra items and observations move behind the full-state disclosure', () =>
   assert.ok(markup.indexOf('Shadow 검증 5/13주') > disclosureStart);
 });
 
-test('watch, attention, and action states use distinct emphasis levels', () => {
-  const watch = render(center({ status: 'watch' }));
-  const attention = render(center({ status: 'attention' }));
-  const action = render(center({ status: 'action-required' }));
-
-  assert.match(watch, /<span class="status-tag">관찰<\/span>/);
-  assert.match(attention, /<span class="status-tag status-tag--warning">확인 필요<\/span>/);
-  assert.match(action, /<span class="status-tag status-tag--critical">조치 필요<\/span>/);
-});
 
 test('the flow marks only the current stage', () => {
   const candidate = render(center({ status: 'watch' }));

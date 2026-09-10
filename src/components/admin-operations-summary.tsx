@@ -184,7 +184,16 @@ export function AdminOperationsSummary({
   return (
     <SectionCard
       title="운영 요약"
-      badge={`현재 Model ${modelParams.modelId}`}
+      badge={
+        <span
+          className="status-tag status-tag--prominent status-tag--brand admin-summary__operating-chip"
+          aria-label={`현재 운영 · Model ${modelParams.modelId}`}
+        >
+          <span className="admin-summary__operating-label" aria-hidden="true">현재 운영</span>
+          <span className="admin-summary__operating-separator" aria-hidden="true">·</span>
+          <strong aria-hidden="true">Model {modelParams.modelId}</strong>
+        </span>
+      }
       description="현재 운영 중인 예측 설정과 최근 성능을 한눈에 보여줍니다."
       className="admin-summary"
     >

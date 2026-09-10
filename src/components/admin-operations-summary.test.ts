@@ -93,7 +93,7 @@ function render(overrides: Partial<AdminOperationsSummaryProps> = {}): string {
 test('the summary leads with the operating model and its recent next-week performance', () => {
   const markup = render();
 
-  assert.match(markup, /현재 Model B/);
+  assert.match(markup, /aria-label="현재 운영 · Model B"/);
   assert.match(markup, /최근 13주 MAPE<\/span><strong>1\.47%<\/strong>/);
   assert.match(markup, /최근 13주 MAE<\/span><strong>28\.37원\/L<\/strong>/);
   assert.match(markup, /평가 표본<\/span><strong>13주<\/strong>/);

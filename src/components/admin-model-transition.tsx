@@ -216,8 +216,8 @@ export function TransitionHistoryDisclosure({ history }: { history: TransitionHi
 const STATUS_BADGE: Record<TransitionViewStatus, { label: string; className: string }> = {
   'not-ready': { label: '대기', className: '' },
   blocked: { label: '전환 대기', className: 'status-tag--warning' },
-  approvable: { label: '전환 가능', className: 'status-tag--ok' },
-  'approved-pending': { label: '승인 완료', className: 'status-tag--ok' },
+  approvable: { label: '전환 가능', className: 'status-tag--warning' },
+  'approved-pending': { label: '승인 완료', className: 'status-tag--brand' },
   applied: { label: '전환 완료', className: 'status-tag--ok' },
 };
 
@@ -242,7 +242,7 @@ export function AdminModelTransition({ view }: { view: ModelTransitionView }) {
   return (
     <SectionCard
       title="운영 전환 검토"
-      badge={<span className={`status-tag ${badge.className}`.trim()}>{badge.label}</span>}
+      badge={<span className={`status-tag status-tag--prominent ${badge.className}`.trim()}>{badge.label}</span>}
       description="검증을 통과한 설정을 관리자가 확인한 뒤에만 운영 예측 설정으로 전환합니다."
       className="admin-transition"
     >

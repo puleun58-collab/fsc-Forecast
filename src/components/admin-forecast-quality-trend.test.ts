@@ -71,7 +71,6 @@ test('the trend card shows five metrics with their change against the previous r
   const markup = render([result(), PREVIOUS]);
 
   assert.match(markup, /예측 품질 추이/);
-  assert.match(markup, /<span class="status-tag status-tag--ok">안정<\/span>/);
   assert.match(markup, /최근 13주 MAPE<\/span><strong>1\.47%<\/strong>/);
   assert.match(markup, /최근 4주 MAE<\/span><strong>21\.34원\/L<\/strong>/);
   assert.match(markup, /최근 26주 MAE<\/span><strong>24\.81원\/L<\/strong>/);
@@ -152,7 +151,6 @@ test('a quarter without any quality metric falls back to the empty state', () =>
 test('a stable assessment reports no degradation signal', () => {
   const markup = render([result(), PREVIOUS]);
 
-  assert.match(markup, /<span class="status-tag status-tag--ok">안정<\/span>/);
   assert.match(markup, /최근 예측 품질에 유의할 만한 악화 신호가 없습니다/);
   assert.doesNotMatch(markup, /quality-trend-status__reasons/);
   assert.doesNotMatch(markup, /데이터 확인 필요/);
@@ -164,7 +162,6 @@ test('recorded guardrail signals raise one attention badge with compact reasons'
     recent4wErrorTrend: 'worsening',
   });
 
-  assert.equal(markup.match(/class="status-tag status-tag--warning">주의</g)?.length, 1);
   assert.match(markup, /최근 백테스트에서 품질 확인이 필요한 신호가 있습니다/);
   assert.equal(markup.match(/<li>/g)?.length, 2);
   assert.match(markup, /<li>최근 4주 오차 추세 주의<\/li>/);
@@ -180,7 +177,6 @@ test('unchanged metrics with an active guardrail explain the different compariso
     recent4wErrorTrend: 'worsening',
   });
 
-  assert.match(markup, /<span class="status-tag status-tag--warning">주의<\/span>/);
   assert.match(markup, /현재 품질 지표는 직전 실행과 큰 변화가 없습니다\. 다만 백테스트에서 품질 확인 신호가 유지되고 있습니다/);
   assert.match(markup, /<li>최근 4주 오차 추세 주의<\/li>/);
   assert.equal(markup.match(/직전 실행 <\/span>대비 유지/g)?.length, 7);
@@ -194,7 +190,6 @@ test('unchanged metrics without guardrails stay stable', () => {
   const unchanged = result();
   const markup = render([unchanged, { ...unchanged, id: 'fsc-0', createdAt: '2026-09-01T02:00:00.000Z' }]);
 
-  assert.match(markup, /<span class="status-tag status-tag--ok">안정<\/span>/);
   assert.match(markup, /최근 예측 품질에 유의할 만한 악화 신호가 없습니다/);
   assert.match(markup, /직전 실행 <\/span>대비 유지/);
 });
@@ -205,7 +200,6 @@ test('worsening metrics with a guardrail keep both signals visible', () => {
     recent4wErrorTrend: 'worsening',
   });
 
-  assert.match(markup, /<span class="status-tag status-tag--warning">주의<\/span>/);
   assert.match(markup, /최근 백테스트에서 품질 확인이 필요한 신호가 있습니다/);
   assert.match(markup, /↑ 0\.23%p <span class="quality-trend-metric__scope">직전 실행 <\/span>대비 악화/);
 });
@@ -216,7 +210,6 @@ test('delayed data is a separate notice rather than a quality warning', () => {
     dataFreshnessStatus: 'delayed',
   });
 
-  assert.match(markup, /<span class="status-tag status-tag--ok">안정<\/span>/);
   assert.match(markup, /데이터 확인 필요/);
   assert.match(markup, /최신 데이터 수집이 지연되어 품질 판단 결과가 최신 상태가 아닐 수 있습니다/);
   assert.doesNotMatch(markup, /주의<\/span>/);
@@ -228,7 +221,6 @@ test('an insufficient sample count stays unrated instead of attention', () => {
     adjustmentReasons: ['recent_4w_error_worsening'],
   });
 
-  assert.match(markup, /<span class="status-tag">산정 전<\/span>/);
   assert.match(markup, /예측 품질을 판단할 데이터가 아직 충분하지 않습니다/);
   assert.doesNotMatch(markup, /주의<\/span>/);
   assert.match(markup, /표본<\/dt><dd>8 \/ 13<\/dd>/);

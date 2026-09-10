@@ -22,7 +22,7 @@ import { getOpinetDisplayWeek, getOpinetWeekEnd, getOpinetWeekStart } from '@/li
 const STATUS_VIEW: Record<ShadowSessionStatus, { label: string; className: string; summary: string }> = {
   validating: {
     label: '검증 중',
-    className: 'status-tag--warning',
+    className: 'status-tag--brand',
     summary: '새 실제값을 기준으로 현재 운영 설정과 Shadow 후보를 동시에 검증하고 있습니다.',
   },
   reviewable: {
@@ -294,7 +294,7 @@ export function AdminShadowValidation({ session }: { session: ShadowValidationSe
     <SectionCard
       title="Shadow 튜닝 후보 검증"
       badge={
-        <span className={`status-tag ${view.className}`.trim()}>
+        <span className={`status-tag status-tag--prominent ${view.className}`.trim()}>
           {summary.status === 'validating'
             ? `${view.label} · ${summary.completedSampleCount}/${summary.requiredSampleCount}`
             : view.label}

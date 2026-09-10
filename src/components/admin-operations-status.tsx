@@ -56,7 +56,7 @@ export function AdminOperationsStatus({ center }: { center: OperationsStatusCent
   return (
     <SectionCard
       title="Forecast 운영 상태"
-      badge={<span className={`status-tag ${view.className}`.trim()}>{view.label}</span>}
+      badge={<span className={`status-tag status-tag--prominent ${view.className}`.trim()}>{view.label}</span>}
       description="현재 Forecast 상태와 진행 중인 검증 단계를 한눈에 보여줍니다."
       className="admin-operations-status"
     >

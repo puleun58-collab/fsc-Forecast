@@ -299,7 +299,7 @@ export function AdminForecastQualityTrend({
     <SectionCard
       title="예측 품질 추이"
       badge={
-        <span className={`status-tag ${statusView.className}`.trim()}>{statusView.label}</span>
+        <span className={`status-tag status-tag--prominent ${statusView.className}`.trim()}>{statusView.label}</span>
       }
       description="현재 예측 품질과 직전 실행 대비 변화를 확인합니다."
       className="admin-quality-trend"

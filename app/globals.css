@@ -421,6 +421,7 @@ main {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  flex: 0 0 auto;
   flex-wrap: wrap;
   min-height: 32px;
 }
@@ -3476,6 +3477,33 @@ details[open] > summary .admin-disclosure__toggle-open {
   line-height: 1.2;
 }
 
+.status-tag--prominent {
+  min-height: 34px;
+  padding: 7px 14px;
+  font-size: 0.875rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.status-tag--brand {
+  border-color: var(--brand-border);
+  background: var(--brand-soft);
+  color: var(--brand-text);
+}
+
+.admin-summary__operating-chip {
+  gap: 6px;
+}
+
+.admin-summary__operating-label,
+.admin-summary__operating-separator {
+  opacity: 0.72;
+}
+
+.admin-summary__operating-chip strong {
+  font-weight: 700;
+}
+
 .status-tag--ok {
   border-color: var(--success-border);
   background: var(--success-soft);
@@ -5033,6 +5061,10 @@ details[open] > summary .admin-disclosure__toggle-open {
   .status-tag {
     flex: 1 1 auto;
     justify-content: center;
+  }
+
+  .section-card__badge > .status-tag--prominent {
+    flex: 0 0 auto;
   }
 
   .reliability-detail {

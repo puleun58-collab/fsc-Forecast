@@ -26,7 +26,7 @@ export interface PostTransitionView {
 const STATUS_VIEW: Record<PostTransitionStatus, { label: string; className: string; summary: string }> = {
   monitoring: {
     label: '모니터링 중',
-    className: 'status-tag--warning',
+    className: 'status-tag--brand',
     summary: '새 설정 적용 후 실제 데이터를 기준으로 현재 설정과 이전 설정을 비교하고 있습니다.',
   },
   stable: {
@@ -68,7 +68,7 @@ export function AdminPostTransition({ view }: { view: PostTransitionView | null 
     <SectionCard
       title="운영 전환 후 성능"
       badge={
-        <span className={`status-tag ${status.className}`.trim()}>
+        <span className={`status-tag status-tag--prominent ${status.className}`.trim()}>
           {summary.status === 'monitoring'
             ? `${status.label} · ${summary.completedSampleCount}/${summary.requiredSampleCount}`
             : status.label}

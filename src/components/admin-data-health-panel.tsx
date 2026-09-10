@@ -118,7 +118,7 @@ export function AdminDataHealthPanel({
     <SectionCard
       title="데이터 상태"
       badge={
-        <span className={`status-tag ${summaryView.className}`.trim()}>{summary.label}</span>
+        <span className={`status-tag status-tag--prominent ${summaryView.className}`.trim()}>{summary.label}</span>
       }
       description="Forecast 입력 데이터의 최신 상태를 확인합니다."
       className="admin-data-health"
