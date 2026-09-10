@@ -155,7 +155,7 @@ function AdminDiagnosticsSection({ view }: { view: AdminPageView['diagnostics'] 
     <AdminPageSection
       id="diagnostics"
       title="예측 품질·진단"
-      description="데이터 품질과 Forecast 성능의 변화 원인을 점검합니다."
+      description="예측 성능과 데이터·신호 상태를 확인합니다."
     >
       <AdminDataHealthPanel {...view.dataHealth} />
       <AdminForecastQualityTrend {...view.qualityTrend} />
@@ -172,7 +172,7 @@ function AdminTuningSection({ view }: { view: AdminPageView['tuning'] }) {
     <AdminPageSection
       id="tuning"
       title="튜닝·검증"
-      description="후보 설정의 민감도와 운영 전환 검증 단계를 확인합니다."
+      description="후보 설정과 Shadow 검증 진행 상태를 확인합니다."
     >
       <AdminParameterSensitivity {...view.sensitivity} />
       <AdminShadowValidation {...view.shadow} />
@@ -188,7 +188,7 @@ function AdminManagementSection({ view }: { view: AdminPageView['management'] })
     <AdminPageSection
       id="management"
       title="관리·이력"
-      description="운영 실행 기록과 분기 설정을 관리합니다."
+      description="운영 기록과 분기 설정을 관리합니다."
     >
       <AdminOperationHistory {...view.operationHistory} />
       <AdminQuarterManagement {...view.quarterManagement} />
