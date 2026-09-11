@@ -82,7 +82,7 @@ test('a reviewable shadow result exposes one explicit admin approval action', ()
   const markup = render(view());
 
   assert.match(markup, /운영 전환 검토/);
-  assert.match(markup, /전환 가능/);
+  assert.match(markup, /class="status-tag status-tag--prominent status-tag--warning">운영 전환 승인 필요/);
   assert.match(markup, /<dt>추세 기간<\/dt><dd>8주 → 6주<\/dd>/);
   assert.match(markup, /<dt>Dubai 반영 시차<\/dt><dd>1주 → 2주<\/dd>/);
   assert.match(markup, /<dt>Dubai 비중<\/dt><dd>20% → 15%<\/dd>/);
@@ -104,7 +104,7 @@ test('an approved transition stays pending and can be cancelled before applicati
     }),
   );
 
-  assert.match(markup, /승인 완료/);
+  assert.match(markup, /class="status-tag status-tag--prominent status-tag--brand">전환 적용 대기/);
   assert.match(markup, /다음 예측 실행 대기/);
   assert.match(markup, /전환 승인 취소/);
   assert.doesNotMatch(markup, />운영 전환 승인</);
@@ -121,6 +121,7 @@ test('a blocked transition explains the reused guardrail and does not render an 
   );
 
   assert.match(markup, /기존 운영 변경 보호 기간/);
+  assert.match(markup, /<span class="status-tag status-tag--warning">전환 대기<\/span>/);
   assert.match(markup, /4일 남았습니다/);
   assert.doesNotMatch(markup, /<button[^>]*>운영 전환 승인/);
 });
@@ -153,6 +154,7 @@ test('transition history distinguishes an applied approval from a rollback', () 
     }),
   );
 
+  assert.match(markup, /<span class="status-tag status-tag--ok">전환 완료<\/span>/);
   assert.match(markup, /최근 운영 전환 이력/);
   assert.match(markup, /검증 후 관리자 승인 · 적용 완료/);
   assert.match(markup, /전환 후 성능 확인에 따른 이전 설정 복원 · 적용 대기/);

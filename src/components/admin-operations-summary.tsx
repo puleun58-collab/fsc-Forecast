@@ -1,9 +1,13 @@
+import { AdminDisclosureToggle } from './admin-disclosure-toggle';
 import { SectionCard } from './section-card';
 
 import { formatPriceText } from '@/lib/dashboard/display-format';
 import type { CandidatePersistence } from '@/lib/forecast/candidate-persistence';
 import type { ForecastModelParams } from '@/lib/forecast/forecast-model-config';
-import { formatModelParams } from '@/lib/forecast/describe-model-params';
+import {
+  listModelParamFields,
+  type ModelParamFieldKey,
+} from '@/lib/forecast/describe-model-params';
 import type { PerformanceDrift, PerformanceDriftStatus } from '@/lib/forecast/performance-drift';
 import type { ModelTransitionView } from './admin-model-transition';
 import type { PostTransitionView } from './admin-post-transition';
@@ -40,6 +44,31 @@ function formatMape(value: number | null): string {
 
 function formatMae(value: number | null): string {
   return value === null ? '산정 전' : formatPriceText(value);
+}
+
+function formatSummaryModelParams(params: ForecastModelParams): readonly [string, string] {
+  const values = Object.fromEntries(
+    listModelParamFields(params).map(({ key, value }) => [key, value]),
+  ) as Record<ModelParamFieldKey, string>;
+  const value = (key: ModelParamFieldKey): string => values[key];
+  const dubai =
+    params.dubai === null
+      ? 'Dubai · 미사용'
+      : `Dubai · Forecast 반영 시차 ${value('dubaiLag')} · 비중 ${value('dubaiWeight')}`;
+  const usdKrw =
+    params.usdKrw === null
+      ? 'USD/KRW · 미사용'
+      : `USD/KRW · ${value('usdKrw').replace('반영 시차', 'Forecast 반영 시차')}`;
+
+  return [
+    `추세 기간 ${value('trend')} · ${dubai}`,
+    [
+      usdKrw,
+      `외부 보정 상한 ${value('cap')}`,
+      ...(params.biasCorrection === null ? [] : [`편향 보정 ${value('bias')}`]),
+      ...(params.dailySignal === null ? [] : [`일별 단기 신호 ${value('dailySignal')}`]),
+    ].join(' · '),
+  ];
 }
 
 /**
@@ -123,26 +152,22 @@ export function resolveNextStep({
   };
 }
 
-const DRIFT_VIEW: Record<PerformanceDriftStatus, { label: string; className: string; detail: string }> = {
+const DRIFT_VIEW: Record<PerformanceDriftStatus, { label: string; className: string }> = {
   stable: {
     label: '안정',
     className: 'status-tag--ok',
-    detail: '최근 Forecast 성능이 기준 범위 안에서 유지되고 있습니다.',
   },
   watch: {
     label: '관찰',
     className: '',
-    detail: '최근 Forecast 성능 변화를 관찰하고 있습니다.',
   },
   alert: {
     label: '악화 감지',
     className: 'status-tag--warning',
-    detail: '최근 예측 오차 증가가 반복되었습니다.',
   },
   undecided: {
     label: '판단 보류',
     className: '',
-    detail: '최근 실제 데이터가 부족해 성능 상태 판단을 보류합니다.',
   },
 };
 
@@ -155,7 +180,6 @@ function ForecastPerformanceStatus({ drift }: { drift: PerformanceDrift }) {
         <span className="dashboard-shell__metric-label">Forecast 성능 상태</span>
         <span className={`status-tag ${view.className}`.trim()}>{view.label}</span>
       </div>
-      <p className="admin-decision__note">{view.detail}</p>
     </div>
   );
 }
@@ -180,6 +204,8 @@ export function AdminOperationsSummary({
       />
     );
   }
+
+  const parameterLines = formatSummaryModelParams(modelParams);
 
   return (
     <SectionCard
@@ -212,18 +238,37 @@ export function AdminOperationsSummary({
           ))}
         </div>
 
-        <p className="admin-decision__note">{formatModelParams(modelParams)}</p>
-
-        <p className="admin-decision__note">현재 운영 중인 설정입니다.</p>
+        <div className="admin-summary__params" aria-label="현재 운영 설정">
+          {parameterLines.map((line) => (
+            <p key={line} className="admin-decision__note">
+              {line}
+            </p>
+          ))}
+        </div>
 
         {drift === null ? null : <ForecastPerformanceStatus drift={drift} />}
 
-        <p className="admin-decision__note">
-          최근 13주의 다음 주 예측 결과를 기준으로 산정한 성능입니다.
-        </p>
-        <p className="admin-decision__note">
-          MAE는 실제 가격과 평균 몇 원/L 차이였는지, MAPE는 평균 몇 % 차이였는지를 뜻합니다.
-        </p>
+        <details className="admin-disclosure admin-disclosure--inline admin-summary__metric-help">
+          <summary className="admin-disclosure__summary">
+            <strong>성능 지표 설명</strong>
+            <AdminDisclosureToggle />
+          </summary>
+          <div className="admin-disclosure__body">
+            <p className="admin-decision__note">
+              최근 13주의 다음 주 예측 결과를 기준으로 산정한 성능입니다.
+            </p>
+            <dl className="admin-summary__metric-definitions">
+              <div>
+                <dt>MAE</dt>
+                <dd>실제 가격과 평균 몇 원/L 차이였는지를 나타냅니다.</dd>
+              </div>
+              <div>
+                <dt>MAPE</dt>
+                <dd>실제 가격과 평균 몇 % 차이였는지를 나타냅니다.</dd>
+              </div>
+            </dl>
+          </div>
+        </details>
       </div>
     </SectionCard>
   );

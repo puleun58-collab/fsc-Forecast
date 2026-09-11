@@ -19,26 +19,33 @@ import {
 } from '@/lib/forecast/shadow-validation';
 import { getOpinetDisplayWeek, getOpinetWeekEnd, getOpinetWeekStart } from '@/lib/opinet/weekly-period';
 
-const STATUS_VIEW: Record<ShadowSessionStatus, { label: string; className: string; summary: string }> = {
+const STATUS_VIEW: Record<
+  ShadowSessionStatus,
+  { label: string; className: string; prominent: boolean; summary: string }
+> = {
   validating: {
     label: '검증 중',
     className: 'status-tag--brand',
+    prominent: true,
     summary: '새 실제값을 기준으로 현재 운영 설정과 Shadow 후보를 동시에 검증하고 있습니다.',
   },
   reviewable: {
     label: '운영 적용 검토 가능',
     className: 'status-tag--ok',
+    prominent: true,
     summary:
       'Shadow 검증에서 현재 운영 모델 대비 성능이 개선되었고 안정성 기준도 충족했습니다. 운영 모델은 아직 변경되지 않았습니다.',
   },
   failed: {
     label: '미통과',
     className: '',
+    prominent: false,
     summary: '일부 지표는 개선되었지만 운영 변경에 필요한 안정성 조건을 충족하지 못했습니다.',
   },
   stopped: {
     label: '중단',
     className: '',
+    prominent: false,
     summary: '비교 조건이 바뀌어 이번 Shadow 검증을 중단했습니다.',
   },
 };
@@ -294,7 +301,15 @@ export function AdminShadowValidation({ session }: { session: ShadowValidationSe
     <SectionCard
       title="Shadow 튜닝 후보 검증"
       badge={
-        <span className={`status-tag status-tag--prominent ${view.className}`.trim()}>
+        <span
+          className={[
+            'status-tag',
+            view.prominent ? 'status-tag--prominent' : '',
+            view.className,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
           {summary.status === 'validating'
             ? `${view.label} · ${summary.completedSampleCount}/${summary.requiredSampleCount}`
             : view.label}

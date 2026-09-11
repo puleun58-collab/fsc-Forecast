@@ -92,21 +92,32 @@ function render(overrides: Partial<AdminOperationsSummaryProps> = {}): string {
 
 test('the summary leads with the operating model and its recent next-week performance', () => {
   const markup = render();
+  const paramsStart = markup.indexOf('admin-summary__params');
+  const paramsBlock = markup.slice(paramsStart, markup.indexOf('</div>', paramsStart));
 
+  assert.match(markup, /class="status-tag status-tag--prominent status-tag--brand admin-summary__operating-chip"/);
   assert.match(markup, /aria-label="현재 운영 · Model B"/);
   assert.match(markup, /최근 13주 MAPE<\/span><strong>1\.47%<\/strong>/);
   assert.match(markup, /최근 13주 MAE<\/span><strong>28\.37원\/L<\/strong>/);
   assert.match(markup, /평가 표본<\/span><strong>13주<\/strong>/);
   assert.match(markup, /신뢰도 등급<\/span><strong>A<\/strong>/);
-  assert.match(markup, /추세 기간 8주 · Dubai · 반영 시차 1주 · 비중 20% · USD\/KRW · 미사용/);
+  assert.match(paramsBlock, /추세 기간 8주 · Dubai · Forecast 반영 시차 1주 · 비중 20%/);
+  assert.match(paramsBlock, /USD\/KRW · 미사용 · 외부 보정 상한 ±3%/);
+  assert.doesNotMatch(paramsBlock, /Model B/);
+  assert.doesNotMatch(markup, /현재 운영 중인 설정입니다/);
+  assert.match(markup, /성능 지표 설명/);
+  assert.match(markup, /보기 ▾/);
+  assert.doesNotMatch(markup, /<details[^>]*\sopen/);
   assert.match(markup, /최근 13주의 다음 주 예측 결과를 기준으로 산정한 성능입니다/);
+  assert.match(markup, /<dt>MAE<\/dt><dd>실제 가격과 평균 몇 원\/L 차이였는지를 나타냅니다/);
+  assert.match(markup, /<dt>MAPE<\/dt><dd>실제 가격과 평균 몇 % 차이였는지를 나타냅니다/);
 });
 
 test('the summary drops progress state and keeps only the operating setting', () => {
   const markup = render();
 
   assert.match(markup, /현재 운영 중인 예측 설정과 최근 성능을 한눈에 보여줍니다/);
-  assert.match(markup, /현재 운영 중인 설정입니다/);
+  assert.doesNotMatch(markup, /현재 운영 중인 설정입니다/);
   assert.doesNotMatch(markup, /admin-summary__next/);
   assert.doesNotMatch(markup, /1순위 후보 연속 확인|Shadow 검증을 시작|다음 확인 단계/);
 });
@@ -265,8 +276,8 @@ test('performance status stays compact without repeating quality trend detail', 
   const markup = render({ drift: drift() });
 
   assert.match(markup, /Forecast 성능 상태/);
-  assert.match(markup, /안정/);
-  assert.match(markup, /최근 Forecast 성능이 기준 범위 안에서 유지되고 있습니다/);
+  assert.match(markup, /<span class="status-tag status-tag--ok">안정<\/span>/);
+  assert.doesNotMatch(markup, /최근 Forecast 성능이 기준 범위 안에서 유지되고 있습니다/);
   assert.doesNotMatch(markup, /최근 4주 MAE|최근 26주 MAE/);
   assert.doesNotMatch(markup, /성능 변화 상세 보기|performance-drift-table/);
 });
@@ -281,8 +292,8 @@ test('a repeated degradation keeps only the current performance state', () => {
     }),
   });
 
-  assert.match(markup, /악화 감지/);
-  assert.match(markup, /최근 예측 오차 증가가 반복되었습니다/);
+  assert.match(markup, /<span class="status-tag status-tag--warning">악화 감지<\/span>/);
+  assert.doesNotMatch(markup, /최근 예측 오차 증가가 반복되었습니다/);
   assert.doesNotMatch(markup, /입력 데이터 상태 → 시장 국면 → 신호 기여도/);
   assert.doesNotMatch(markup, /data-label="MAPE"/);
 });

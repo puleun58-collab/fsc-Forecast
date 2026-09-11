@@ -23,30 +23,38 @@ export interface PostTransitionView {
   } | null;
 }
 
-const STATUS_VIEW: Record<PostTransitionStatus, { label: string; className: string; summary: string }> = {
+const STATUS_VIEW: Record<
+  PostTransitionStatus,
+  { label: string; className: string; prominent: boolean; summary: string }
+> = {
   monitoring: {
     label: '모니터링 중',
     className: 'status-tag--brand',
+    prominent: true,
     summary: '새 설정 적용 후 실제 데이터를 기준으로 현재 설정과 이전 설정을 비교하고 있습니다.',
   },
   stable: {
     label: '안정',
     className: 'status-tag--ok',
+    prominent: false,
     summary: '전환 후 새 실제 데이터를 기준으로 현재 설정이 안정적으로 운영되고 있습니다.',
   },
   rollback_reviewable: {
     label: '롤백 검토 필요',
-    className: 'status-tag--warning',
+    className: 'status-tag--critical',
+    prominent: true,
     summary: '전환 이후 실제 데이터에서는 이전 설정의 예측 오차가 더 작았습니다.',
   },
   rolled_back: {
     label: '롤백 완료',
     className: '',
+    prominent: false,
     summary: '이전 설정으로 되돌린 뒤 이 비교는 종료되었습니다.',
   },
   stopped: {
     label: '중단',
     className: '',
+    prominent: false,
     summary: '비교 조건이 바뀌어 전환 후 성능 비교를 중단했습니다.',
   },
 };
@@ -68,7 +76,15 @@ export function AdminPostTransition({ view }: { view: PostTransitionView | null 
     <SectionCard
       title="운영 전환 후 성능"
       badge={
-        <span className={`status-tag status-tag--prominent ${status.className}`.trim()}>
+        <span
+          className={[
+            'status-tag',
+            status.prominent ? 'status-tag--prominent' : '',
+            status.className,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
           {summary.status === 'monitoring'
             ? `${status.label} · ${summary.completedSampleCount}/${summary.requiredSampleCount}`
             : status.label}

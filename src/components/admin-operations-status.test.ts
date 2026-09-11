@@ -114,6 +114,20 @@ test('extra items and observations move behind the full-state disclosure', () =>
   assert.ok(markup.indexOf('Shadow 검증 5/13주') > disclosureStart);
 });
 
+test('status size follows administrator action priority instead of tone alone', () => {
+  const healthy = render(center());
+  const watch = render(center({ status: 'watch' }));
+  const passiveAttention = render(center({ status: 'attention' }));
+  const reviewAttention = render(center({ status: 'attention', primaryAction: item() }));
+  const action = render(center({ status: 'action-required' }));
+
+  assert.match(healthy, /<span class="status-tag status-tag--ok">정상<\/span>/);
+  assert.match(watch, /<span class="status-tag">관찰<\/span>/);
+  assert.match(passiveAttention, /<span class="status-tag status-tag--warning">확인 필요<\/span>/);
+  assert.match(reviewAttention, /<span class="status-tag status-tag--prominent status-tag--warning">확인 필요<\/span>/);
+  assert.match(action, /<span class="status-tag status-tag--prominent status-tag--critical">조치 필요<\/span>/);
+});
+
 
 test('the flow marks only the current stage', () => {
   const candidate = render(center({ status: 'watch' }));

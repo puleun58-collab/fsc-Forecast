@@ -47,6 +47,7 @@ function StageFlow({ stages }: { stages: OperationsStatusCenter['stages'] }) {
 
 export function AdminOperationsStatus({ center }: { center: OperationsStatusCenter }) {
   const view = STATUS_VIEW[center.status];
+  const prominent = center.status === 'action-required' || center.primaryAction !== null;
   const lead = center.primaryAction ?? center.observations[0] ?? null;
   const restItems = center.items.filter((item) => item.key !== lead?.key);
   const restObservations = center.observations.filter((item) => item.key !== lead?.key);
@@ -56,7 +57,15 @@ export function AdminOperationsStatus({ center }: { center: OperationsStatusCent
   return (
     <SectionCard
       title="Forecast 운영 상태"
-      badge={<span className={`status-tag status-tag--prominent ${view.className}`.trim()}>{view.label}</span>}
+      badge={
+        <span
+          className={['status-tag', prominent ? 'status-tag--prominent' : '', view.className]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          {view.label}
+        </span>
+      }
       description="현재 Forecast 상태와 진행 중인 검증 단계를 한눈에 보여줍니다."
       className="admin-operations-status"
     >

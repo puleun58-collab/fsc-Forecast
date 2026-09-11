@@ -73,6 +73,7 @@ test('an in-flight session shows progress and marks the numbers as interim', () 
 
   assert.match(markup, /Shadow 튜닝 후보 검증/);
   assert.match(markup, /검증 중 · 2\/13/);
+  assert.match(markup, /class="status-tag status-tag--prominent status-tag--brand">검증 중 · 2\/13/);
   assert.match(markup, /새 실제값을 기준으로 현재 운영 설정과 Shadow 후보를 동시에 검증하고 있습니다/);
   assert.match(markup, /Model B · 추세 기간 8주 · Dubai · 반영 시차 1주 · 비중 20%/);
   assert.match(markup, /Model B · 추세 기간 6주 · Dubai · 반영 시차 1주 · 비중 20%/);
@@ -134,6 +135,7 @@ test('a completed session that meets the existing rules is review-ready, not app
   const markup = render(session({ observations }));
 
   assert.match(markup, /운영 적용 검토 가능/);
+  assert.match(markup, /class="status-tag status-tag--prominent status-tag--ok">운영 적용 검토 가능/);
   assert.match(markup, /운영 모델은 아직 변경되지 않았습니다/);
   assert.match(markup, /MAE·MAPE 개선<\/dt><dd>충족<\/dd>/);
   assert.match(markup, /운영 변경 조건<\/dt><dd>운영 변경 대기 기간 확인 필요<\/dd>/);
@@ -145,6 +147,7 @@ test('a stopped session explains why the comparison ended', () => {
   const markup = render(session({ status: 'stopped', stoppedReason: 'baseline_params_changed' }));
 
   assert.match(markup, /운영 모델 파라미터가 변경되었습니다/);
+  assert.match(markup, /<span class="status-tag">중단<\/span>/);
   assert.doesNotMatch(markup, /baseline_params_changed/);
 });
 

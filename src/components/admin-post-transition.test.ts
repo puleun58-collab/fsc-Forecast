@@ -88,6 +88,7 @@ test('monitoring renders progress as interim evidence without a rollback action'
   });
 
   assert.match(markup, /모니터링 중 · 4\/13/);
+  assert.match(markup, /class="status-tag status-tag--prominent status-tag--brand">모니터링 중 · 4\/13/);
   assert.match(markup, /표본 13주가 확보되기 전까지는 중간 결과/);
   assert.match(markup, /최근 오차 추세 확인이 필요합니다/);
   assert.match(markup, /현재/);
@@ -113,6 +114,7 @@ test('a reviewable regression exposes rollback approval but never applies it aut
   });
 
   assert.match(markup, /롤백 검토 필요/);
+  assert.match(markup, /class="status-tag status-tag--prominent status-tag--critical">롤백 검토 필요/);
   assert.match(markup, /이전 설정의 예측 오차가 더 작았습니다/);
   assert.match(markup, /31\.20원/);
   assert.match(markup, /22\.80원/);

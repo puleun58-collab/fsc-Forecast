@@ -74,6 +74,7 @@
   --radius-card: 10px;
   --radius-panel: 10px;
   --radius-pill: 999px;
+  --z-sticky: 5;
   --container-dashboard: 1440px;
   --shadow-section: none;
   --shadow-card: none;
@@ -211,9 +212,15 @@ main {
   margin-bottom: 0;
 }
 
+.admin-grid {
+  --admin-section-nav-height: 44px;
+}
+
 .admin-section-nav {
   position: sticky;
+  z-index: var(--z-sticky);
   top: 0;
+  min-height: var(--admin-section-nav-height);
   overflow: hidden;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-control);
@@ -235,7 +242,7 @@ main {
   flex: 1 1 25%;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
+  min-height: var(--admin-section-nav-height);
   padding: 0 var(--space-4);
   background: var(--bg-card);
   color: var(--text-secondary);
@@ -282,6 +289,10 @@ main {
 }
 
 @media (max-width: 700px) {
+  .admin-grid {
+    --admin-section-nav-height: 48px;
+  }
+
   .admin-section-nav__link {
     flex: 0 0 auto;
     min-width: 112px;
@@ -1247,7 +1258,7 @@ main {
 
 .admin-page-section {
   gap: var(--space-5);
-  scroll-margin-top: calc(44px + var(--space-6));
+  scroll-margin-top: calc(var(--admin-section-nav-height) + var(--space-6));
 }
 
 .admin-page-section + .admin-page-section {
@@ -2538,6 +2549,37 @@ summary.operation-history-row::-webkit-details-marker {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+}
+
+.admin-summary__params {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-summary__params .admin-decision__note {
+  margin: 0;
+}
+
+.admin-summary__metric-definitions {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.admin-summary__metric-definitions > div {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-summary__metric-definitions dt {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.admin-summary__metric-definitions dd {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.55;
 }
 
 .admin-table__flag {

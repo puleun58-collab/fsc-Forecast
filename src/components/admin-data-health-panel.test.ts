@@ -77,6 +77,7 @@ test('data health renders one compact table with column headers instead of repea
 
   assert.match(markup, /데이터 상태/);
   assert.match(markup, /확인 필요/);
+  assert.match(markup, /class="status-tag status-tag--prominent status-tag--critical">확인 필요/);
   assert.match(markup, /Forecast 입력 데이터의 최신 상태를 확인합니다/);
   assert.match(head, /<th scope="col">데이터 소스<\/th><th scope="col">상태<\/th><th scope="col">최신 데이터<\/th><th scope="col">최근 성공 수집<\/th>/);
   assert.equal(markup.match(/최근 성공 수집/g)?.length, 5);
