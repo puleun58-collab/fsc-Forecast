@@ -3508,6 +3508,8 @@ details[open] > summary .admin-disclosure__toggle-open {
 .status-tag {
   display: inline-flex;
   align-items: center;
+  flex: 0 0 auto;
+  width: auto;
   min-height: 30px;
   padding: 5px 9px;
   border: 1px solid var(--border);
@@ -5100,14 +5102,6 @@ details[open] > summary .admin-disclosure__toggle-open {
     flex-direction: row;
   }
 
-  .status-tag {
-    flex: 1 1 auto;
-    justify-content: center;
-  }
-
-  .section-card__badge > .status-tag--prominent {
-    flex: 0 0 auto;
-  }
 
   .reliability-detail {
     flex: 1 0 100%;

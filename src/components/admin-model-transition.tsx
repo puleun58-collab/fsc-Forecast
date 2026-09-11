@@ -224,6 +224,14 @@ const STATUS_BADGE: Record<
   applied: { label: '전환 완료', className: 'status-tag--ok', prominent: false },
 };
 
+const GUIDANCE_TEXT: Partial<Record<TransitionViewStatus, string>> = {
+  approvable:
+    '승인해도 현재 Forecast와 FSC 결과는 즉시 변경되지 않습니다. 다음 예측 성공 실행부터 새 설정이 적용됩니다.',
+  'approved-pending':
+    '운영 전환이 승인되었습니다. 다음 예측 성공 실행부터 새 설정이 적용됩니다.',
+  applied: '새 설정이 운영 Forecast에 적용되었습니다.',
+};
+
 function TransitionStatusBadge({ status }: { status: TransitionViewStatus }) {
   const badge = STATUS_BADGE[status];
 
@@ -238,7 +246,15 @@ function TransitionStatusBadge({ status }: { status: TransitionViewStatus }) {
   );
 }
 
+function TransitionGuidance({ status }: { status: TransitionViewStatus }) {
+  const guidance = GUIDANCE_TEXT[status];
+
+  return guidance ? <p className="admin-decision__note">{guidance}</p> : null;
+}
+
+
 export function AdminModelTransition({ view }: { view: ModelTransitionView }) {
+
   if (view.status === 'not-ready') {
     return (
       <SectionCard
@@ -355,9 +371,7 @@ export function AdminModelTransition({ view }: { view: ModelTransitionView }) {
 
         <TransitionHistoryDisclosure history={view.history} />
 
-        <p className="admin-decision__note">
-          승인 시점에는 현재 예측과 FSC 결과가 바뀌지 않으며, 다음 예측 성공 실행부터 새 설정이 사용됩니다.
-        </p>
+        <TransitionGuidance status={view.status} />
       </div>
     </SectionCard>
   );

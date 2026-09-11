@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import { scheduleHashTargetRelease } from './admin-section-navigation-state';
 
 const SECTION_LINKS = [
   { id: 'operations', label: '운영 현황' },
@@ -25,10 +27,24 @@ export function AdminSectionNavigation() {
   const listRef = useRef<HTMLDivElement>(null);
   const activeLinkRef = useRef<HTMLAnchorElement>(null);
   const hashTargetRef = useRef<AdminSectionId | null>(null);
+  const hashReleaseTimerRef = useRef<number | null>(null);
+  const scheduleUpdateRef = useRef<() => void>(() => undefined);
+
+  const selectHashSection = useCallback((section: AdminSectionId): void => {
+    hashTargetRef.current = section;
+    setActiveSection(section);
+    hashReleaseTimerRef.current = scheduleHashTargetRelease(
+      hashReleaseTimerRef.current,
+      () => {
+        hashTargetRef.current = null;
+        hashReleaseTimerRef.current = null;
+        scheduleUpdateRef.current();
+      },
+    );
+  }, []);
 
   useEffect(() => {
     let animationFrame = 0;
-    let hashReleaseTimer = 0;
 
     function updateActiveSection(): void {
       const hashTarget = hashTargetRef.current;
@@ -64,16 +80,6 @@ export function AdminSectionNavigation() {
       animationFrame = window.requestAnimationFrame(updateActiveSection);
     }
 
-    function selectHashSection(section: AdminSectionId): void {
-      hashTargetRef.current = section;
-      setActiveSection(section);
-      window.clearTimeout(hashReleaseTimer);
-      hashReleaseTimer = window.setTimeout(() => {
-        hashTargetRef.current = null;
-        scheduleUpdate();
-      }, 1_600);
-    }
-
     function handleHashChange(): void {
       const hashSection = readHashSection();
 
@@ -81,6 +87,8 @@ export function AdminSectionNavigation() {
         selectHashSection(hashSection);
       }
     }
+
+    scheduleUpdateRef.current = scheduleUpdate;
 
     const hashSection = readHashSection();
     if (hashSection !== null) {
@@ -94,12 +102,16 @@ export function AdminSectionNavigation() {
 
     return () => {
       window.cancelAnimationFrame(animationFrame);
-      window.clearTimeout(hashReleaseTimer);
+      if (hashReleaseTimerRef.current !== null) {
+        window.clearTimeout(hashReleaseTimerRef.current);
+        hashReleaseTimerRef.current = null;
+      }
+      scheduleUpdateRef.current = () => undefined;
       window.removeEventListener('scroll', scheduleUpdate);
       window.removeEventListener('resize', scheduleUpdate);
       window.removeEventListener('hashchange', handleHashChange);
     };
-  }, []);
+  }, [selectHashSection]);
 
   useEffect(() => {
     const list = listRef.current;
@@ -137,10 +149,7 @@ export function AdminSectionNavigation() {
               className="admin-section-nav__link"
               href={`#${section.id}`}
               aria-current={active ? 'location' : undefined}
-              onClick={() => {
-                hashTargetRef.current = section.id;
-                setActiveSection(section.id);
-              }}
+              onClick={() => selectHashSection(section.id)}
             >
               {section.label}
             </a>

@@ -5,6 +5,7 @@ import React, { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { AdminSectionNavigation } from './admin-section-navigation';
+import { scheduleHashTargetRelease } from './admin-section-navigation-state';
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
@@ -25,4 +26,37 @@ test('the hashless server view marks operations as the initial location', () => 
 
   assert.match(markup, /href="#operations" aria-current="location"/);
   assert.equal(markup.match(/aria-current="location"/g)?.length, 1);
+});
+
+test('reselecting the current hash replaces its release timer and always resumes scroll tracking', () => {
+  const scheduled = new Map<number, () => void>();
+  const cancelled: number[] = [];
+  let nextTimer = 1;
+  let releaseCount = 0;
+  const timers = {
+    schedule(callback: () => void, delayMs: number): number {
+      assert.equal(delayMs, 1_600);
+      const timer = nextTimer;
+      nextTimer += 1;
+      scheduled.set(timer, callback);
+      return timer;
+    },
+    cancel(timer: number): void {
+      cancelled.push(timer);
+      scheduled.delete(timer);
+    },
+  };
+
+  const firstTimer = scheduleHashTargetRelease(null, () => {
+    releaseCount += 1;
+  }, timers);
+  const repeatedTimer = scheduleHashTargetRelease(firstTimer, () => {
+    releaseCount += 1;
+  }, timers);
+
+  assert.deepEqual(cancelled, [firstTimer]);
+  assert.equal(scheduled.has(firstTimer), false);
+  assert.equal(scheduled.size, 1);
+  scheduled.get(repeatedTimer)?.();
+  assert.equal(releaseCount, 1);
 });

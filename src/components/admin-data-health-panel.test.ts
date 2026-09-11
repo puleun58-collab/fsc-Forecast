@@ -142,6 +142,22 @@ test('the run input status is summarized and its detail stays collapsed', () => 
   assert.equal(markup.match(/data-label="Forecast 사용">미사용/g)?.length, 2);
 });
 
+test('an unusable required input is labelled as action-required rather than review-only', () => {
+  const quality: ForecastInputQuality = {
+    ...inputQuality(),
+    level: 'action-required',
+  };
+  const markup = renderToStaticMarkup(
+    createElement(AdminDataHealthPanel, { summary: SUMMARY, inputQuality: quality }),
+  );
+
+  assert.match(
+    markup,
+    /<span class="status-tag status-tag--critical">조치 필요<\/span>/,
+  );
+  assert.match(markup, /필수 데이터를 사용할 수 없어 정상 예측을 계산할 수 없습니다/);
+});
+
 test('runs stored before the quality gate render the panel unchanged', () => {
   const markup = renderToStaticMarkup(createElement(AdminDataHealthPanel, { summary: SUMMARY }));
 

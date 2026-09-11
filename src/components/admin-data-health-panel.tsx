@@ -49,7 +49,7 @@ const INPUT_LEVEL_VIEW: Record<
     summary: '예측은 정상 생성되었지만 일부 보조 데이터를 사용하지 않았습니다.',
   },
   'action-required': {
-    label: '확인 필요',
+    label: '조치 필요',
     className: 'status-tag--critical',
     summary: '필수 데이터를 사용할 수 없어 정상 예측을 계산할 수 없습니다.',
   },

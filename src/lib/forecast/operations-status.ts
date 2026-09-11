@@ -166,7 +166,7 @@ export function buildOperationsStatusCenter({
       severity: inputQuality.level === "action-required" ? "action-required" : "attention",
       title:
         inputQuality.level === "action-required"
-          ? "입력 데이터 확인 필요"
+          ? "입력 데이터 조치 필요"
           : "입력 데이터 일부 미사용",
       detail:
         degraded.length === 0

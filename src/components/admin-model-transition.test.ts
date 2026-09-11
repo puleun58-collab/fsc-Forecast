@@ -91,7 +91,10 @@ test('a reviewable shadow result exposes one explicit admin approval action', ()
   assert.match(markup, /18\.90원/);
   assert.match(markup, /운영 전환 승인/);
   assert.doesNotMatch(markup, /전환 승인 취소|롤백 승인/);
-  assert.match(markup, /다음 예측 성공 실행부터 새 설정이 사용됩니다/);
+  assert.match(
+    markup,
+    /승인해도 현재 Forecast와 FSC 결과는 즉시 변경되지 않습니다\. 다음 예측 성공 실행부터 새 설정이 적용됩니다\./,
+  );
 });
 
 test('an approved transition stays pending and can be cancelled before application', () => {
@@ -108,6 +111,10 @@ test('an approved transition stays pending and can be cancelled before applicati
   assert.match(markup, /다음 예측 실행 대기/);
   assert.match(markup, /전환 승인 취소/);
   assert.doesNotMatch(markup, />운영 전환 승인</);
+  assert.match(
+    markup,
+    /운영 전환이 승인되었습니다\. 다음 예측 성공 실행부터 새 설정이 적용됩니다\./,
+  );
 });
 
 test('a blocked transition explains the reused guardrail and does not render an action', () => {
@@ -124,6 +131,7 @@ test('a blocked transition explains the reused guardrail and does not render an 
   assert.match(markup, /<span class="status-tag status-tag--warning">전환 대기<\/span>/);
   assert.match(markup, /4일 남았습니다/);
   assert.doesNotMatch(markup, /<button[^>]*>운영 전환 승인/);
+  assert.doesNotMatch(markup, /승인해도 현재 Forecast|운영 전환이 승인되었습니다|새 설정이 운영 Forecast/);
 });
 
 test('transition history distinguishes an applied approval from a rollback', () => {
@@ -158,4 +166,19 @@ test('transition history distinguishes an applied approval from a rollback', () 
   assert.match(markup, /최근 운영 전환 이력/);
   assert.match(markup, /검증 후 관리자 승인 · 적용 완료/);
   assert.match(markup, /전환 후 성능 확인에 따른 이전 설정 복원 · 적용 대기/);
+  assert.match(markup, /새 설정이 운영 Forecast에 적용되었습니다\./);
+  assert.doesNotMatch(markup, /다음 예측 성공 실행부터 새 설정이 적용됩니다/);
+});
+
+test('a missing transition candidate keeps the existing empty state without guidance', () => {
+  const markup = render(
+    view({
+      status: 'not-ready',
+      summary: null,
+      request: null,
+    }),
+  );
+
+  assert.match(markup, /<span class="section-card__badge-pill">대기<\/span>/);
+  assert.doesNotMatch(markup, /승인해도 현재 Forecast|운영 전환이 승인되었습니다|새 설정이 운영 Forecast/);
 });

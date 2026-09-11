@@ -165,6 +165,13 @@ test("input data problems outrank a performance warning", () => {
   assert.match(center.items[1].detail, /입력 데이터 이상이 함께 감지되었습니다/);
 });
 
+test("an unusable required input asks for action instead of review", () => {
+  const center = build({ inputQuality: inputQuality("action-required") });
+
+  assert.equal(center.status, "action-required");
+  assert.equal(center.primaryAction?.title, "입력 데이터 조치 필요");
+});
+
 test("admin decisions outrank every diagnostic", () => {
   const center = build({
     inputQuality: inputQuality("attention"),
