@@ -76,9 +76,22 @@
   --radius-pill: 999px;
   --z-sticky: 5;
   --container-dashboard: 1440px;
+  --shadow-card-admin:
+    0 1px 2px rgba(23, 26, 24, 0.04),
+    0 4px 12px rgba(23, 26, 24, 0.025);
+  --shadow-card-admin-emphasis:
+    0 1px 2px rgba(23, 26, 24, 0.05),
+    0 6px 16px rgba(23, 26, 24, 0.035);
+  --shadow-kpi-admin: 0 1px 2px rgba(23, 26, 24, 0.03);
+  --shadow-card-public:
+    0 1px 2px rgba(23, 26, 24, 0.025),
+    0 3px 8px rgba(23, 26, 24, 0.018);
+  --shadow-card-public-emphasis:
+    0 1px 2px rgba(23, 26, 24, 0.035),
+    0 4px 10px rgba(23, 26, 24, 0.022);
   --shadow-section: none;
-  --shadow-card: none;
-  --shadow-hover: none;
+  --shadow-card: var(--shadow-card-admin);
+  --shadow-hover: 0 2px 6px rgba(23, 26, 24, 0.04);
   --background: var(--bg-app);
   --background-alt: var(--bg-masthead);
   --surface-soft: var(--bg-section);
@@ -396,20 +409,34 @@ main {
 }
 
 .section-card {
+  --section-card-shadow: var(--shadow-card-admin);
   display: grid;
   gap: var(--space-4);
   padding: var(--space-5);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-card);
   background: var(--bg-card);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--section-card-shadow);
 }
 
 .section-card--highlight {
   border-color: var(--brand-border);
   box-shadow:
     inset 3px 0 0 var(--brand),
-    var(--shadow-card);
+    var(--section-card-shadow);
+}
+
+.admin-grid
+  :is(
+    .admin-operations-status,
+    .admin-summary,
+    .admin-data-health,
+    .admin-quality-trend,
+    .admin-shadow,
+    .admin-transition,
+    .admin-post-transition
+  ) {
+  --section-card-shadow: var(--shadow-card-admin-emphasis);
 }
 
 .section-card__header {
@@ -1345,6 +1372,7 @@ main {
 
 .admin-metric {
   background: var(--bg-card);
+  box-shadow: var(--shadow-kpi-admin);
 }
 
 .admin-row {
@@ -3430,6 +3458,14 @@ details[open] > summary .admin-disclosure__toggle-open {
   border: 1px solid var(--border);
   border-radius: var(--radius-panel);
   background: var(--surface);
+}
+
+.fsc-dashboard .surface-panel {
+  box-shadow: var(--shadow-card-public);
+}
+
+.fsc-dashboard :is(.decision-summary, .dashboard-state) {
+  box-shadow: var(--shadow-card-public-emphasis);
 }
 
 .ops-header {
