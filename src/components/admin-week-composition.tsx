@@ -180,7 +180,7 @@ function buildBreakdownMetrics(
   explanation: FirstForecastExplanation,
   dominantCause: ForecastCause | null,
 ): { core: ForecastBreakdownMetric[]; auxiliary: ForecastBreakdownMetric[] } {
-  const capQualifier = explanation.externalAdjustmentCapReached ? ' (상한 전)' : '';
+  const capQualifier = explanation.externalAdjustmentCapReached ? ' (상한 적용 전)' : '';
   const core: ForecastBreakdownMetric[] = [
     {
       key: 'anchor',
@@ -316,7 +316,11 @@ function ForecastExplanationDetails({
             className={`admin-metric forecast-basis__metric forecast-basis__metric--${metric.tone}`}
           >
             <span className="dashboard-shell__metric-label">{metric.label}</span>
-            <strong className="forecast-basis__value">{metric.value}</strong>
+            <strong
+              className={`forecast-basis__value${metric.key === 'dubai' ? ' forecast-basis__value--nowrap' : ''}`}
+            >
+              {metric.value}
+            </strong>
             {metric.details.length === 0 ? null : (
               <span
                 className="forecast-basis__signal-detail"

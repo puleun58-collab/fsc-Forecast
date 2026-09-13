@@ -225,7 +225,7 @@ test('forecast basis leads with the dominant cause and the core calculation path
   );
   assert.match(
     basisBlock,
-    /forecast-basis__metric--dominant"><span class="dashboard-shell__metric-label">Dubai 보정<\/span><strong class="forecast-basis__value">\+31\.76원\/L<\/strong>/,
+    /forecast-basis__metric--dominant"><span class="dashboard-shell__metric-label">Dubai 보정<\/span><strong class="forecast-basis__value forecast-basis__value--nowrap">\+31\.76원\/L<\/strong>/,
   );
   assert.match(
     basisBlock,
@@ -274,6 +274,23 @@ test('forecast basis leads with the dominant cause and the core calculation path
     /외부 보정 상한<\/span><strong class="forecast-basis__value">미적용 · 설정 ±3%<\/strong>/,
   );
   assert.doesNotMatch(basisBlock, /저장된 산출 근거로 재현되지 않습니다/);
+});
+
+test('a capped Dubai correction keeps its amount and qualifier in one value element', () => {
+  const markup = render(WEEKS, '1851.370', {
+    ...SEPTEMBER_FORECAST_BASIS,
+    explanation: {
+      ...SEPTEMBER_EXPLANATION,
+      externalAdjustmentCapReached: true,
+    },
+  });
+  const basisBlock = markup.slice(markup.indexOf('Forecast 산출 근거'));
+
+  assert.match(
+    basisBlock,
+    /Dubai 보정<\/span><strong class="forecast-basis__value forecast-basis__value--nowrap">\+31\.76원\/L \(상한 적용 전\)<\/strong>/,
+  );
+  assert.doesNotMatch(basisBlock, /\+31\.76원\/L<\/strong>[^<]*\(상한 적용 전\)/);
 });
 
 test('dominant cause follows the largest aligned contribution instead of a fixed signal', () => {
