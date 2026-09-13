@@ -421,9 +421,7 @@ main {
 
 .section-card--highlight {
   border-color: var(--brand-border);
-  box-shadow:
-    inset 3px 0 0 var(--brand),
-    var(--section-card-shadow);
+  box-shadow: var(--section-card-shadow);
 }
 
 .admin-grid
