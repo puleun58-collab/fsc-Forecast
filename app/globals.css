@@ -3152,7 +3152,11 @@ details[open] > summary .admin-disclosure__toggle-open {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 10px;
-  align-items: start;
+  align-items: center;
+  padding: 10px 14px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-control);
+  background: var(--bg-card);
 }
 
 .admin-tuning-criteria__index {
@@ -3164,7 +3168,7 @@ details[open] > summary .admin-disclosure__toggle-open {
 }
 
 .admin-tuning-criteria__group h3,
-.admin-tuning-criteria__group header p,
+.admin-tuning-criteria__lead,
 .admin-tuning-criteria__note {
   margin: 0;
 }
@@ -3172,11 +3176,13 @@ details[open] > summary .admin-disclosure__toggle-open {
 .admin-tuning-criteria__group h3 {
   color: var(--text-primary);
   font-size: 0.96rem;
+  font-weight: 700;
   line-height: 1.4;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
-.admin-tuning-criteria__group header p {
-  margin-top: 3px;
+.admin-tuning-criteria__lead {
   color: var(--text-secondary);
   font-size: 0.82rem;
   line-height: 1.6;

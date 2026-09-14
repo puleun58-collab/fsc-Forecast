@@ -116,11 +116,11 @@ export function AdminTuningCriteria({ session }: { session: ShadowValidationSess
               <span className="admin-tuning-criteria__index" aria-hidden="true">
                 01
               </span>
-              <div>
-                <h3 id="tuning-candidate-criteria">튜닝 검토 후보 기준</h3>
-                <p>현재 운영 모델보다 충분히 좋아진 후보만 검토합니다.</p>
-              </div>
+              <h3 id="tuning-candidate-criteria">튜닝 검토 후보 기준</h3>
             </header>
+            <p className="admin-tuning-criteria__lead">
+              현재 운영 모델보다 충분히 좋아진 후보만 검토합니다.
+            </p>
             <dl className="admin-tuning-criteria__facts">
               <Criterion label="후보 교체" value={candidateSwitchThreshold}>
                 최근 13주 MAE가 현재 확인 중인 후보보다 상대 5% 이상, 동시에 절대 0.5원/L 이상
@@ -141,15 +141,13 @@ export function AdminTuningCriteria({ session }: { session: ShadowValidationSess
               <span className="admin-tuning-criteria__index" aria-hidden="true">
                 02
               </span>
-              <div>
-                <h3 id="shadow-pass-criteria">Shadow 검증 통과 기준</h3>
-                <p>
-                  Shadow에서는 후보 모델을 실제 운영 모델과 동시에 실행해 새 Actual{' '}
-                  {SHADOW_REQUIRED_SAMPLE_COUNT}주 동안 비교합니다. 다음 조건을 모두 만족해야 운영 전환
-                  검토가 가능합니다.
-                </p>
-              </div>
+              <h3 id="shadow-pass-criteria">Shadow 검증 통과 기준</h3>
             </header>
+            <p className="admin-tuning-criteria__lead">
+              Shadow에서는 후보 모델을 실제 운영 모델과 동시에 실행해 새 Actual{' '}
+              {SHADOW_REQUIRED_SAMPLE_COUNT}주 동안 비교합니다. 다음 조건을 모두 만족해야 운영 전환
+              검토가 가능합니다.
+            </p>
             <dl className="admin-tuning-criteria__facts admin-tuning-criteria__facts--pass">
               <Criterion label="Shadow 검증" value={`${SHADOW_REQUIRED_SAMPLE_COUNT}주`}>
                 새 Actual을 기준으로 운영 모델과 후보 모델을 같은 기간 비교합니다.
@@ -187,11 +185,11 @@ export function AdminTuningCriteria({ session }: { session: ShadowValidationSess
               <span className="admin-tuning-criteria__index" aria-hidden="true">
                 03
               </span>
-              <div>
-                <h3 id="shadow-stop-criteria">Shadow 중단 기준</h3>
-                <p>Shadow 진행 중 후보 성능이 명확하게 나빠지는 경우 중단 검토가 필요합니다.</p>
-              </div>
+              <h3 id="shadow-stop-criteria">Shadow 중단 기준</h3>
             </header>
+            <p className="admin-tuning-criteria__lead">
+              Shadow 진행 중 후보 성능이 명확하게 나빠지는 경우 중단 검토가 필요합니다.
+            </p>
             <dl className="admin-tuning-criteria__facts">
               <Criterion label="중단 판단 시작" value={`${SHADOW_MIN_OBSERVATION_COUNT}주`}>
                 새 Actual 4주 이상 확보한 뒤부터 누적 성능 악화 여부를 판단합니다.
