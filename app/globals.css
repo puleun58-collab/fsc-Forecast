@@ -3284,7 +3284,7 @@ details[open] > summary .admin-disclosure__toggle-open {
 }
 
 .admin-tuning-criteria__clarifier-emphasis {
-  color: var(--critical);
+  color: var(--warning);
   font-weight: 700;
 }
 
