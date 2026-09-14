@@ -50,37 +50,63 @@ function Criterion({
   );
 }
 
-function describeShadowContext(session: ShadowValidationSession | null): string | null {
+type ShadowContext = {
+  label: string;
+  progress: string | null;
+  detail: string;
+};
+
+function describeShadowContext(session: ShadowValidationSession | null): ShadowContext | null {
   if (session === null) {
     return null;
   }
 
   const summary = summarizeShadowValidation(session);
   const degradation = evaluateShadowDegradation(session);
-  const progress = `현재 Shadow 검증 ${
-    summary.status === 'validating' ? '진행 중' : '완료'
-  } ${summary.completedSampleCount}/${summary.requiredSampleCount}주`;
+  const label =
+    summary.status === 'validating' ? '현재 Shadow 검증 진행 중' : 'Shadow 검증 완료';
+  const progress = `${summary.completedSampleCount}/${summary.requiredSampleCount}주`;
 
   if (
     degradation?.status === 'watch' ||
     degradation?.status === 'stop-recommended'
   ) {
-    return `${progress} · 현재 중단 기준 확인 중 ${degradation.confirmedCount}/${degradation.requiredCount}주. 중단 권고가 표시되어도 자동으로 Shadow를 종료하지 않습니다.`;
+    return {
+      label,
+      progress,
+      detail: `현재 중단 기준 확인 중 ${degradation.confirmedCount}/${degradation.requiredCount}주. 중단 권고가 표시되어도 자동으로 Shadow를 종료하지 않습니다.`,
+    };
   }
 
   if (summary.status === 'validating') {
-    return `${progress} · Shadow 검증은 ${summary.requiredSampleCount}주 완료 후 최종 통과 여부를 판단합니다.`;
+    return {
+      label,
+      progress,
+      detail: `Shadow 검증은 ${summary.requiredSampleCount}주 완료 후 최종 통과 여부를 판단합니다.`,
+    };
   }
 
   if (summary.status === 'reviewable') {
-    return `${progress} · 운영 전환 검토가 가능한 상태이며 운영 모델은 아직 변경되지 않았습니다.`;
+    return {
+      label,
+      progress,
+      detail: '운영 전환 검토가 가능한 상태이며 운영 모델은 아직 변경되지 않았습니다.',
+    };
   }
 
   if (summary.status === 'failed') {
-    return `${progress} · 운영 전환 검토 기준을 통과하지 못했습니다.`;
+    return {
+      label,
+      progress,
+      detail: '운영 전환 검토 기준을 통과하지 못했습니다.',
+    };
   }
 
-  return `현재 Shadow 검증이 중단된 상태입니다. 최종 중단 여부와 다음 조치는 관리자가 판단합니다.`;
+  return {
+    label: '현재 Shadow 검증 중단',
+    progress: null,
+    detail: '최종 중단 여부와 다음 조치는 관리자가 판단합니다.',
+  };
 }
 
 export function AdminTuningCriteria({ session }: { session: ShadowValidationSession | null }) {
@@ -107,7 +133,17 @@ export function AdminTuningCriteria({ session }: { session: ShadowValidationSess
 
       <div className="admin-disclosure__body admin-tuning-criteria__body">
         {shadowContext === null ? null : (
-          <p className="admin-tuning-criteria__context">{shadowContext}</p>
+          <div className="admin-tuning-criteria__context">
+            <span className="admin-tuning-criteria__context-status">
+              {shadowContext.label}
+              {shadowContext.progress === null ? null : (
+                <strong className="admin-tuning-criteria__context-progress">
+                  {shadowContext.progress}
+                </strong>
+              )}
+            </span>
+            <span className="admin-tuning-criteria__context-detail">{shadowContext.detail}</span>
+          </div>
         )}
 
         <div className="admin-tuning-criteria__groups">
@@ -166,11 +202,16 @@ export function AdminTuningCriteria({ session }: { session: ShadowValidationSess
                 label="Forecast 변화폭"
                 value={`운영 모델의 ${PROMOTION_VOLATILITY_TOLERANCE_RATIO}배 이내`}
               >
-                지난주와 이번 주의 Forecast가 얼마나 달라졌는지 비교합니다. 후보의 평균 변화폭이 운영
-                모델의 2배를 넘으면 예측값이 주마다 지나치게 출렁이는 후보로 판단해 제외합니다.
+                <span className="admin-tuning-criteria__explanation">
+                  지난주와 이번 주의 Forecast가 얼마나 달라졌는지 비교합니다.
+                </span>
+                <span className="admin-tuning-criteria__explanation">
+                  후보의 평균 변화폭이 운영 모델의 2배를 넘으면 지나치게 불안정한 예측으로
+                  판단합니다.
+                </span>
                 <span className="admin-tuning-criteria__example">
                   <b>예시</b> 운영 모델의 주차별 Forecast 변화폭이 평균 10원/L이면 후보는 평균 20원/L
-                  이내여야 기준을 통과합니다.
+                  이내여야 합니다.
                 </span>
                 <span className="admin-tuning-criteria__clarifier">
                   ※ 실제 유가 변동폭이 아니라, 매주 새로 산출되는 Forecast 값 자체의 변화폭을

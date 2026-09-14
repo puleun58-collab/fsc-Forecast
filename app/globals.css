@@ -3125,11 +3125,32 @@ details[open] > summary .admin-disclosure__toggle-open {
 }
 
 .admin-tuning-criteria__context {
+  display: grid;
+  gap: 2px;
   margin: 0 0 4px;
+  padding: 8px 12px;
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-control);
+  background: var(--brand-soft);
   color: var(--text-primary);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.admin-tuning-criteria__context-status {
   font-weight: 700;
-  line-height: 1.55;
+}
+
+.admin-tuning-criteria__context-progress {
+  margin-left: 5px;
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-tuning-criteria__context-detail {
+  font-weight: 400;
 }
 
 .admin-tuning-criteria__groups {
@@ -3238,19 +3259,28 @@ details[open] > summary .admin-disclosure__toggle-open {
   overflow-wrap: break-word;
 }
 
+.admin-tuning-criteria__explanation,
 .admin-tuning-criteria__example,
 .admin-tuning-criteria__clarifier {
   display: block;
-  margin-top: 7px;
+}
+
+.admin-tuning-criteria__explanation + .admin-tuning-criteria__explanation {
+  margin-top: 2px;
+}
+
+.admin-tuning-criteria__example,
+.admin-tuning-criteria__clarifier {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1.5;
 }
 
 .admin-tuning-criteria__example b {
   color: var(--brand);
-  font-weight: 800;
-}
-
-.admin-tuning-criteria__clarifier {
-  font-size: 0.74rem;
+  font-weight: 700;
 }
 
 .admin-tuning-criteria__note {
