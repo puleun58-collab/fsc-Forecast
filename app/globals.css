@@ -3280,6 +3280,7 @@ details[open] > summary .admin-disclosure__toggle-open {
 
 .admin-tuning-criteria__clarifier {
   color: var(--warning);
+  font-weight: 700;
 }
 
 .admin-tuning-criteria__example b {
@@ -3287,9 +3288,6 @@ details[open] > summary .admin-disclosure__toggle-open {
   font-weight: 700;
 }
 
-.admin-tuning-criteria__clarifier-emphasis {
-  font-weight: 700;
-}
 
 .admin-tuning-criteria__note {
   padding-top: 2px;

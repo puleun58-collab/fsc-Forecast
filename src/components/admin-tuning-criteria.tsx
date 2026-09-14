@@ -212,11 +212,8 @@ export function AdminTuningCriteria({ session }: { session: ShadowValidationSess
                   <b>예시</b> 운영 모델이 평균 10원/L이면 후보는 20원/L 이내여야 합니다.
                 </span>
                 <span className="admin-tuning-criteria__clarifier">
-                  ※{' '}
-                  <b className="admin-tuning-criteria__clarifier-emphasis">
-                    실제 유가 변동폭이 아니라
-                  </b>
-                  , 매주 새로 산출되는 Forecast 값 자체의 변화폭을 비교합니다.
+                  ※ 실제 유가 변동폭이 아니라, 매주 새로 산출되는 Forecast 값 자체의 변화폭을
+                  비교합니다.
                 </span>
               </Criterion>
             </dl>

@@ -88,7 +88,7 @@ test('the disclosure explains every threshold used by the operating logic', () =
   );
   assert.match(
     markup,
-    /<b class="admin-tuning-criteria__clarifier-emphasis">실제 유가 변동폭이 아니라<\/b>, 매주 새로 산출되는 Forecast 값 자체의 변화폭을 비교합니다/,
+    /admin-tuning-criteria__clarifier">※ 실제 유가 변동폭이 아니라, 매주 새로 산출되는 Forecast 값 자체의 변화폭을\s+비교합니다/,
   );
   assert.doesNotMatch(markup, /Forecast 변동성/);
 
