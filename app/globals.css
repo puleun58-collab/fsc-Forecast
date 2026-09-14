@@ -3278,13 +3278,16 @@ details[open] > summary .admin-disclosure__toggle-open {
   line-height: 1.5;
 }
 
+.admin-tuning-criteria__clarifier {
+  color: var(--warning);
+}
+
 .admin-tuning-criteria__example b {
   color: var(--brand);
   font-weight: 700;
 }
 
 .admin-tuning-criteria__clarifier-emphasis {
-  color: var(--warning);
   font-weight: 700;
 }
 
