@@ -3283,6 +3283,11 @@ details[open] > summary .admin-disclosure__toggle-open {
   font-weight: 700;
 }
 
+.admin-tuning-criteria__clarifier-emphasis {
+  color: var(--critical);
+  font-weight: 700;
+}
+
 .admin-tuning-criteria__note {
   padding-top: 2px;
 }

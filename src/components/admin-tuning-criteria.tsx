@@ -203,19 +203,20 @@ export function AdminTuningCriteria({ session }: { session: ShadowValidationSess
                 value={`운영 모델의 ${PROMOTION_VOLATILITY_TOLERANCE_RATIO}배 이내`}
               >
                 <span className="admin-tuning-criteria__explanation">
-                  지난주와 이번 주의 Forecast가 얼마나 달라졌는지 비교합니다.
+                  지난주와 이번 주의 Forecast 변화폭을 비교합니다.
                 </span>
                 <span className="admin-tuning-criteria__explanation">
-                  후보의 평균 변화폭이 운영 모델의 2배를 넘으면 지나치게 불안정한 예측으로
-                  판단합니다.
+                  후보가 운영 모델의 2배를 넘으면 불안정한 예측으로 판단합니다.
                 </span>
                 <span className="admin-tuning-criteria__example">
-                  <b>예시</b> 운영 모델의 주차별 Forecast 변화폭이 평균 10원/L이면 후보는 평균 20원/L
-                  이내여야 합니다.
+                  <b>예시</b> 운영 모델이 평균 10원/L이면 후보는 20원/L 이내여야 합니다.
                 </span>
                 <span className="admin-tuning-criteria__clarifier">
-                  ※ 실제 유가 변동폭이 아니라, 매주 새로 산출되는 Forecast 값 자체의 변화폭을
-                  비교합니다.
+                  ※{' '}
+                  <b className="admin-tuning-criteria__clarifier-emphasis">
+                    실제 유가 변동폭이 아니라
+                  </b>
+                  , 매주 새로 산출되는 Forecast 값 자체의 변화폭을 비교합니다.
                 </span>
               </Criterion>
             </dl>
