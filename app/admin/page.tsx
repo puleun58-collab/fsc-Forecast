@@ -14,6 +14,7 @@ import { AdminShadowValidation } from '@/components/admin-shadow-validation';
 import { AdminHorizonProfile } from '@/components/admin-horizon-profile';
 import { AdminSignalReview } from '@/components/admin-signal-review';
 import { AdminTuningTimeline } from '@/components/admin-tuning-timeline';
+import { AdminTuningCriteria } from '@/components/admin-tuning-criteria';
 import { AdminModelTransition } from '@/components/admin-model-transition';
 import { AdminOperationsStatus } from '@/components/admin-operations-status';
 import { AdminOperationsSummary, resolveNextStep } from '@/components/admin-operations-summary';
@@ -174,6 +175,7 @@ function AdminTuningSection({ view }: { view: AdminPageView['tuning'] }) {
       title="튜닝·검증"
       description="후보 설정과 Shadow 검증 진행 상태를 확인합니다."
     >
+      <AdminTuningCriteria session={view.shadow.session} />
       <AdminParameterSensitivity {...view.sensitivity} />
       <AdminShadowValidation {...view.shadow} />
       <AdminTuningTimeline {...view.timeline} />

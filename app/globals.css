@@ -3102,6 +3102,160 @@ details[open] > summary .admin-disclosure__toggle-open {
   padding: var(--space-4);
 }
 
+.admin-tuning-criteria__summary {
+  align-items: flex-start;
+}
+
+.admin-tuning-criteria__summary-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.admin-tuning-criteria__summary-copy > span {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.admin-tuning-criteria__body {
+  gap: 0;
+}
+
+.admin-tuning-criteria__context {
+  margin: 0 0 4px;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.admin-tuning-criteria__groups {
+  display: grid;
+}
+
+.admin-tuning-criteria__group {
+  display: grid;
+  gap: 14px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.admin-tuning-criteria__group:last-child {
+  padding-bottom: 4px;
+  border-bottom: 0;
+}
+
+.admin-tuning-criteria__group > header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.admin-tuning-criteria__index {
+  padding-top: 2px;
+  color: var(--brand);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.admin-tuning-criteria__group h3,
+.admin-tuning-criteria__group header p,
+.admin-tuning-criteria__note {
+  margin: 0;
+}
+
+.admin-tuning-criteria__group h3 {
+  color: var(--text-primary);
+  font-size: 0.96rem;
+  line-height: 1.4;
+}
+
+.admin-tuning-criteria__group header p {
+  margin-top: 3px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.admin-tuning-criteria__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 14px 18px;
+  margin: 0;
+}
+
+.admin-tuning-criteria__facts--pass {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 450px), 1fr));
+}
+
+.admin-tuning-criteria__criterion {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-width: 0;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--border-default) 78%, transparent);
+}
+
+.admin-tuning-criteria__criterion dt {
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.admin-tuning-criteria__criterion dd {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+}
+
+.admin-tuning-criteria__criterion strong {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.35;
+}
+
+.admin-tuning-criteria__criterion dd > span,
+.admin-tuning-criteria__note {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.58;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.admin-tuning-criteria__example,
+.admin-tuning-criteria__clarifier {
+  display: block;
+  margin-top: 7px;
+}
+
+.admin-tuning-criteria__example b {
+  color: var(--brand);
+  font-weight: 800;
+}
+
+.admin-tuning-criteria__clarifier {
+  font-size: 0.74rem;
+}
+
+.admin-tuning-criteria__note {
+  padding-top: 2px;
+}
+
+.admin-tuning-criteria__note--warning {
+  color: var(--warning);
+  font-weight: 700;
+}
+
 .forecast-basis__path {
   grid-template-columns:
     repeat(2, minmax(0, 1fr)) minmax(225px, 1.15fr)
