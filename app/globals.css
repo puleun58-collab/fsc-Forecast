@@ -2757,6 +2757,32 @@ summary.operation-history-row::-webkit-details-marker {
   background: var(--bg-card);
 }
 
+.shadow-direction {
+  min-width: 300px;
+  white-space: normal;
+}
+
+.shadow-direction__detail {
+  display: grid;
+  justify-items: start;
+  gap: 5px;
+}
+
+.shadow-direction__comparison {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.shadow-direction__basis {
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.shadow-direction__guide {
+  margin-top: 10px;
+}
+
 @media (max-width: 700px) {
   .shadow-validation__table thead,
   .shadow-validation__observations thead {
@@ -2790,6 +2816,19 @@ summary.operation-history-row::-webkit-details-marker {
     color: var(--text-secondary);
     font-size: 0.74rem;
     font-weight: 700;
+  }
+
+  .shadow-direction {
+    min-width: 0;
+  }
+
+  .shadow-direction__detail {
+    min-width: 0;
+  }
+
+  .shadow-direction__comparison,
+  .shadow-direction__basis {
+    overflow-wrap: anywhere;
   }
 }
 

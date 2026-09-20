@@ -2,7 +2,7 @@ import { AdminDisclosureToggle } from './admin-disclosure-toggle';
 import { SectionCard } from './section-card';
 
 import { formatDashboardDate } from '@/lib/dashboard/dashboard-time';
-import { formatPriceText } from '@/lib/dashboard/display-format';
+import { formatPriceNumber, formatPriceText } from '@/lib/dashboard/display-format';
 import { formatModelParams } from '@/lib/forecast/describe-model-params';
 import {
   evaluateShadowDegradation,
@@ -84,6 +84,12 @@ function formatRatioPercent(value: number | null): string {
   return value === null ? '산정 전' : `${(value * 100).toFixed(1)}%`;
 }
 
+const DIRECTION_LABEL: Record<ShadowObservation['shadowDirection'], string> = {
+  up: '상승',
+  down: '하락',
+  flat: '보합',
+};
+
 function ComparisonRow({
   label,
   baseline,
@@ -129,19 +135,30 @@ function ObservationRow({ observation }: { observation: ShadowObservation }) {
       </td>
       <td data-label="운영 오차">{formatMae(observation.baselineAbsoluteErrorKrwPerL)}</td>
       <td data-label="Shadow 오차">{formatMae(observation.shadowAbsoluteErrorKrwPerL)}</td>
-      <td data-label="Shadow 방향">
-        {observation.actualDirection === null ? (
+      <td className="shadow-direction" data-label="Shadow 방향">
+        {observation.actualDirection === null || observation.actualKrwPerL === null ? (
           '확정 대기'
         ) : (
-          <span
-            className={`status-tag ${
-              observation.shadowDirection === observation.actualDirection
-                ? 'status-tag--ok'
-                : 'status-tag--warning'
-            }`}
-          >
-            {observation.shadowDirection === observation.actualDirection ? '방향 적중' : '방향 실패'}
-          </span>
+          <div className="shadow-direction__detail">
+            <span
+              className={`status-tag ${
+                observation.shadowDirection === observation.actualDirection
+                  ? 'status-tag--ok'
+                  : 'status-tag--warning'
+              }`}
+            >
+              {observation.shadowDirection === observation.actualDirection ? '성공' : '실패'}
+            </span>
+            <span className="shadow-direction__comparison">
+              {DIRECTION_LABEL[observation.shadowDirection]} 예측 → 실제{' '}
+              {DIRECTION_LABEL[observation.actualDirection]}
+            </span>
+            <span className="shadow-direction__basis">
+              기준 {formatPriceNumber(observation.anchorKrwPerL)} → 예측{' '}
+              {formatPriceNumber(observation.shadowForecastKrwPerL)} / 실제{' '}
+              {formatPriceText(observation.actualKrwPerL)}
+            </span>
+          </div>
         )}
       </td>
     </tr>
@@ -400,28 +417,34 @@ export function AdminShadowValidation({ session }: { session: ShadowValidationSe
             {session.observations.length === 0 ? (
               <p className="backtest-detail__empty">아직 발행된 Shadow 예측이 없습니다.</p>
             ) : (
-              <div className="admin-table-wrap">
-                <table className="admin-table shadow-validation__observations">
-                  <thead>
-                    <tr>
-                      <th scope="col">주차</th>
-                      <th scope="col">운영 예측값</th>
-                      <th scope="col">Shadow 예측값</th>
-                      <th scope="col">실제값</th>
-                      <th scope="col">운영 오차</th>
-                      <th scope="col">Shadow 오차</th>
-                      <th scope="col">Shadow 방향</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[...session.observations]
-                      .sort((left, right) => left.targetDate.localeCompare(right.targetDate))
-                      .map((observation) => (
-                        <ObservationRow key={observation.targetDate} observation={observation} />
-                      ))}
-                  </tbody>
-                </table>
-              </div>
+              <>
+                <div className="admin-table-wrap">
+                  <table className="admin-table shadow-validation__observations">
+                    <thead>
+                      <tr>
+                        <th scope="col">주차</th>
+                        <th scope="col">운영 예측값</th>
+                        <th scope="col">Shadow 예측값</th>
+                        <th scope="col">실제값</th>
+                        <th scope="col">운영 오차</th>
+                        <th scope="col">Shadow 오차</th>
+                        <th scope="col">Shadow 방향</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...session.observations]
+                        .sort((left, right) => left.targetDate.localeCompare(right.targetDate))
+                        .map((observation) => (
+                          <ObservationRow key={observation.targetDate} observation={observation} />
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="admin-decision__note shadow-direction__guide">
+                  방향은 직전 기준 Actual 대비 예측값과 실제값의 상승·하락 여부가 일치하는지
+                  판단합니다.
+                </p>
+              </>
             )}
           </div>
         </details>

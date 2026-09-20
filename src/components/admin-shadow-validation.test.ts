@@ -24,7 +24,12 @@ const BASELINE: ForecastModelParams = {
   externalAdjustmentCapRatio: 0.03,
 };
 
-function observation(index: number, baselineError: number, shadowError: number): ShadowObservation {
+function observation(
+  index: number,
+  baselineError: number,
+  shadowError: number,
+  overrides: Partial<ShadowObservation> = {},
+): ShadowObservation {
   const actualKrwPerL = 1800;
 
   return {
@@ -42,6 +47,7 @@ function observation(index: number, baselineError: number, shadowError: number):
     baselineDirection: 'up',
     shadowDirection: 'up',
     actualDirection: 'up',
+    ...overrides,
   };
 }
 
@@ -151,28 +157,45 @@ test('a stopped session explains why the comparison ended', () => {
   assert.doesNotMatch(markup, /baseline_params_changed/);
 });
 
-test('week rows use the shared direction wording and mark pending actuals', () => {
-  const pending = observation(3, 0, 0);
+test('week rows explain every stored Shadow direction result and keep pending actuals neutral', () => {
   const markup = render(
     session({
       observations: [
-        observation(1, 20, 10),
-        {
-          ...pending,
+        observation(1, 20, 10, {
+          anchorKrwPerL: 1844.03,
+          shadowForecastKrwPerL: 1850.13,
+          actualKrwPerL: 1843.86,
+          shadowDirection: 'up',
+          actualDirection: 'down',
+        }),
+        observation(2, 20, 10, { shadowDirection: 'up', actualDirection: 'up' }),
+        observation(3, 20, 10, { shadowDirection: 'down', actualDirection: 'up' }),
+        observation(4, 20, 10, { shadowDirection: 'down', actualDirection: 'down' }),
+        observation(5, 20, 10, { shadowDirection: 'flat', actualDirection: 'up' }),
+        observation(6, 0, 0, {
           actualKrwPerL: null,
           baselineAbsoluteErrorKrwPerL: null,
           shadowAbsoluteErrorKrwPerL: null,
           baselineApePct: null,
           shadowApePct: null,
           actualDirection: null,
-        },
+        }),
       ],
     }),
   );
 
-  assert.match(markup, /<span class="status-tag status-tag--ok">방향 적중<\/span>/);
+  assert.match(markup, /status-tag status-tag--warning">실패<\/span><span class="shadow-direction__comparison">상승 예측 → 실제 하락/);
+  assert.match(markup, /status-tag status-tag--ok">성공<\/span><span class="shadow-direction__comparison">상승 예측 → 실제 상승/);
+  assert.match(markup, /하락 예측 → 실제 상승/);
+  assert.match(markup, /하락 예측 → 실제 하락/);
+  assert.match(markup, /보합 예측 → 실제 상승/);
+  assert.match(
+    markup,
+    /기준 1,844\.03 → 예측 1,850\.13 \/ 실제 1,843\.86원\/L/,
+  );
+  assert.match(markup, /방향은 직전 기준 Actual 대비 예측값과 실제값의 상승·하락 여부가 일치하는지\s+판단합니다/);
   assert.match(markup, /확정 대기/);
-  assert.doesNotMatch(markup, />적중<\/span>|>실패<\/span>/);
+  assert.doesNotMatch(markup, /방향 적중|방향 실패/);
 });
 
 test('runs without shadow metadata explain that validation has not started', () => {
