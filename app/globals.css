@@ -2765,7 +2765,14 @@ summary.operation-history-row::-webkit-details-marker {
 .shadow-direction__detail {
   display: grid;
   justify-items: start;
-  gap: 5px;
+  gap: 3px;
+}
+
+.shadow-direction__result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
 }
 
 .shadow-direction__comparison {
@@ -2826,6 +2833,7 @@ summary.operation-history-row::-webkit-details-marker {
     min-width: 0;
   }
 
+  .shadow-direction__result,
   .shadow-direction__comparison,
   .shadow-direction__basis {
     overflow-wrap: anywhere;

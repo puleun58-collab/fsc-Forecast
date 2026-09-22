@@ -140,18 +140,20 @@ function ObservationRow({ observation }: { observation: ShadowObservation }) {
           '확정 대기'
         ) : (
           <div className="shadow-direction__detail">
-            <span
-              className={`status-tag ${
-                observation.shadowDirection === observation.actualDirection
-                  ? 'status-tag--ok'
-                  : 'status-tag--warning'
-              }`}
-            >
-              {observation.shadowDirection === observation.actualDirection ? '성공' : '실패'}
-            </span>
-            <span className="shadow-direction__comparison">
-              {DIRECTION_LABEL[observation.shadowDirection]} 예측 → 실제{' '}
-              {DIRECTION_LABEL[observation.actualDirection]}
+            <span className="shadow-direction__result">
+              <span
+                className={`status-tag ${
+                  observation.shadowDirection === observation.actualDirection
+                    ? 'status-tag--ok'
+                    : 'status-tag--warning'
+                }`}
+              >
+                {observation.shadowDirection === observation.actualDirection ? '성공' : '실패'}
+              </span>
+              <span className="shadow-direction__comparison">
+                {DIRECTION_LABEL[observation.shadowDirection]} 예측 → 실제{' '}
+                {DIRECTION_LABEL[observation.actualDirection]}
+              </span>
             </span>
             <span className="shadow-direction__basis">
               기준 {formatPriceNumber(observation.anchorKrwPerL)} → 예측{' '}

@@ -184,8 +184,8 @@ test('week rows explain every stored Shadow direction result and keep pending ac
     }),
   );
 
-  assert.match(markup, /status-tag status-tag--warning">실패<\/span><span class="shadow-direction__comparison">상승 예측 → 실제 하락/);
-  assert.match(markup, /status-tag status-tag--ok">성공<\/span><span class="shadow-direction__comparison">상승 예측 → 실제 상승/);
+  assert.match(markup, /shadow-direction__result"><span class="status-tag status-tag--warning">실패<\/span><span class="shadow-direction__comparison">상승 예측 → 실제 하락/);
+  assert.match(markup, /shadow-direction__result"><span class="status-tag status-tag--ok">성공<\/span><span class="shadow-direction__comparison">상승 예측 → 실제 상승/);
   assert.match(markup, /하락 예측 → 실제 상승/);
   assert.match(markup, /하락 예측 → 실제 하락/);
   assert.match(markup, /보합 예측 → 실제 상승/);
