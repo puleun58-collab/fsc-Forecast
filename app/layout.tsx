@@ -3,7 +3,7 @@ import Script from 'next/script';
 import './globals.css';
 
 const PRODUCT_NAME = 'FSC Forecast';
-const PRODUCT_MESSAGE = '경유가 전망·FSC 의사결정 지원';
+const PRODUCT_MESSAGE = '경유가 기반 FSC 의사결정 지원';
 const PRODUCT_DESCRIPTION =
   '오피넷 경유가를 기반으로 주간 전망과 분기별 FSC 산정을 지원하는 운영 대시보드입니다.';
 
