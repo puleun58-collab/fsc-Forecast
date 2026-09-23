@@ -3,10 +3,8 @@ import Script from 'next/script';
 import './globals.css';
 
 const PRODUCT_NAME = 'FSC Forecast';
-const PRODUCT_MESSAGE = '경유가 기반 FSC 의사결정 지원';
-const PRODUCT_DESCRIPTION =
-  '오피넷 경유가를 기반으로 주간 전망과 분기별 FSC 산정을 지원하는 운영 대시보드입니다.';
-const SOCIAL_DESCRIPTION = '오피넷 경유가 기반 주간 전망·분기 FSC 산정 지원';
+const PRODUCT_MESSAGE = '경유가 전망·FSC 산정';
+const PRODUCT_DESCRIPTION = '오피넷 경유가 기반 주간 전망·분기 FSC 산정 지원';
 
 function resolveMetadataBase(): URL {
   const configuredOrigin =
@@ -40,7 +38,7 @@ export const metadata: Metadata = {
     url: '/',
     siteName: PRODUCT_NAME,
     title: `${PRODUCT_NAME} | ${PRODUCT_MESSAGE}`,
-    description: SOCIAL_DESCRIPTION,
+    description: PRODUCT_DESCRIPTION,
     images: [
       {
         url: SOCIAL_IMAGE_URL,
@@ -55,7 +53,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: `${PRODUCT_NAME} | ${PRODUCT_MESSAGE}`,
-    description: SOCIAL_DESCRIPTION,
+    description: PRODUCT_DESCRIPTION,
     images: [SOCIAL_IMAGE_URL],
   },
   manifest: '/manifest.webmanifest',
