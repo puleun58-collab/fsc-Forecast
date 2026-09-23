@@ -43,6 +43,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: SOCIAL_IMAGE_URL,
+        secureUrl: SOCIAL_IMAGE_URL,
+        type: 'image/png',
         width: 1200,
         height: 630,
         alt: `${PRODUCT_NAME} — ${PRODUCT_MESSAGE}`,
