@@ -23,7 +23,7 @@ function resolveMetadataBase(): URL {
 }
 
 const METADATA_BASE = resolveMetadataBase();
-const SOCIAL_IMAGE_URL = `${METADATA_BASE.origin}/opengraph-image.png`;
+const SOCIAL_IMAGE_URL = `${METADATA_BASE.origin}/opengraph-image-v2.png`;
 
 export const metadata: Metadata = {
   metadataBase: METADATA_BASE,
